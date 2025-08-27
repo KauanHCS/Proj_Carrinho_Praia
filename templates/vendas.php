@@ -43,7 +43,7 @@
                     <p class="text-muted">Nenhum item adicionado</p>
                 </div>
                 <div class="mt-3">
-                    <h5>Total:: R$ <span id="totalCarrinho">0,00</span></h5>
+                    <h5>Total: R$ <span id="totalCarrinho">0,00</span></h5>
                 </div>
                 <div class="mt-3">
                     <label for="formaPagamento" class="form-label">Forma de Pagamento</label>
