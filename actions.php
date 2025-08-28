@@ -1,6 +1,5 @@
 <?php
 // actions.php
-
 require_once 'config/database.php';
 
 // Função para retornar resposta JSON
@@ -19,6 +18,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     
     switch ($action) {
+        case 'login':
+            login();
+            break;
+        case 'register':
+            register();
+            break;
+        case 'check_google_user':
+            checkGoogleUser();
+            break;
+        case 'register_google':
+            registerGoogleUser();
+            break;
+        case 'login_google':
+            loginGoogleUser();
+            break;
         case 'finalizar_venda':
             finalizarVenda();
             break;
@@ -55,8 +69,242 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Funções de ação
+// Funções de autenticação com Google
 
+function checkGoogleUser() {
+    $conn = getConnection();
+    
+    try {
+        $email = $_POST['email'] ?? '';
+        
+        if (empty($email)) {
+            jsonResponse(false, null, 'Email é obrigatório');
+        }
+        
+        // Verificar se o usuário já existe
+        $stmt = $conn->prepare("SELECT id, nome FROM usuarios WHERE email = ? AND google_id IS NOT NULL");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows > 0) {
+            $usuario = $result->fetch_assoc();
+            jsonResponse(true, [
+                'exists' => true,
+                'usuario_id' => $usuario['id'],
+                'nome' => $usuario['nome']
+            ]);
+        } else {
+            jsonResponse(true, ['exists' => false]);
+        }
+        
+    } catch (Exception $e) {
+        jsonResponse(false, null, $e->getMessage());
+    }
+    
+    $conn->close();
+}
+
+function registerGoogleUser() {
+    $conn = getConnection();
+    
+    try {
+        $name = $_POST['name'] ?? '';
+        $email = $_POST['email'] ?? '';
+        $imageUrl = $_POST['imageUrl'] ?? '';
+        $googleId = $_POST['googleId'] ?? '';
+        
+        if (empty($name) || empty($email) || empty($googleId)) {
+            jsonResponse(false, null, 'Dados do Google são obrigatórios');
+        }
+        
+        // Verificar se o email já existe
+        $stmt = $conn->prepare("SELECT id FROM usuarios WHERE email = ?");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows > 0) {
+            // Atualizar usuário existente com Google ID
+            $stmt = $conn->prepare("UPDATE usuarios SET google_id = ?, imagem_url = ? WHERE email = ?");
+            $stmt->bind_param("sss", $googleId, $imageUrl, $email);
+            $stmt->execute();
+            
+            // Obter informações do usuário
+            $stmt = $conn->prepare("SELECT id, nome FROM usuarios WHERE email = ?");
+            $stmt->bind_param("s", $email);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $usuario = $result->fetch_assoc();
+            
+        } else {
+            // Criar novo usuário
+            $stmt = $conn->prepare("INSERT INTO usuarios (nome, email, imagem_url, google_id, data_cadastro) VALUES (?, ?, ?, ?, NOW())");
+            $stmt->bind_param("ssss", $name, $email, $imageUrl, $googleId);
+            $stmt->execute();
+            $usuarioId = $conn->insert_id;
+            $usuario = ['id' => $usuarioId, 'nome' => $name];
+        }
+        
+        // Criar usuário na sessão
+        $user = [
+            'id' => $usuario['id'],
+            'name' => $usuario['nome'],
+            'email' => $email,
+            'imageUrl' => $imageUrl
+        ];
+        
+        jsonResponse(true, ['user' => $user], 'Usuário do Google registrado com sucesso');
+        
+    } catch (Exception $e) {
+        jsonResponse(false, null, $e->getMessage());
+    }
+    
+    $conn->close();
+}
+
+function loginGoogleUser() {
+    $conn = getConnection();
+    
+    try {
+        $email = $_POST['email'] ?? '';
+        
+        if (empty($email)) {
+            jsonResponse(false, null, 'Email é obrigatório');
+        }
+        
+        // Verificar se o usuário existe e tem login com Google
+        $stmt = $conn->prepare("SELECT id, nome, email, imagem_url FROM usuarios WHERE email = ? AND google_id IS NOT NULL");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows === 0) {
+            jsonResponse(false, null, 'Usuário não encontrado ou não tem login com Google');
+        }
+        
+        $usuario = $result->fetch_assoc();
+        
+        // Criar usuário para retorno
+        $user = [
+            'id' => $usuario['id'],
+            'name' => $usuario['nome'],
+            'email' => $usuario['email'],
+            'imageUrl' => $usuario['imagem_url'] ?: "https://ui-avatars.com/api/?name=" . urlencode($usuario['nome']) . "&background=0066cc&color=fff"
+        ];
+        
+        jsonResponse(true, ['user' => $user], 'Login com Google realizado com sucesso');
+        
+    } catch (Exception $e) {
+        jsonResponse(false, null, $e->getMessage());
+    }
+    
+    $conn->close();
+}
+
+// Funções de autenticação existentes
+function login() {
+    $conn = getConnection();
+    
+    try {
+        $email = $_POST['email'] ?? '';
+        $password = $_POST['password'] ?? '';
+        
+        if (empty($email) || empty($password)) {
+            jsonResponse(false, null, 'Email e senha são obrigatórios');
+        }
+        
+        // Verificar se o usuário existe
+        $stmt = $conn->prepare("SELECT * FROM usuarios WHERE email = ?");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows === 0) {
+            jsonResponse(false, null, 'Email ou senha incorretos');
+        }
+        
+        $usuario = $result->fetch_assoc();
+        
+        // Verificar senha (em um sistema real, use password_verify)
+        if ($password !== $usuario['senha']) {
+            jsonResponse(false, null, 'Email ou senha incorretos');
+        }
+        
+        // Iniciar sessão
+        session_start();
+        $_SESSION['usuario_id'] = $usuario['id'];
+        $_SESSION['usuario_nome'] = $usuario['nome'];
+        $_SESSION['usuario_email'] = $usuario['email'];
+        
+        jsonResponse(true, [
+            'usuario_id' => $usuario['id'],
+            'nome' => $usuario['nome']
+        ], 'Login realizado com sucesso');
+        
+    } catch (Exception $e) {
+        jsonResponse(false, null, $e->getMessage());
+    }
+    
+    $conn->close();
+}
+
+function register() {
+    $conn = getConnection();
+    
+    try {
+        $nome = $_POST['nome'] ?? '';
+        $sobrenome = $_POST['sobrenome'] ?? '';
+        $email = $_POST['email'] ?? '';
+        $telefone = $_POST['telefone'] ?? '';
+        $password = $_POST['password'] ?? '';
+        $confirmPassword = $_POST['confirm_password'] ?? '';
+        
+        // Validações
+        if (empty($nome) || empty($sobrenome) || empty($email) || empty($telefone) || empty($password)) {
+            jsonResponse(false, null, 'Todos os campos são obrigatórios');
+        }
+        
+        if ($password !== $confirmPassword) {
+            jsonResponse(false, null, 'As senhas não coincidem');
+        }
+        
+        // Verificar se o email já existe
+        $stmt = $conn->prepare("SELECT id FROM usuarios WHERE email = ?");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows > 0) {
+            jsonResponse(false, null, 'Email já cadastrado');
+        }
+        
+        // Criar usuário (em um sistema real, use password_hash)
+        $nomeCompleto = $nome . ' ' . $sobrenome;
+        $stmt = $conn->prepare("INSERT INTO usuarios (nome, email, telefone, senha) VALUES (?, ?, ?, ?)");
+        $stmt->bind_param("ssss", $nomeCompleto, $email, $telefone, $password);
+        $stmt->execute();
+        $usuarioId = $conn->insert_id;
+        
+        // Iniciar sessão
+        session_start();
+        $_SESSION['usuario_id'] = $usuarioId;
+        $_SESSION['usuario_nome'] = $nomeCompleto;
+        $_SESSION['usuario_email'] = $email;
+        
+        jsonResponse(true, [
+            'usuario_id' => $usuarioId,
+            'nome' => $nomeCompleto
+        ], 'Cadastro realizado com sucesso');
+        
+    } catch (Exception $e) {
+        jsonResponse(false, null, $e->getMessage());
+    }
+    
+    $conn->close();
+}
+
+// Funções de ação existentes (mantidas)
 function finalizarVenda() {
     $conn = getConnection();
     

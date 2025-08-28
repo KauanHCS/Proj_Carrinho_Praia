@@ -3,13 +3,16 @@ body {
     background-color: #f8f9fa;
     padding-bottom: 70px;
 }
+
 .navbar {
     background: linear-gradient(135deg, #0066cc, #0099ff);
 }
+
 .navbar-brand, .nav-link {
     color: white !important;
     font-weight: 500;
 }
+
 .card {
     border-radius: 12px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
@@ -17,34 +20,41 @@ body {
     border: none;
     transition: transform 0.2s;
 }
+
 .card:hover {
     transform: translateY(-5px);
 }
+
 .card-header {
     background: linear-gradient(135deg, #0066cc, #0099ff);
     color: white;
     border-radius: 12px 12px 0 0 !important;
     font-weight: 600;
 }
+
 .btn-primary {
     background: linear-gradient(135deg, #0066cc, #0099ff);
     border: none;
     border-radius: 8px;
 }
+
 .btn-success {
     background: linear-gradient(135deg, #28a745, #20c997);
     border: none;
     border-radius: 8px;
 }
+
 .btn-danger {
     background: linear-gradient(135deg, #dc3545, #c92066);
     border: none;
     border-radius: 8px;
 }
+
 .low-stock {
     background-color: #fff3cd;
     border-left: 4px solid #ffc107;
 }
+
 .footer {
     background-color: #f8f9fa;
     padding: 20px 0;
@@ -54,34 +64,43 @@ body {
     width: 100%;
     z-index: 100;
 }
+
 .product-btn {
-    font-size: 1.1rem;
-    padding: 12px;
-    margin: 5px;
+    font-size: 0.9rem;
+    padding: 10px;
+    margin: 3px;
     border-radius: 8px;
     transition: all 0.2s;
     border: 2px solid #e9ecef;
+    height: 70px;
+    display: flex;
+    align-items: center;
 }
+
 .product-btn:hover {
     border-color: #0066cc;
     transform: scale(1.02);
 }
+
 .product-btn.low {
     background-color: #fff3cd;
     border-color: #ffc107;
 }
+
 #map {
     height: 400px;
     width: 100%;
     border-radius: 12px;
     margin-top: 10px;
 }
+
 .tab-content {
     padding: 20px;
     background-color: white;
     border-radius: 12px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
+
 .alert-banner {
     position: fixed;
     top: 10px;
@@ -89,4 +108,63 @@ body {
     z-index: 1000;
     max-width: 300px;
     border-radius: 8px;
+}
+
+/* Estilos para as abas de categoria */
+.nav-tabs .nav-link {
+    font-size: 0.9rem;
+    padding: 8px 12px;
+    border: 1px solid #dee2e6;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    margin-right: 2px;
+}
+
+.nav-tabs .nav-link.active {
+    background-color: #0066cc;
+    color: white;
+    border-color: #0066cc;
+}
+
+/* Ajustes para dispositivos móveis */
+@media (max-width: 768px) {
+    .product-btn {
+        font-size: 0.8rem;
+        padding: 8px;
+        height: 60px;
+    }
+    
+    .product-btn .text-start {
+        font-size: 0.85rem;
+    }
+    
+    .card {
+        margin-bottom: 15px;
+    }
+    
+    .footer {
+        padding: 15px 0;
+    }
+}
+
+/* Ajustes para telas menores */
+@media (max-width: 576px) {
+    .product-btn {
+        font-size: 0.75rem;
+        padding: 6px;
+        height: 55px;
+    }
+    
+    .product-btn strong {
+        font-size: 0.9em;
+    }
+    
+    .product-btn small {
+        font-size: 0.75em;
+    }
+    
+    .nav-tabs .nav-link {
+        font-size: 0.8rem;
+        padding: 6px 10px;
+    }
 }
