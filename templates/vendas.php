@@ -6,6 +6,23 @@
                 <span class="badge bg-secondary">Hoje: <span id="dataAtual"></span></span>
             </div>
             <div class="card-body">
+                <!-- Search and Filter Controls -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" id="searchProdutos" placeholder="Buscar produtos...">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <select class="form-select" id="filtroCategoria">
+                            <option value="">Todas as categorias</option>
+                            <option value="bebida">Bebidas</option>
+                            <option value="comida">Comidas</option>
+                            <option value="outros">Outros</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="row" id="produtosVenda">
                     <?php
                     $conn = getConnection();
@@ -16,7 +33,7 @@
                         while($row = $result->fetch_assoc()) {
                             $lowStock = $row["quantidade"] <= $row["limite_minimo"] ? 'low' : '';
                             echo '<div class="col-md-4 col-sm-6">';
-                            echo '<button class="btn btn-light w-100 product-btn ' . $lowStock . '" onclick="adicionarAoCarrinho(' . $row["id"] . ', \'' . $row["nome"] . '\', ' . $row["preco"] . ', ' . $row["quantidade"] . ')">';
+                            echo '<button class="btn btn-light w-100 product-btn ' . $lowStock . '" data-categoria="' . $row["categoria"] . '" onclick="adicionarAoCarrinho(' . $row["id"] . ', \'' . $row["nome"] . '\', ' . $row["preco"] . ', ' . $row["quantidade"] . ')">';
                             echo '<div class="text-start">';
                             echo '<strong>' . $row["nome"] . '</strong><br>';
                             echo '<small>R$ ' . number_format($row["preco"], 2, ',', '.') . ' | ' . $row["quantidade"] . ' unid.</small>';

@@ -2,6 +2,34 @@
 // actions.php
 require_once 'config/database.php';
 
+// Input sanitization functions
+function sanitizeInput($input) {
+    if (is_string($input)) {
+        return htmlspecialchars(trim($input), ENT_QUOTES, 'UTF-8');
+    }
+    return $input;
+}
+
+function sanitizeArray($array) {
+    $sanitized = [];
+    foreach ($array as $key => $value) {
+        $sanitized[sanitizeInput($key)] = sanitizeInput($value);
+    }
+    return $sanitized;
+}
+
+function validateEmail($email) {
+    return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
+}
+
+function validatePrice($price) {
+    return is_numeric($price) && $price > 0;
+}
+
+function validateQuantity($quantity) {
+    return is_numeric($quantity) && intval($quantity) == $quantity && $quantity > 0;
+}
+
 // Função para retornar resposta JSON
 function jsonResponse($success, $data = null, $message = '') {
     header('Content-Type: application/json');
@@ -226,8 +254,8 @@ function login() {
         
         $usuario = $result->fetch_assoc();
         
-        // Verificar senha (em um sistema real, use password_verify)
-        if ($password !== $usuario['senha']) {
+        // Verificar senha usando hash seguro
+        if (!password_verify($password, $usuario['senha'])) {
             jsonResponse(false, null, 'Email ou senha incorretos');
         }
         
@@ -279,10 +307,11 @@ function register() {
             jsonResponse(false, null, 'Email já cadastrado');
         }
         
-        // Criar usuário (em um sistema real, use password_hash)
+        // Criar usuário com senha hasheada
         $nomeCompleto = $nome . ' ' . $sobrenome;
+        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
         $stmt = $conn->prepare("INSERT INTO usuarios (nome, email, telefone, senha) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param("ssss", $nomeCompleto, $email, $telefone, $password);
+        $stmt->bind_param("ssss", $nomeCompleto, $email, $telefone, $hashedPassword);
         $stmt->execute();
         $usuarioId = $conn->insert_id;
         
@@ -417,13 +446,43 @@ function salvarProduto() {
     $conn = getConnection();
     
     try {
-        $nome = $_POST['nome'];
-        $categoria = $_POST['categoria'];
-        $preco = $_POST['preco'];
-        $quantidade = $_POST['quantidade'];
-        $limiteMinimo = $_POST['limite_minimo'];
-        $validade = $_POST['validade'] ?: null;
-        $observacoes = $_POST['observacoes'] ?: '';
+        // Sanitize inputs
+        $nome = sanitizeInput($_POST['nome'] ?? '');
+        $categoria = sanitizeInput($_POST['categoria'] ?? '');
+        $preco = sanitizeInput($_POST['preco'] ?? '');
+        $quantidade = sanitizeInput($_POST['quantidade'] ?? '');
+        $limiteMinimo = sanitizeInput($_POST['limite_minimo'] ?? '');
+        $validade = sanitizeInput($_POST['validade'] ?? '') ?: null;
+        $observacoes = sanitizeInput($_POST['observacoes'] ?? '');
+        
+        // Validate inputs
+        if (empty($nome) || strlen($nome) < 2 || strlen($nome) > 100) {
+            jsonResponse(false, null, 'Nome do produto deve ter entre 2 e 100 caracteres');
+        }
+        
+        if (!in_array($categoria, ['bebida', 'comida', 'outros'])) {
+            jsonResponse(false, null, 'Categoria inválida');
+        }
+        
+        if (!validatePrice($preco)) {
+            jsonResponse(false, null, 'Preço deve ser um valor positivo');
+        }
+        
+        if (!validateQuantity($quantidade)) {
+            jsonResponse(false, null, 'Quantidade deve ser um número inteiro positivo');
+        }
+        
+        if (!validateQuantity($limiteMinimo)) {
+            jsonResponse(false, null, 'Limite mínimo deve ser um número inteiro positivo');
+        }
+        
+        // Validate date if provided
+        if ($validade && !empty($validade)) {
+            $date = DateTime::createFromFormat('Y-m-d', $validade);
+            if (!$date || $date < new DateTime()) {
+                jsonResponse(false, null, 'Data de validade deve ser futura');
+            }
+        }
         
         // Verificar se o produto já existe
         $stmt = $conn->prepare("SELECT id FROM produtos WHERE nome = ?");

@@ -2,6 +2,35 @@
 let carrinho = [];
 let localizacaoVendas = [];
 
+// Cart persistence functions
+function salvarCarrinho() {
+    try {
+        localStorage.setItem('carrinho_praia', JSON.stringify(carrinho));
+    } catch (error) {
+        console.warn('Não foi possível salvar o carrinho no localStorage:', error);
+    }
+}
+
+function carregarCarrinho() {
+    try {
+        const carrinhoSalvo = localStorage.getItem('carrinho_praia');
+        if (carrinhoSalvo) {
+            carrinho = JSON.parse(carrinhoSalvo);
+            return true;
+        }
+    } catch (error) {
+        console.warn('Erro ao carregar carrinho do localStorage:', error);
+        localStorage.removeItem('carrinho_praia');
+    }
+    return false;
+}
+
+function limparCarrinho() {
+    carrinho = [];
+    localStorage.removeItem('carrinho_praia');
+    atualizarCarrinho();
+}
+
 // Funções auxiliares
 function formatarMoeda(valor) {
     return valor.toFixed(2).replace('.', ',');
@@ -15,6 +44,7 @@ function getDataAtual() {
 // Carregar dados iniciais
 function carregarDados() {
     document.getElementById('dataAtual').textContent = getDataAtual();
+    carregarCarrinho(); // Carregar carrinho salvo
     atualizarCarrinho();
     verificarAlertaEstoque();
     atualizarGraficoVendas();
@@ -43,6 +73,7 @@ function adicionarAoCarrinho(id, nome, preco, quantidade) {
     }
     
     atualizarCarrinho();
+    salvarCarrinho(); // Salvar no localStorage
     mostrarAlerta(`${nome} adicionado ao carrinho!`, 'success');
 }
 
@@ -89,6 +120,7 @@ function atualizarCarrinho() {
 function removerDoCarrinho(id) {
     carrinho = carrinho.filter(item => item.id !== id);
     atualizarCarrinho();
+    salvarCarrinho(); // Salvar no localStorage
 }
 
 // Calcular troco
@@ -125,10 +157,13 @@ document.getElementById('finalizarVenda').addEventListener('click', function() {
         const total = carrinho.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
         
         if (valorPago < total) {
-            mostrarAlerta('Valor pago insuficiente!', 'danger');
+            mostrarAlerta('Valor pago insuficiente! Faltam R$ ' + formatarMoeda(total - valorPago), 'danger');
             return;
         }
     }
+
+    const botaoFinalizar = document.getElementById('finalizarVenda');
+    mostrarCarregamento(botaoFinalizar, 'Finalizando...');
 
     // Enviar venda para o servidor
     const formData = new FormData();
@@ -144,23 +179,33 @@ document.getElementById('finalizarVenda').addEventListener('click', function() {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Erro na resposta do servidor');
+        }
+        return response.json();
+    })
     .then(data => {
+        ocultarCarregamento(botaoFinalizar);
+        
         if (data.success) {
             // Limpar carrinho
-            carrinho = [];
-            atualizarCarrinho();
+            limparCarrinho();
             
-            // Atualizar interface
-            location.reload(); // Atualiza a página para mostrar os novos valores
+            const total = carrinho.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
+            mostrarAlerta(`Venda finalizada! Total: R$ ${formatarMoeda(total)}`, 'success');
             
-            mostrarAlerta('Venda finalizada com sucesso!', 'success');
+            // Atualizar interface após um breve delay
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
         } else {
-            mostrarAlerta('Erro ao finalizar venda: ' + data.message, 'danger');
+            mostrarAlerta(data.message || 'Erro ao finalizar venda', 'danger');
         }
     })
     .catch(error => {
-        mostrarAlerta('Erro de conexão: ' + error, 'danger');
+        ocultarCarregamento(botaoFinalizar);
+        tratarErro(error, 'Finalizar venda');
     });
 });
 
@@ -467,28 +512,187 @@ function inicializarMapa() {
     }
 }
 
-// Mostrar alerta
-function mostrarAlerta(mensagem, tipo = 'info') {
+// Enhanced notification system
+function mostrarAlerta(mensagem, tipo = 'info', duracao = 4000) {
+    // Remove existing alerts of the same type
+    const existingAlerts = document.querySelectorAll(`.toast-notification.alert-${tipo}`);
+    existingAlerts.forEach(alert => alert.remove());
+    
     const alerta = document.createElement('div');
-    alerta.className = `alert alert-${tipo} alert-dismissible fade show`;
+    alerta.className = `alert alert-${tipo} alert-dismissible fade show toast-notification`;
     alerta.role = 'alert';
-    alerta.innerHTML = `
-        ${mensagem}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    alerta.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        max-width: 350px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        border-radius: 8px;
     `;
     
-    // Adicionar ao corpo
+    const icons = {
+        success: 'bi-check-circle',
+        danger: 'bi-exclamation-triangle',
+        warning: 'bi-exclamation-circle',
+        info: 'bi-info-circle'
+    };
+    
+    alerta.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="bi ${icons[tipo] || icons.info} me-2"></i>
+            <div class="flex-grow-1">${mensagem}</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
     document.body.appendChild(alerta);
     
-    // Remover após 3 segundos
-    setTimeout(() => {
+    // Auto remove
+    const timer = setTimeout(() => {
+        if (alerta.parentNode) {
+            alerta.classList.add('fade');
+            setTimeout(() => alerta.remove(), 300);
+        }
+    }, duracao);
+    
+    // Manual close
+    alerta.querySelector('.btn-close').addEventListener('click', () => {
+        clearTimeout(timer);
         alerta.remove();
-    }, 3000);
+    });
+}
+
+// Loading state management
+function mostrarCarregamento(elemento, texto = 'Carregando...') {
+    if (typeof elemento === 'string') {
+        elemento = document.getElementById(elemento);
+    }
+    if (!elemento) return;
+    
+    elemento.dataset.originalContent = elemento.innerHTML;
+    elemento.disabled = true;
+    elemento.innerHTML = `
+        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+        ${texto}
+    `;
+}
+
+function ocultarCarregamento(elemento) {
+    if (typeof elemento === 'string') {
+        elemento = document.getElementById(elemento);
+    }
+    if (!elemento) return;
+    
+    elemento.disabled = false;
+    elemento.innerHTML = elemento.dataset.originalContent || elemento.innerHTML;
+    delete elemento.dataset.originalContent;
+}
+
+// Enhanced error handling
+function tratarErro(error, contexto = '') {
+    console.error(`Erro ${contexto}:`, error);
+    
+    let mensagem = 'Ocorreu um erro inesperado. Tente novamente.';
+    
+    if (error.message) {
+        mensagem = error.message;
+    } else if (typeof error === 'string') {
+        mensagem = error;
+    }
+    
+    mostrarAlerta(`${contexto ? contexto + ': ' : ''}${mensagem}`, 'danger', 6000);
+}
+
+// Export and backup functions
+function exportarVendas() {
+    const startDate = document.getElementById('exportStartDate')?.value || '';
+    const endDate = document.getElementById('exportEndDate')?.value || '';
+    
+    let url = 'utils/backup_export.php?action=export_sales';
+    if (startDate) url += '&start_date=' + encodeURIComponent(startDate);
+    if (endDate) url += '&end_date=' + encodeURIComponent(endDate);
+    
+    // Create hidden link and click to trigger download
+    const link = document.createElement('a');
+    link.href = url;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    mostrarAlerta('Iniciando download das vendas...', 'info');
+}
+
+function exportarProdutos() {
+    const url = 'utils/backup_export.php?action=export_products';
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    mostrarAlerta('Iniciando download dos produtos...', 'info');
+}
+
+function criarBackup() {
+    if (!confirm('Deseja criar um backup completo do banco de dados?')) {
+        return;
+    }
+    
+    const url = 'utils/backup_export.php?action=backup_database';
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    mostrarAlerta('Criando backup do sistema...', 'info');
+}
+
+// Product search and filter functions
+function filtrarProdutos() {
+    const searchTerm = document.getElementById('searchProdutos')?.value.toLowerCase() || '';
+    const selectedCategory = document.getElementById('filtroCategoria')?.value || '';
+    const produtos = document.querySelectorAll('#produtosVenda .col-md-4, #produtosVenda .col-sm-6');
+    
+    produtos.forEach(produto => {
+        const button = produto.querySelector('.product-btn');
+        if (!button) return;
+        
+        const nome = button.querySelector('strong')?.textContent.toLowerCase() || '';
+        const categoria = button.getAttribute('data-categoria') || '';
+        
+        const matchesSearch = nome.includes(searchTerm);
+        const matchesCategory = !selectedCategory || categoria === selectedCategory;
+        
+        if (matchesSearch && matchesCategory) {
+            produto.style.display = 'block';
+        } else {
+            produto.style.display = 'none';
+        }
+    });
 }
 
 // Inicializar
 document.addEventListener('DOMContentLoaded', function() {
     carregarDados();
+    
+    // Adicionar event listeners para busca e filtro
+    const searchInput = document.getElementById('searchProdutos');
+    const categoryFilter = document.getElementById('filtroCategoria');
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', filtrarProdutos);
+    }
+    
+    if (categoryFilter) {
+        categoryFilter.addEventListener('change', filtrarProdutos);
+    }
     
     // Atualizar alertas periodicamente
     setInterval(verificarAlertaEstoque, 30000);

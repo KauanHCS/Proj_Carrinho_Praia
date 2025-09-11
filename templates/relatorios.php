@@ -71,6 +71,49 @@
         </div>
     </div>
 </div>
+
+<!-- Export and Backup Section -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-download"></i> Exportar Dados e Backup
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6>Exportar Vendas</h6>
+                        <p class="small text-muted">Baixar dados de vendas em formato CSV</p>
+                        <div class="mb-2">
+                            <input type="date" class="form-control form-control-sm mb-1" id="exportStartDate" placeholder="Data inicial">
+                            <input type="date" class="form-control form-control-sm" id="exportEndDate" placeholder="Data final">
+                        </div>
+                        <button class="btn btn-primary btn-sm" onclick="exportarVendas()">
+                            <i class="bi bi-file-earmark-excel"></i> Exportar Vendas
+                        </button>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Exportar Produtos</h6>
+                        <p class="small text-muted">Baixar cadastro de produtos em CSV</p>
+                        <br><br>
+                        <button class="btn btn-success btn-sm" onclick="exportarProdutos()">
+                            <i class="bi bi-file-earmark-excel"></i> Exportar Produtos
+                        </button>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Backup do Sistema</h6>
+                        <p class="small text-muted">Fazer backup completo do banco de dados</p>
+                        <br><br>
+                        <button class="btn btn-warning btn-sm" onclick="criarBackup()">
+                            <i class="bi bi-hdd"></i> Backup Completo
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-header">
         <i class="bi bi-bar-chart"></i> Produtos Mais Vendidos
