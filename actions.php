@@ -460,7 +460,7 @@ function salvarProduto() {
             jsonResponse(false, null, 'Nome do produto deve ter entre 2 e 100 caracteres');
         }
         
-        if (!in_array($categoria, ['bebida', 'comida', 'outros'])) {
+        if (!in_array($categoria, ['bebida', 'comida', 'acessorio', 'outros'])) {
             jsonResponse(false, null, 'Categoria inválida');
         }
         

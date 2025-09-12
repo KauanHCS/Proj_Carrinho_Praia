@@ -17,6 +17,7 @@
                         <select class="form-select" id="categoriaProduto" required>
                             <option value="bebida">Bebida</option>
                             <option value="comida">Comida</option>
+                            <option value="acessorio">Acessório</option>
                             <option value="outros">Outros</option>
                         </select>
                     </div>
