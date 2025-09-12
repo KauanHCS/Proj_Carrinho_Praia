@@ -656,26 +656,66 @@ function criarBackup() {
 
 // Product search and filter functions
 function filtrarProdutos() {
-    const searchTerm = document.getElementById('searchProdutos')?.value.toLowerCase() || '';
+    const searchTerm = document.getElementById('searchProdutos')?.value.toLowerCase().trim() || '';
     const selectedCategory = document.getElementById('filtroCategoria')?.value || '';
-    const produtos = document.querySelectorAll('#produtosVenda .col-md-4, #produtosVenda .col-sm-6');
+    const produtos = document.querySelectorAll('#produtosVenda > div');
+    
+    console.log('Filtrando produtos:', { searchTerm, selectedCategory, totalProdutos: produtos.length });
+    
+    let produtosVisiveis = 0;
     
     produtos.forEach(produto => {
         const button = produto.querySelector('.product-btn');
-        if (!button) return;
+        if (!button) {
+            console.log('Botão não encontrado em:', produto);
+            return;
+        }
         
-        const nome = button.querySelector('strong')?.textContent.toLowerCase() || '';
-        const categoria = button.getAttribute('data-categoria') || '';
+        // Buscar nome do produto
+        const nomeElement = button.querySelector('strong');
+        const nome = nomeElement ? nomeElement.textContent.toLowerCase().trim() : '';
         
-        const matchesSearch = nome.includes(searchTerm);
+        // Buscar categoria do produto
+        const categoria = button.getAttribute('data-categoria') || button.dataset.categoria || '';
+        
+        console.log('Produto:', { nome, categoria, searchTerm, selectedCategory });
+        
+        // Verificar se corresponde à busca
+        const matchesSearch = !searchTerm || nome.includes(searchTerm);
+        
+        // Verificar se corresponde à categoria
         const matchesCategory = !selectedCategory || categoria === selectedCategory;
         
+        // Mostrar ou ocultar produto
         if (matchesSearch && matchesCategory) {
-            produto.style.display = 'block';
+            produto.style.display = '';
+            produto.classList.remove('d-none');
+            produtosVisiveis++;
         } else {
             produto.style.display = 'none';
+            produto.classList.add('d-none');
         }
     });
+    
+    console.log('Produtos visíveis:', produtosVisiveis);
+    
+    // Mostrar mensagem se nenhum produto for encontrado
+    const container = document.getElementById('produtosVenda');
+    let mensagemVazia = container.querySelector('.mensagem-vazia');
+    
+    if (produtosVisiveis === 0) {
+        if (!mensagemVazia) {
+            mensagemVazia = document.createElement('div');
+            mensagemVazia.className = 'col-12 text-center text-muted mensagem-vazia';
+            mensagemVazia.innerHTML = '<p>Nenhum produto encontrado</p>';
+            container.appendChild(mensagemVazia);
+        }
+        mensagemVazia.style.display = '';
+    } else {
+        if (mensagemVazia) {
+            mensagemVazia.style.display = 'none';
+        }
+    }
 }
 
 // Inicializar

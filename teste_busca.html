@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Busca - Carrinho de Praia</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <h2>🧪 Teste de Busca e Filtros</h2>
+        
+        <!-- Controles de busca e filtro -->
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" id="searchProdutos" placeholder="Buscar produtos...">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <select class="form-select" id="filtroCategoria">
+                    <option value="">Todas as categorias</option>
+                    <option value="bebida">Bebidas</option>
+                    <option value="comida">Comidas</option>
+                    <option value="acessorio">Acessórios</option>
+                    <option value="outros">Outros</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Container de produtos -->
+        <div class="row" id="produtosVenda">
+            <div class="col-md-4 col-sm-6 mb-3">
+                <button class="btn btn-light w-100 product-btn" data-categoria="bebida" data-nome="Água Mineral 500ml">
+                    <div class="text-start">
+                        <strong>Água Mineral 500ml</strong><br>
+                        <small class="text-muted">R$ 2,50 | 100 unid.</small><br>
+                        <span class="badge bg-secondary">Bebida</span>
+                    </div>
+                </button>
+            </div>
+            
+            <div class="col-md-4 col-sm-6 mb-3">
+                <button class="btn btn-light w-100 product-btn low-stock" data-categoria="comida" data-nome="Sanduíche Natural">
+                    <div class="text-start">
+                        <strong>Sanduíche Natural</strong><br>
+                        <small class="text-muted">R$ 8,00 | 3 unid.</small><br>
+                        <span class="badge bg-secondary">Comida</span>
+                        <span class="badge bg-warning">Estoque baixo</span>
+                    </div>
+                </button>
+            </div>
+            
+            <div class="col-md-4 col-sm-6 mb-3">
+                <button class="btn btn-light w-100 product-btn" data-categoria="acessorio" data-nome="Protetor Solar FPS 30">
+                    <div class="text-start">
+                        <strong>Protetor Solar FPS 30</strong><br>
+                        <small class="text-muted">R$ 15,00 | 15 unid.</small><br>
+                        <span class="badge bg-secondary">Acessorio</span>
+                    </div>
+                </button>
+            </div>
+            
+            <div class="col-md-4 col-sm-6 mb-3">
+                <button class="btn btn-light w-100 product-btn" data-categoria="bebida" data-nome="Cerveja Lata">
+                    <div class="text-start">
+                        <strong>Cerveja Lata</strong><br>
+                        <small class="text-muted">R$ 5,50 | 40 unid.</small><br>
+                        <span class="badge bg-secondary">Bebida</span>
+                    </div>
+                </button>
+            </div>
+            
+            <div class="col-md-4 col-sm-6 mb-3">
+                <button class="btn btn-light w-100 product-btn" data-categoria="comida" data-nome="Picolé">
+                    <div class="text-start">
+                        <strong>Picolé</strong><br>
+                        <small class="text-muted">R$ 4,50 | 60 unid.</small><br>
+                        <span class="badge bg-secondary">Comida</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Informações de debug -->
+        <div class="mt-4">
+            <h4>🔍 Debug Info</h4>
+            <p>Abra o console do navegador (F12) para ver os logs de debug da função de filtro.</p>
+            <div id="debugInfo" class="alert alert-info">
+                <p><strong>Como testar:</strong></p>
+                <ul>
+                    <li>Digite "água" na busca → Deve mostrar apenas Água Mineral</li>
+                    <li>Selecione "Bebidas" no filtro → Deve mostrar Água e Cerveja</li>
+                    <li>Digite "sand" + selecione "Comidas" → Deve mostrar Sanduíche</li>
+                    <li>Digite "xyz" → Deve mostrar "Nenhum produto encontrado"</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/main.js"></script>
+    
+    <script>
+        // Inicializar filtros apenas nesta página de teste
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchProdutos');
+            const categoryFilter = document.getElementById('filtroCategoria');
+            
+            if (searchInput) {
+                searchInput.addEventListener('input', filtrarProdutos);
+            }
+            
+            if (categoryFilter) {
+                categoryFilter.addEventListener('change', filtrarProdutos);
+            }
+            
+            console.log('✅ Página de teste carregada - busca e filtros inicializados');
+        });
+    </script>
+</body>
+</html>

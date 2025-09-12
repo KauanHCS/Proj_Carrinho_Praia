@@ -19,6 +19,7 @@
                             <option value="">Todas as categorias</option>
                             <option value="bebida">Bebidas</option>
                             <option value="comida">Comidas</option>
+                            <option value="acessorio">Acessórios</option>
                             <option value="outros">Outros</option>
                         </select>
                     </div>
@@ -31,12 +32,23 @@
 
                     if ($result->num_rows > 0) {
                         while($row = $result->fetch_assoc()) {
-                            $lowStock = $row["quantidade"] <= $row["limite_minimo"] ? 'low' : '';
-                            echo '<div class="col-md-4 col-sm-6">';
-                            echo '<button class="btn btn-light w-100 product-btn ' . $lowStock . '" data-categoria="' . $row["categoria"] . '" onclick="adicionarAoCarrinho(' . $row["id"] . ', \'' . $row["nome"] . '\', ' . $row["preco"] . ', ' . $row["quantidade"] . ')">';
+                            $lowStock = $row["quantidade"] <= $row["limite_minimo"] ? ' low-stock' : '';
+                            $categoria = htmlspecialchars($row["categoria"]);
+                            $nome = htmlspecialchars($row["nome"]);
+                            $nomeJs = addslashes($row["nome"]);
+                            
+                            echo '<div class="col-md-4 col-sm-6 mb-3">';
+                            echo '<button class="btn btn-light w-100 product-btn' . $lowStock . '" ';
+                            echo 'data-categoria="' . $categoria . '" ';
+                            echo 'data-nome="' . $nome . '" ';
+                            echo 'onclick="adicionarAoCarrinho(' . $row["id"] . ', \'' . $nomeJs . '\', ' . $row["preco"] . ', ' . $row["quantidade"] . ')">';
                             echo '<div class="text-start">';
-                            echo '<strong>' . $row["nome"] . '</strong><br>';
-                            echo '<small>R$ ' . number_format($row["preco"], 2, ',', '.') . ' | ' . $row["quantidade"] . ' unid.</small>';
+                            echo '<strong>' . $nome . '</strong><br>';
+                            echo '<small class="text-muted">R$ ' . number_format($row["preco"], 2, ',', '.') . ' | ' . $row["quantidade"] . ' unid.</small><br>';
+                            echo '<span class="badge bg-secondary">' . ucfirst($categoria) . '</span>';
+                            if ($lowStock) {
+                                echo ' <span class="badge bg-warning">Estoque baixo</span>';
+                            }
                             echo '</div>';
                             echo '</button>';
                             echo '</div>';

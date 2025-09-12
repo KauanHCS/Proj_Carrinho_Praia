@@ -82,9 +82,31 @@ body {
     transform: scale(1.02);
 }
 
-.product-btn.low {
+.product-btn.low-stock {
     background-color: #fff3cd;
     border-color: #ffc107;
+    animation: pulse-warning 2s infinite;
+}
+
+@keyframes pulse-warning {
+    0% { border-color: #ffc107; }
+    50% { border-color: #ff8c00; }
+    100% { border-color: #ffc107; }
+}
+
+.product-btn .badge {
+    font-size: 0.7rem;
+    margin: 2px;
+}
+
+/* Estilos para produtos filtrados */
+.product-btn.d-none {
+    display: none !important;
+}
+
+.mensagem-vazia {
+    padding: 40px 20px;
+    color: #6c757d;
 }
 
 #map {
