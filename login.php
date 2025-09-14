@@ -361,12 +361,16 @@
     
     <script>
         // Variável para armazenar o Client ID do Google
-        const GOOGLE_CLIENT_ID = '1054454585532-a1tc6hph831kjgaca4d2kusnv0kta0k4.apps.googleusercontent.com';
+        // ATENÇÃO: Substitua este Client ID pelo seu próprio Client ID do Google Cloud Console
+        const GOOGLE_CLIENT_ID = 'SEU_NOVO_CLIENT_ID_AQUI.apps.googleusercontent.com';
         
         // Função para inicializar o Google Sign-In
         function initializeGoogleSignIn() {
+            console.log('Tentando inicializar Google Sign-In...');
+            
             // Verificar se o Google Identity Services está disponível
             if (typeof google !== 'undefined' && typeof google.accounts !== 'undefined') {
+                console.log('Google Identity Services disponível');
                 try {
                     // Inicializar o Google Identity Services
                     google.accounts.id.initialize({
@@ -376,43 +380,55 @@
                         cancel_on_tap_outside: true
                     });
                     
+                    console.log('Google Sign-In inicializado com sucesso');
+                    
                     // Renderizar o botão de login
                     renderGoogleLoginButton();
                     
                     // Renderizar o botão de cadastro
                     renderGoogleRegisterButton();
+                    
                 } catch (error) {
                     console.error('Erro ao inicializar Google Sign-In:', error);
-                    showGoogleButtons();
+                    showFallbackButtons();
                 }
             } else {
-                // Se o Google Identity Services não estiver disponível, mostrar os botões personalizados
+                console.log('Google Identity Services ainda não disponível, tentando novamente...');
+                // Tentar novamente após um tempo
                 setTimeout(initializeGoogleSignIn, 1000);
             }
         }
         
         // Função para renderizar o botão de login do Google
         function renderGoogleLoginButton() {
+            console.log('Renderizando botão de login do Google...');
             const loginContainer = document.getElementById('google-login-container');
             if (loginContainer) {
-                // Limpar o container
-                loginContainer.innerHTML = '';
-                
-                // Criar div para o botão do Google
-                const googleButtonDiv = document.createElement('div');
-                googleButtonDiv.style.width = '100%';
-                loginContainer.appendChild(googleButtonDiv);
-                
-                // Renderizar o botão do Google
-                google.accounts.id.renderButton(googleButtonDiv, {
-                    theme: 'outline',
-                    size: 'large',
-                    width: 350,
-                    type: 'standard',
-                    text: 'signin_with',
-                    shape: 'rectangular',
-                    logo_alignment: 'center'
-                });
+                try {
+                    // Limpar o container
+                    loginContainer.innerHTML = '';
+                    
+                    // Criar div para o botão do Google
+                    const googleButtonDiv = document.createElement('div');
+                    googleButtonDiv.style.width = '100%';
+                    loginContainer.appendChild(googleButtonDiv);
+                    
+                    // Renderizar o botão do Google
+                    google.accounts.id.renderButton(googleButtonDiv, {
+                        theme: 'outline',
+                        size: 'large',
+                        width: 350,
+                        type: 'standard',
+                        text: 'signin_with',
+                        shape: 'rectangular',
+                        logo_alignment: 'center'
+                    });
+                    
+                    console.log('Botão de login renderizado com sucesso');
+                } catch (error) {
+                    console.error('Erro ao renderizar botão de login:', error);
+                    showFallbackButtons();
+                }
             }
         }
         
@@ -439,7 +455,8 @@
         }
         
         // Função para mostrar botões personalizados como fallback
-        function showGoogleButtons() {
+        function showFallbackButtons() {
+            console.log('Mostrando botões de fallback...');
             const loginContainer = document.getElementById('google-login-container');
             const registerButton = document.getElementById('registerWithGoogle');
             
@@ -450,10 +467,16 @@
                 fallbackButton.className = 'btn-google-custom';
                 fallbackButton.innerHTML = '<i class="bi bi-google"></i> Entrar com Google';
                 fallbackButton.onclick = function() {
+                    console.log('Botão de fallback clicado');
                     if (typeof google !== 'undefined' && typeof google.accounts !== 'undefined') {
-                        google.accounts.id.prompt();
+                        try {
+                            google.accounts.id.prompt();
+                        } catch (error) {
+                            console.error('Erro ao abrir popup do Google:', error);
+                            alert('Erro ao conectar com Google. Verifique se popups estão habilitados.');
+                        }
                     } else {
-                        alert('Serviço do Google não disponível. Tente novamente mais tarde.');
+                        alert('Serviço do Google não disponível. Tente recarregar a página.');
                     }
                 };
                 loginContainer.appendChild(fallbackButton);
@@ -461,24 +484,48 @@
             
             if (registerButton) {
                 registerButton.style.display = 'inline-block';
+                registerButton.onclick = function() {
+                    console.log('Botão de cadastro clicado');
+                    if (typeof google !== 'undefined' && typeof google.accounts !== 'undefined') {
+                        try {
+                            google.accounts.id.prompt();
+                        } catch (error) {
+                            console.error('Erro ao abrir popup do Google:', error);
+                            alert('Erro ao conectar com Google. Verifique se popups estão habilitados.');
+                        }
+                    } else {
+                        alert('Serviço do Google não disponível. Tente recarregar a página.');
+                    }
+                };
             }
         }
         
         // Tratar a resposta do login do Google
         function handleCredentialResponse(response) {
-            // Decodificar o JWT
-            const payload = parseJwt(response.credential);
+            console.log('Resposta do Google recebida:', response);
             
-            // Armazenar informações do usuário
-            const user = {
-                name: payload.name,
-                email: payload.email,
-                imageUrl: payload.picture,
-                googleId: payload.sub
-            };
-            
-            // Verificar se o usuário já existe no sistema
-            checkGoogleUserExists(user.email, user);
+            try {
+                // Decodificar o JWT
+                const payload = parseJwt(response.credential);
+                console.log('Payload decodificado:', payload);
+                
+                // Armazenar informações do usuário
+                const user = {
+                    name: payload.name,
+                    email: payload.email,
+                    imageUrl: payload.picture,
+                    googleId: payload.sub
+                };
+                
+                console.log('Usuário do Google:', user);
+                
+                // Verificar se o usuário já existe no sistema
+                checkGoogleUserExists(user.email, user);
+                
+            } catch (error) {
+                console.error('Erro ao processar resposta do Google:', error);
+                alert('Erro ao processar login com Google. Tente novamente.');
+            }
         }
         
         // Função para decodificar JWT
@@ -494,6 +541,8 @@
         
         // Verificar se o usuário do Google já existe
         function checkGoogleUserExists(email, user) {
+            console.log('Verificando se usuário existe:', email);
+            
             fetch('actions.php', {
                 method: 'POST',
                 headers: {
@@ -501,14 +550,23 @@
                 },
                 body: 'action=check_google_user&email=' + encodeURIComponent(email)
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('Resposta do servidor:', response);
+                return response.json();
+            })
             .then(data => {
-                if (data.exists) {
+                console.log('Dados recebidos:', data);
+                if (data.success && data.data && data.data.exists) {
+                    console.log('Usuário já existe, fazendo login...');
                     // Usuário já existe, fazer login
                     loginWithGoogleUser(email, user);
-                } else {
+                } else if (data.success) {
+                    console.log('Usuário não existe, criando conta...');
                     // Usuário não existe, criar conta
                     createGoogleUser(user);
+                } else {
+                    console.log('Erro na verificação:', data.message);
+                    alert('Erro: ' + (data.message || 'Erro desconhecido'));
                 }
             })
             .catch(error => {
@@ -519,6 +577,7 @@
         
         // Criar usuário com Google
         function createGoogleUser(user) {
+            console.log('Criando usuário com Google:', user);
             const formData = new FormData();
             formData.append('action', 'register_google');
             formData.append('name', user.name);
@@ -549,6 +608,7 @@
         
         // Fazer login com usuário do Google
         function loginWithGoogleUser(email, user) {
+            console.log('Fazendo login com Google:', email);
             const formData = new FormData();
             formData.append('action', 'login_google');
             formData.append('email', email);
@@ -753,11 +813,15 @@
         
         // Inicializar quando a página carregar
         document.addEventListener('DOMContentLoaded', function() {
-            // Mostrar botões personalizados inicialmente
-            showGoogleButtons();
+            console.log('DOM carregado, iniciando Google Sign-In...');
             
-            // Inicializar o Google Sign-In
-            initializeGoogleSignIn();
+            // Mostrar botões personalizados inicialmente
+            showFallbackButtons();
+            
+            // Inicializar o Google Sign-In após um pequeno delay
+            setTimeout(function() {
+                initializeGoogleSignIn();
+            }, 1000);
         });
     </script>
 </body>

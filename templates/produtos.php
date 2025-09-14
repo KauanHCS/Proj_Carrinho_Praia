@@ -21,10 +21,21 @@
                 <tbody id="listaProdutos">
                     <?php
                     $conn = getConnection();
-                    $sql = "SELECT * FROM produtos ORDER BY nome";
-                    $result = $conn->query($sql);
+                    // Obter o ID do usuário da sessão (session_start já foi chamado no index.php)
+                    $usuarioId = $_SESSION['usuario_id'] ?? null;
+                    
+                    if ($usuarioId) {
+                        $sql = "SELECT * FROM produtos WHERE usuario_id = ? ORDER BY nome";
+                        $stmt = $conn->prepare($sql);
+                        $stmt->bind_param("i", $usuarioId);
+                        $stmt->execute();
+                        $result = $stmt->get_result();
+                    } else {
+                        // Se não há usuário logado, não mostrar produtos
+                        $result = null;
+                    }
 
-                    if ($result->num_rows > 0) {
+                    if ($result && $result->num_rows > 0) {
                         while($row = $result->fetch_assoc()) {
                             $lowStock = $row["quantidade"] <= $row["limite_minimo"] ? 'low-stock' : '';
                             echo '<tr class="' . $lowStock . '">';

@@ -41,6 +41,20 @@ function jsonResponse($success, $data = null, $message = '') {
     exit;
 }
 
+// Funções de sessão
+function getUsuarioLogado() {
+    session_start();
+    return $_SESSION['usuario_id'] ?? null;
+}
+
+function verificarLogin() {
+    $usuarioId = getUsuarioLogado();
+    if (!$usuarioId) {
+        jsonResponse(false, null, 'Usuário não está logado');
+    }
+    return $usuarioId;
+}
+
 // Verificar ação
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
@@ -75,6 +89,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             break;
         case 'excluir_produto':
             excluirProduto();
+            break;
+        case 'criar_notificacao':
+            criarNotificacao();
             break;
         default:
             jsonResponse(false, null, 'Ação inválida');
@@ -174,7 +191,13 @@ function registerGoogleUser() {
             $usuario = ['id' => $usuarioId, 'nome' => $name];
         }
         
-        // Criar usuário na sessão
+        // Iniciar sessão
+        session_start();
+        $_SESSION['usuario_id'] = $usuario['id'];
+        $_SESSION['usuario_nome'] = $usuario['nome'];
+        $_SESSION['usuario_email'] = $email;
+        
+        // Criar usuário para retorno
         $user = [
             'id' => $usuario['id'],
             'name' => $usuario['nome'],
@@ -212,6 +235,12 @@ function loginGoogleUser() {
         }
         
         $usuario = $result->fetch_assoc();
+        
+        // Iniciar sessão
+        session_start();
+        $_SESSION['usuario_id'] = $usuario['id'];
+        $_SESSION['usuario_nome'] = $usuario['nome'];
+        $_SESSION['usuario_email'] = $usuario['email'];
         
         // Criar usuário para retorno
         $user = [
@@ -359,8 +388,8 @@ function finalizarVenda() {
         
         // Inserir itens da venda e atualizar estoque
         foreach ($carrinho as $item) {
-            // Verificar estoque
-            $stmt = $conn->prepare("SELECT quantidade FROM produtos WHERE id = ?");
+            // Verificar estoque atual
+            $stmt = $conn->prepare("SELECT quantidade, nome FROM produtos WHERE id = ?");
             $stmt->bind_param("i", $item['id']);
             $stmt->execute();
             $result = $stmt->get_result();
@@ -370,19 +399,24 @@ function finalizarVenda() {
                 throw new Exception("Estoque insuficiente para {$item['nome']}");
             }
             
+            // Salvar estoque anterior para o histórico
+            $estoqueAnterior = $produto['quantidade'];
+            $estoqueAtual = $estoqueAnterior - $item['quantidade'];
+            
             // Inserir item da venda
             $stmt = $conn->prepare("INSERT INTO itens_venda (venda_id, produto_id, quantidade, preco_unitario) VALUES (?, ?, ?, ?)");
             $stmt->bind_param("iiid", $vendaId, $item['id'], $item['quantidade'], $item['preco']);
             $stmt->execute();
             
             // Atualizar estoque
-            $stmt = $conn->prepare("UPDATE produtos SET quantidade = quantidade - ? WHERE id = ?");
-            $stmt->bind_param("ii", $item['quantidade'], $item['id']);
+            $stmt = $conn->prepare("UPDATE produtos SET quantidade = ? WHERE id = ?");
+            $stmt->bind_param("ii", $estoqueAtual, $item['id']);
             $stmt->execute();
             
-            // Registrar movimentação
-            $stmt = $conn->prepare("INSERT INTO movimentacoes (data, produto_id, tipo, quantidade, descricao) VALUES (NOW(), ?, 'saida', ?, 'Venda')");
-            $stmt->bind_param("ii", $item['id'], $item['quantidade']);
+            // Registrar movimentação com dados completos
+            $descricao = "Venda - {$produto['nome']}";
+            $stmt = $conn->prepare("INSERT INTO movimentacoes (data, produto_id, tipo, quantidade, quantidade_anterior, quantidade_atual, descricao, venda_id) VALUES (NOW(), ?, 'saida', ?, ?, ?, ?, ?)");
+            $stmt->bind_param("iiiisi", $item['id'], $item['quantidade'], $estoqueAnterior, $estoqueAtual, $descricao, $vendaId);
             $stmt->execute();
         }
         
@@ -417,22 +451,25 @@ function reabastecerEstoque() {
         }
         
         $produto = $result->fetch_assoc();
+        $estoqueAnterior = $produto['quantidade'];
+        $estoqueAtual = $estoqueAnterior + $quantidade;
         
         // Atualizar estoque
-        $stmt = $conn->prepare("UPDATE produtos SET quantidade = quantidade + ? WHERE id = ?");
-        $stmt->bind_param("ii", $quantidade, $produtoId);
+        $stmt = $conn->prepare("UPDATE produtos SET quantidade = ? WHERE id = ?");
+        $stmt->bind_param("ii", $estoqueAtual, $produtoId);
         $stmt->execute();
         
-        // Registrar movimentação
-        $stmt = $conn->prepare("INSERT INTO movimentacoes (data, produto_id, tipo, quantidade, descricao) VALUES (NOW(), ?, 'entrada', ?, 'Reabastecimento')");
-        $stmt->bind_param("ii", $produtoId, $quantidade);
+        // Registrar movimentação com dados completos
+        $descricao = 'Reabastecimento';
+        $stmt = $conn->prepare("INSERT INTO movimentacoes (data, produto_id, tipo, quantidade, quantidade_anterior, quantidade_atual, descricao) VALUES (NOW(), ?, 'entrada', ?, ?, ?, ?)");
+        $stmt->bind_param("iiiis", $produtoId, $quantidade, $estoqueAnterior, $estoqueAtual, $descricao);
         $stmt->execute();
         
         jsonResponse(true, [
             'produto_id' => $produtoId,
             'nome' => $produto['nome'],
-            'quantidade_antiga' => $produto['quantidade'],
-            'quantidade_nova' => $produto['quantidade'] + $quantidade
+            'quantidade_antiga' => $estoqueAnterior,
+            'quantidade_nova' => $estoqueAtual
         ], 'Estoque reabastecido com sucesso');
         
     } catch (Exception $e) {
@@ -446,6 +483,9 @@ function salvarProduto() {
     $conn = getConnection();
     
     try {
+        // Verificar se o usuário está logado
+        $usuarioId = verificarLogin();
+        
         // Sanitize inputs
         $nome = sanitizeInput($_POST['nome'] ?? '');
         $categoria = sanitizeInput($_POST['categoria'] ?? '');
@@ -484,26 +524,29 @@ function salvarProduto() {
             }
         }
         
-        // Verificar se o produto já existe
-        $stmt = $conn->prepare("SELECT id FROM produtos WHERE nome = ?");
-        $stmt->bind_param("s", $nome);
+        // Verificar se o produto já existe para este usuário
+        $stmt = $conn->prepare("SELECT id FROM produtos WHERE nome = ? AND usuario_id = ?");
+        $stmt->bind_param("si", $nome, $usuarioId);
         $stmt->execute();
         $result = $stmt->get_result();
         
         if ($result->num_rows > 0) {
-            jsonResponse(false, null, 'Produto com este nome já existe');
+            jsonResponse(false, null, 'Você já possui um produto com este nome');
         }
         
-        // Inserir produto
-        $stmt = $conn->prepare("INSERT INTO produtos (nome, preco, quantidade, categoria, limite_minimo, validade, observacoes) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("sdissis", $nome, $preco, $quantidade, $categoria, $limiteMinimo, $validade, $observacoes);
+        // Inserir produto com usuario_id
+        $stmt = $conn->prepare("INSERT INTO produtos (nome, preco, quantidade, categoria, limite_minimo, validade, observacoes, usuario_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("sdissisi", $nome, $preco, $quantidade, $categoria, $limiteMinimo, $validade, $observacoes, $usuarioId);
         $stmt->execute();
         $produtoId = $conn->insert_id;
         
-        // Registrar movimentação de entrada
-        $stmt = $conn->prepare("INSERT INTO movimentacoes (data, produto_id, tipo, quantidade, descricao) VALUES (NOW(), ?, 'entrada', ?, 'Cadastro inicial')");
-        $stmt->bind_param("ii", $produtoId, $quantidade);
-        $stmt->execute();
+        // Registrar movimentação de entrada com dados completos
+        if ($quantidade > 0) {
+            $descricao = 'Cadastro inicial';
+            $stmt = $conn->prepare("INSERT INTO movimentacoes (data, produto_id, tipo, quantidade, quantidade_anterior, quantidade_atual, descricao) VALUES (NOW(), ?, 'entrada', ?, 0, ?, ?)");
+            $stmt->bind_param("iiis", $produtoId, $quantidade, $quantidade, $descricao);
+            $stmt->execute();
+        }
         
         jsonResponse(true, ['produto_id' => $produtoId], 'Produto cadastrado com sucesso');
         
@@ -518,6 +561,8 @@ function atualizarProduto() {
     $conn = getConnection();
     
     try {
+        $usuarioId = verificarLogin();
+        
         $id = $_POST['id'];
         $nome = $_POST['nome'];
         $categoria = $_POST['categoria'];
@@ -527,19 +572,19 @@ function atualizarProduto() {
         $validade = $_POST['validade'] ?: null;
         $observacoes = $_POST['observacoes'] ?: '';
         
-        // Verificar se o produto existe
-        $stmt = $conn->prepare("SELECT id FROM produtos WHERE id = ?");
-        $stmt->bind_param("i", $id);
+        // Verificar se o produto existe e pertence ao usuário
+        $stmt = $conn->prepare("SELECT id FROM produtos WHERE id = ? AND usuario_id = ?");
+        $stmt->bind_param("ii", $id, $usuarioId);
         $stmt->execute();
         $result = $stmt->get_result();
         
         if ($result->num_rows === 0) {
-            jsonResponse(false, null, 'Produto não encontrado');
+            jsonResponse(false, null, 'Produto não encontrado ou não pertence a você');
         }
         
         // Atualizar produto
-        $stmt = $conn->prepare("UPDATE produtos SET nome = ?, preco = ?, quantidade = ?, categoria = ?, limite_minimo = ?, validade = ?, observacoes = ? WHERE id = ?");
-        $stmt->bind_param("sdissisi", $nome, $preco, $quantidade, $categoria, $limiteMinimo, $validade, $observacoes, $id);
+        $stmt = $conn->prepare("UPDATE produtos SET nome = ?, preco = ?, quantidade = ?, categoria = ?, limite_minimo = ?, validade = ?, observacoes = ? WHERE id = ? AND usuario_id = ?");
+        $stmt->bind_param("sdississi", $nome, $preco, $quantidade, $categoria, $limiteMinimo, $validade, $observacoes, $id, $usuarioId);
         $stmt->execute();
         
         jsonResponse(true, ['produto_id' => $id], 'Produto atualizado com sucesso');
@@ -555,16 +600,17 @@ function excluirProduto() {
     $conn = getConnection();
     
     try {
+        $usuarioId = verificarLogin();
         $id = $_POST['id'];
         
-        // Verificar se o produto existe
-        $stmt = $conn->prepare("SELECT id, nome FROM produtos WHERE id = ?");
-        $stmt->bind_param("i", $id);
+        // Verificar se o produto existe e pertence ao usuário
+        $stmt = $conn->prepare("SELECT id, nome FROM produtos WHERE id = ? AND usuario_id = ?");
+        $stmt->bind_param("ii", $id, $usuarioId);
         $stmt->execute();
         $result = $stmt->get_result();
         
         if ($result->num_rows === 0) {
-            jsonResponse(false, null, 'Produto não encontrado');
+            jsonResponse(false, null, 'Produto não encontrado ou não pertence a você');
         }
         
         $produto = $result->fetch_assoc();
@@ -581,8 +627,8 @@ function excluirProduto() {
         }
         
         // Excluir produto
-        $stmt = $conn->prepare("DELETE FROM produtos WHERE id = ?");
-        $stmt->bind_param("i", $id);
+        $stmt = $conn->prepare("DELETE FROM produtos WHERE id = ? AND usuario_id = ?");
+        $stmt->bind_param("ii", $id, $usuarioId);
         $stmt->execute();
         
         jsonResponse(true, ['produto_id' => $id, 'nome' => $produto['nome']], 'Produto excluído com sucesso');
@@ -598,7 +644,16 @@ function verificarEstoqueBaixo() {
     $conn = getConnection();
     
     try {
-        $stmt = $conn->prepare("SELECT id, nome, quantidade, limite_minimo FROM produtos WHERE quantidade <= limite_minimo AND quantidade > 0 ORDER BY quantidade ASC LIMIT 1");
+        $usuarioId = getUsuarioLogado();
+        
+        // Se não estiver logado, não mostrar alertas
+        if (!$usuarioId) {
+            jsonResponse(false, null, 'Usuário não logado');
+        }
+        
+        // Buscar produto com estoque baixo do usuário (incluindo produtos zerados)
+        $stmt = $conn->prepare("SELECT id, nome, quantidade, limite_minimo FROM produtos WHERE quantidade <= limite_minimo AND ativo = 1 AND usuario_id = ? ORDER BY quantidade ASC, nome ASC LIMIT 1");
+        $stmt->bind_param("i", $usuarioId);
         $stmt->execute();
         $result = $stmt->get_result();
         
@@ -606,7 +661,7 @@ function verificarEstoqueBaixo() {
             $produto = $result->fetch_assoc();
             jsonResponse(true, ['produto' => $produto]);
         } else {
-            jsonResponse(false);
+            jsonResponse(false, null, 'Nenhum produto com estoque baixo');
         }
         
     } catch (Exception $e) {
@@ -620,10 +675,17 @@ function getProduto() {
     $conn = getConnection();
     
     try {
+        $usuarioId = getUsuarioLogado();
         $id = $_GET['id'];
         
-        $stmt = $conn->prepare("SELECT * FROM produtos WHERE id = ?");
-        $stmt->bind_param("i", $id);
+        // Se não estiver logado, não permitir acesso
+        if (!$usuarioId) {
+            jsonResponse(false, null, 'Usuário não está logado');
+        }
+        
+        // Buscar apenas produtos do usuário logado
+        $stmt = $conn->prepare("SELECT * FROM produtos WHERE id = ? AND usuario_id = ?");
+        $stmt->bind_param("ii", $id, $usuarioId);
         $stmt->execute();
         $result = $stmt->get_result();
         
@@ -631,7 +693,7 @@ function getProduto() {
             $produto = $result->fetch_assoc();
             jsonResponse(true, ['produto' => $produto]);
         } else {
-            jsonResponse(false, null, 'Produto não encontrado');
+            jsonResponse(false, null, 'Produto não encontrado ou não pertence a você');
         }
         
     } catch (Exception $e) {
@@ -645,26 +707,100 @@ function getProdutosMaisVendidos() {
     $conn = getConnection();
     
     try {
-        $sql = "SELECT p.nome, SUM(iv.quantidade) as total_vendido 
+        $usuarioId = getUsuarioLogado();
+        
+        // Se não estiver logado, retornar vazio
+        if (!$usuarioId) {
+            jsonResponse(true, []);
+        }
+        
+        // Buscar produtos mais vendidos dos últimos 30 dias (não apenas hoje)
+        $sql = "SELECT p.nome, p.categoria, SUM(iv.quantidade) as total_vendido, 
+                       COUNT(DISTINCT iv.venda_id) as num_vendas
                 FROM itens_venda iv 
                 JOIN produtos p ON iv.produto_id = p.id 
                 JOIN vendas v ON iv.venda_id = v.id 
-                WHERE DATE(v.data) = CURDATE() 
-                GROUP BY p.id, p.nome 
+                WHERE v.data >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND p.usuario_id = ? 
+                GROUP BY p.id, p.nome, p.categoria 
                 ORDER BY total_vendido DESC 
-                LIMIT 5";
+                LIMIT 10";
         
-        $result = $conn->query($sql);
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("i", $usuarioId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
         $produtos = [];
-        
         while ($row = $result->fetch_assoc()) {
-            $produtos[] = $row;
+            $produtos[] = [
+                'nome' => $row['nome'],
+                'categoria' => $row['categoria'],
+                'total_vendido' => (int)$row['total_vendido'],
+                'num_vendas' => (int)$row['num_vendas']
+            ];
         }
         
-        jsonResponse(true, ['produtos' => $produtos]);
+        jsonResponse(true, $produtos);
         
     } catch (Exception $e) {
         jsonResponse(false, null, $e->getMessage());
+    }
+    
+    $conn->close();
+}
+
+function criarNotificacao() {
+    $conn = getConnection();
+    
+    try {
+        $usuarioId = verificarLogin();
+        
+        $titulo = sanitizeInput($_POST['titulo'] ?? '');
+        $mensagem = sanitizeInput($_POST['mensagem'] ?? '');
+        $tipo = sanitizeInput($_POST['tipo'] ?? 'info');
+        $produtoId = $_POST['produto_id'] ?? null;
+        $acao = sanitizeInput($_POST['acao'] ?? '');
+        
+        if (empty($titulo) || empty($mensagem)) {
+            jsonResponse(false, null, 'Título e mensagem são obrigatórios');
+        }
+        
+        $stmt = $conn->prepare("INSERT INTO notificacoes (usuario_id, tipo, titulo, mensagem, produto_id, acao) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("isssIs", $usuarioId, $tipo, $titulo, $mensagem, $produtoId, $acao);
+        $stmt->execute();
+        $notificacaoId = $conn->insert_id;
+        
+        jsonResponse(true, ['notificacao_id' => $notificacaoId], 'Notificação criada com sucesso');
+        
+    } catch (Exception $e) {
+        jsonResponse(false, null, $e->getMessage());
+    }
+    
+    $conn->close();
+}
+
+// Função auxiliar para criar notificação de ação de produto
+function notificarAcao($usuarioId, $acao, $produtoNome, $produtoId = null) {
+    $conn = getConnection();
+    
+    $acoes = [
+        'cadastrado' => ['tipo' => 'success', 'titulo' => 'Produto Cadastrado', 'icone' => '➕'],
+        'atualizado' => ['tipo' => 'info', 'titulo' => 'Produto Atualizado', 'icone' => '✏️'],
+        'reabastecido' => ['tipo' => 'success', 'titulo' => 'Estoque Reabastecido', 'icone' => '📦'],
+        'excluido' => ['tipo' => 'warning', 'titulo' => 'Produto Excluído', 'icone' => '🗑️']
+    ];
+    
+    if (isset($acoes[$acao])) {
+        $config = $acoes[$acao];
+        $mensagem = $config['icone'] . ' Produto "' . $produtoNome . '" foi ' . $acao . ' com sucesso!';
+        
+        try {
+            $stmt = $conn->prepare("INSERT INTO notificacoes (usuario_id, tipo, titulo, mensagem, produto_id, acao) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("isssIs", $usuarioId, $config['tipo'], $config['titulo'], $mensagem, $produtoId, $acao);
+            $stmt->execute();
+        } catch (Exception $e) {
+            // Silenciar erros de notificação para não afetar a operação principal
+        }
     }
     
     $conn->close();

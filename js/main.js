@@ -43,12 +43,22 @@ function getDataAtual() {
 
 // Carregar dados iniciais
 function carregarDados() {
-    document.getElementById('dataAtual').textContent = getDataAtual();
-    carregarCarrinho(); // Carregar carrinho salvo
-    atualizarCarrinho();
-    verificarAlertaEstoque();
-    atualizarGraficoVendas();
-    inicializarMapa();
+    try {
+        const dataAtualEl = document.getElementById('dataAtual');
+        if (dataAtualEl) {
+            dataAtualEl.textContent = getDataAtual();
+        }
+        
+        carregarCarrinho(); // Carregar carrinho salvo
+        atualizarCarrinho();
+        inicializarEventListeners(); // Inicializar event listeners
+        verificarAlertaEstoque();
+        atualizarGraficoVendas();
+        configurarDatasExportacao(); // Configurar datas padrão
+        // inicializarMapa(); // Removido - agora usando OpenStreetMap na aba de localização
+    } catch (error) {
+        console.warn('Erro ao carregar dados iniciais:', error);
+    }
 }
 
 // Adicionar produto ao carrinho
@@ -82,10 +92,18 @@ function atualizarCarrinho() {
     const container = document.getElementById('itensCarrinho');
     const totalCarrinho = document.getElementById('totalCarrinho');
     
+    // Verificar se os elementos existem
+    if (!container || !totalCarrinho) {
+        return;
+    }
+    
     if (carrinho.length === 0) {
         container.innerHTML = '<p class="text-muted">Nenhum item adicionado</p>';
         totalCarrinho.textContent = '0,00';
-        document.getElementById('divTroco').style.display = 'none';
+        const divTroco = document.getElementById('divTroco');
+        if (divTroco) {
+            divTroco.style.display = 'none';
+        }
         return;
     }
     
@@ -110,8 +128,8 @@ function atualizarCarrinho() {
     totalCarrinho.textContent = formatarMoeda(total);
     
     // Atualizar troco se necessário
-    const formaPagamento = document.getElementById('formaPagamento').value;
-    if (formaPagamento === 'dinheiro') {
+    const formaPagamento = document.getElementById('formaPagamento');
+    if (formaPagamento && formaPagamento.value === 'dinheiro') {
         calcularTroco();
     }
 }
@@ -125,60 +143,120 @@ function removerDoCarrinho(id) {
 
 // Calcular troco
 function calcularTroco() {
-    const valorPago = parseFloat(document.getElementById('valorPago').value) || 0;
+    const valorPagoEl = document.getElementById('valorPago');
+    const valorTrocoEl = document.getElementById('valorTroco');
+    
+    if (!valorPagoEl || !valorTrocoEl) {
+        return;
+    }
+    
+    const valorPago = parseFloat(valorPagoEl.value) || 0;
     const total = carrinho.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
     const troco = valorPago - total;
     
-    document.getElementById('valorTroco').textContent = formatarMoeda(Math.max(0, troco));
+    valorTrocoEl.textContent = formatarMoeda(Math.max(0, troco));
 }
 
-// Forma de pagamento
-document.getElementById('formaPagamento').addEventListener('change', function() {
-    if (this.value === 'dinheiro') {
-        document.getElementById('divTroco').style.display = 'block';
-    } else {
-        document.getElementById('divTroco').style.display = 'none';
-    }
-});
-
-document.getElementById('valorPago').addEventListener('input', calcularTroco);
-
-// Finalizar venda
-document.getElementById('finalizarVenda').addEventListener('click', function() {
-    if (carrinho.length === 0) {
-        mostrarAlerta('Adicione produtos ao carrinho primeiro!', 'warning');
-        return;
-    }
-
-    const formaPagamento = document.getElementById('formaPagamento').value;
-    
-    if (formaPagamento === 'dinheiro') {
-        const valorPago = parseFloat(document.getElementById('valorPago').value) || 0;
-        const total = carrinho.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
-        
-        if (valorPago < total) {
-            mostrarAlerta('Valor pago insuficiente! Faltam R$ ' + formatarMoeda(total - valorPago), 'danger');
-            return;
-        }
+// Função para inicializar event listeners
+function inicializarEventListeners() {
+    // Forma de pagamento
+    const formaPagamentoEl = document.getElementById('formaPagamento');
+    if (formaPagamentoEl) {
+        formaPagamentoEl.addEventListener('change', function() {
+            const divTroco = document.getElementById('divTroco');
+            if (divTroco) {
+                if (this.value === 'dinheiro') {
+                    divTroco.style.display = 'block';
+                } else {
+                    divTroco.style.display = 'none';
+                }
+            }
+        });
     }
 
-    const botaoFinalizar = document.getElementById('finalizarVenda');
-    mostrarCarregamento(botaoFinalizar, 'Finalizando...');
-
-    // Enviar venda para o servidor
-    const formData = new FormData();
-    formData.append('action', 'finalizar_venda');
-    formData.append('carrinho', JSON.stringify(carrinho));
-    formData.append('forma_pagamento', formaPagamento);
-    
-    if (formaPagamento === 'dinheiro') {
-        formData.append('valor_pago', document.getElementById('valorPago').value);
+    const valorPagoEl = document.getElementById('valorPago');
+    if (valorPagoEl) {
+        valorPagoEl.addEventListener('input', calcularTroco);
     }
 
-    fetch('actions.php', {
-        method: 'POST',
-        body: formData
-    })
+    // Finalizar venda
+    const finalizarVendaEl = document.getElementById('finalizarVenda');
+    if (finalizarVendaEl) {
+        finalizarVendaEl.addEventListener('click', function() {
+            if (carrinho.length === 0) {
+                mostrarAlerta('Adicione produtos ao carrinho primeiro!', 'warning');
+                return;
+            }
+
+            const formaPagamentoEl = document.getElementById('formaPagamento');
+            const formaPagamento = formaPagamentoEl ? formaPagamentoEl.value : '';
+            
+            if (formaPagamento === 'dinheiro') {
+                const valorPagoEl = document.getElementById('valorPago');
+                const valorPago = valorPagoEl ? parseFloat(valorPagoEl.value) || 0 : 0;
+                const total = carrinho.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
+                
+                if (valorPago < total) {
+                    mostrarAlerta('Valor pago insuficiente! Faltam R$ ' + formatarMoeda(total - valorPago), 'danger');
+                    return;
+                }
+            }
+
+            const botaoFinalizar = document.getElementById('finalizarVenda');
+            mostrarCarregamento(botaoFinalizar, 'Finalizando...');
+
+            // Enviar venda para o servidor
+            const formData = new FormData();
+            formData.append('action', 'finalizar_venda');
+            formData.append('carrinho', JSON.stringify(carrinho));
+            formData.append('forma_pagamento', formaPagamento);
+            
+            if (formaPagamento === 'dinheiro') {
+                const valorPagoEl = document.getElementById('valorPago');
+                if (valorPagoEl) {
+                    formData.append('valor_pago', valorPagoEl.value);
+                }
+            }
+
+            fetch('actions.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erro na resposta do servidor');
+                }
+                return response.json();
+            })
+            .then(data => {
+                ocultarCarregamento(botaoFinalizar);
+                
+                if (data.success) {
+                    // Limpar carrinho
+                    limparCarrinho();
+                    
+                    const total = carrinho.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
+                    mostrarAlerta(`Venda finalizada! Total: R$ ${formatarMoeda(total)}`, 'success');
+                    
+                    // Atualizar interface após um breve delay
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    mostrarAlerta(data.message || 'Erro ao finalizar venda', 'danger');
+                }
+            })
+            .catch(error => {
+                ocultarCarregamento(botaoFinalizar);
+                tratarErro(error, 'Finalizar venda');
+            });
+        });
+    }
+}
+
+// Verificar alerta de estoque baixo
+function verificarAlertaEstoque() {
+    fetch('actions.php?action=verificar_estoque_baixo')
     .then(response => {
         if (!response.ok) {
             throw new Error('Erro na resposta do servidor');
@@ -186,44 +264,57 @@ document.getElementById('finalizarVenda').addEventListener('click', function() {
         return response.json();
     })
     .then(data => {
-        ocultarCarregamento(botaoFinalizar);
+        const alertElement = document.getElementById('alertLowStock');
+        const messageElement = document.getElementById('alertMessage');
         
-        if (data.success) {
-            // Limpar carrinho
-            limparCarrinho();
+        if (data.success && data.data && data.data.produto) {
+            const produto = data.data.produto;
+            let mensagem = '';
+            let tipoAlerta = 'warning';
+            let icone = '⚠️';
             
-            const total = carrinho.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
-            mostrarAlerta(`Venda finalizada! Total: R$ ${formatarMoeda(total)}`, 'success');
+            if (produto.quantidade === 0) {
+                mensagem = `${produto.nome} - SEM ESTOQUE`;
+                tipoAlerta = 'danger';
+                icone = '🚫';
+            } else if (produto.quantidade <= produto.limite_minimo) {
+                mensagem = `${produto.nome} - ESTOQUE BAIXO (${produto.quantidade} unidades)`;
+                tipoAlerta = 'warning';
+                icone = '⚠️';
+            }
             
-            // Atualizar interface após um breve delay
-            setTimeout(() => {
-                location.reload();
-            }, 1500);
-        } else {
-            mostrarAlerta(data.message || 'Erro ao finalizar venda', 'danger');
+            if (messageElement && alertElement) {
+                messageElement.innerHTML = `<strong>${icone} ${mensagem}</strong>`;
+                
+                // Remover classes de alerta anteriores
+                alertElement.classList.remove('alert-warning', 'alert-danger');
+                
+                // Adicionar classe apropriada
+                if (tipoAlerta === 'danger') {
+                    alertElement.classList.add('alert-danger');
+                } else {
+                    alertElement.classList.add('alert-warning');
+                }
+                
+                alertElement.classList.remove('d-none');
+                
+                // Esconder após tempo baseado na criticidade
+                const timeout = produto.quantidade === 0 ? 10000 : 6000;
+                setTimeout(() => {
+                    alertElement.classList.add('d-none');
+                }, timeout);
+            } else {
+                // Fallback: mostrar alerta personalizado
+                mostrarAlerta(`${icone} ${mensagem}`, tipoAlerta, 8000);
+            }
+        } else if (alertElement) {
+            // Ocultar alerta se não há produtos com estoque baixo
+            alertElement.classList.add('d-none');
         }
     })
     .catch(error => {
-        ocultarCarregamento(botaoFinalizar);
-        tratarErro(error, 'Finalizar venda');
-    });
-});
-
-// Verificar alerta de estoque baixo
-function verificarAlertaEstoque() {
-    fetch('actions.php?action=verificar_estoque_baixo')
-    .then(response => response.json())
-    .then(data => {
-        if (data.produto) {
-            document.getElementById('alertMessage').textContent = 
-                `Só restam ${data.produto.quantidade} unidades de ${data.produto.nome}`;
-            document.getElementById('alertLowStock').classList.remove('d-none');
-            
-            // Esconder após 5 segundos
-            setTimeout(() => {
-                document.getElementById('alertLowStock').classList.add('d-none');
-            }, 5000);
-        }
+        console.warn('Erro ao verificar estoque baixo:', error);
+        // Não mostrar erro para o usuário, pois é verificação em background
     });
 }
 
@@ -232,6 +323,11 @@ function verificarAlertaEstoque() {
 
 // Atualizar gráfico de vendas
 function atualizarGraficoVendas() {
+    const graficoElement = document.getElementById('graficoVendas');
+    if (!graficoElement) {
+        return; // Elemento não existe, sair da função
+    }
+    
     fetch('actions.php?action=get_produtos_mais_vendidos')
         .then(response => response.json())
         .then(data => {
@@ -240,80 +336,111 @@ function atualizarGraficoVendas() {
                 // Se não houver dados, limpe o gráfico
                 if (window.vendasChart) {
                     window.vendasChart.destroy();
+                    window.vendasChart = null;
                 }
                 return;
             }
             
-            const ctx = document.getElementById('graficoVendas').getContext('2d');
-            
-            const labels = data.produtos.map(p => p.nome);
-            const dataValues = data.produtos.map(p => p.total_vendido);
-            
-            // Destruir gráfico anterior se existir
-            if (window.vendasChart) {
-                window.vendasChart.destroy();
-            }
-            
-            window.vendasChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Quantidade Vendida',
-                        data: dataValues,
-                        backgroundColor: 'rgba(40, 167, 69, 0.7)',
-                        borderColor: 'rgba(40, 167, 69, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Quantidade'
+            try {
+                const ctx = graficoElement.getContext('2d');
+                
+                const labels = data.produtos.map(p => p.nome);
+                const dataValues = data.produtos.map(p => p.total_vendido);
+                
+                // Destruir gráfico anterior se existir
+                if (window.vendasChart) {
+                    window.vendasChart.destroy();
+                }
+                
+                // Verificar se Chart.js está disponível
+                if (typeof Chart !== 'undefined') {
+                    window.vendasChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Quantidade Vendida',
+                                data: dataValues,
+                                backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                                borderColor: 'rgba(40, 167, 69, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    title: {
+                                        display: true,
+                                        text: 'Quantidade'
+                                    }
+                                }
                             }
                         }
-                    }
+                    });
                 }
-            });
+            } catch (error) {
+                console.warn('Erro ao criar gráfico:', error);
+            }
         })
         .catch(error => {
-            console.error('Erro ao carregar dados para o gráfico:', error);
+            console.warn('Erro ao carregar dados para o gráfico:', error);
             // Limpe o gráfico se houver erro
             if (window.vendasChart) {
                 window.vendasChart.destroy();
+                window.vendasChart = null;
             }
         });
 }
 
-// Inicializar mapa
+// Inicializar mapa (apenas para outras abas que não sejam localização)
 function inicializarMapa() {
-    // Coordenadas aproximadas de uma praia
-    const centro = { lat: -23.550520, lng: -46.633308 };
+    const mapElement = document.getElementById('map');
+    if (!mapElement) {
+        return; // Elemento não existe
+    }
     
-    const map = new google.maps.Map(document.getElementById('map'), {
-        zoom: 15,
-        center: centro
-    });
+    // Verificar se estamos na aba de localização
+    const localizacaoTab = document.getElementById('localizacao');
+    if (localizacaoTab && localizacaoTab.classList.contains('show')) {
+        // A aba de localização tem seu próprio sistema de mapa
+        return;
+    }
     
-    // Verifique se AdvancedMarkerElement está disponível
-    if (typeof google.maps.marker !== 'undefined' && typeof google.maps.marker.AdvancedMarkerElement !== 'undefined') {
-        // Use AdvancedMarkerElement se disponível
-        const marker = new google.maps.marker.AdvancedMarkerElement({
-            position: centro,
-            map: map,
-            title: 'Ponto de Venda'
+    // Verificar se Google Maps está disponível
+    if (typeof google === 'undefined' || typeof google.maps === 'undefined') {
+        console.warn('Google Maps não está disponível');
+        return;
+    }
+    
+    try {
+        // Coordenadas aproximadas de uma praia
+        const centro = { lat: -23.550520, lng: -46.633308 };
+        
+        const map = new google.maps.Map(mapElement, {
+            zoom: 15,
+            center: centro
         });
-    } else {
-        // Use o Marker antigo como fallback
-        const marker = new google.maps.Marker({
-            position: centro,
-            map: map,
-            title: 'Ponto de Venda'
-        });
+        
+        // Verifique se AdvancedMarkerElement está disponível
+        if (typeof google.maps.marker !== 'undefined' && typeof google.maps.marker.AdvancedMarkerElement !== 'undefined') {
+            // Use AdvancedMarkerElement se disponível
+            const marker = new google.maps.marker.AdvancedMarkerElement({
+                position: centro,
+                map: map,
+                title: 'Ponto de Venda'
+            });
+        } else if (typeof google.maps.Marker !== 'undefined') {
+            // Use o Marker antigo como fallback
+            const marker = new google.maps.Marker({
+                position: centro,
+                map: map,
+                title: 'Ponto de Venda'
+            });
+        }
+    } catch (error) {
+        console.warn('Erro ao inicializar mapa:', error);
     }
 }
 
@@ -366,6 +493,148 @@ function mostrarAlerta(mensagem, tipo = 'info', duracao = 4000) {
         clearTimeout(timer);
         alerta.remove();
     });
+}
+
+// Sistema de notificações para ações de produtos
+function notificarAcaoProduto(acao, produtoNome, tipo = 'success') {
+    const acoes = {
+        'cadastrado': {
+            icone: '➕',
+            mensagem: `Produto "${produtoNome}" cadastrado com sucesso!`,
+            tipo: 'success'
+        },
+        'atualizado': {
+            icone: '✏️',
+            mensagem: `Produto "${produtoNome}" atualizado com sucesso!`,
+            tipo: 'info'
+        },
+        'reabastecido': {
+            icone: '📦',
+            mensagem: `Estoque de "${produtoNome}" reabastecido!`,
+            tipo: 'success'
+        },
+        'excluido': {
+            icone: '🗑️',
+            mensagem: `Produto "${produtoNome}" excluído com sucesso!`,
+            tipo: 'warning'
+        },
+        'sem_estoque': {
+            icone: '🚫',
+            mensagem: `ATENÇÃO: "${produtoNome}" ficou sem estoque!`,
+            tipo: 'danger'
+        },
+        'estoque_baixo': {
+            icone: '⚠️',
+            mensagem: `AVISO: "${produtoNome}" com estoque baixo!`,
+            tipo: 'warning'
+        }
+    };
+    
+    const notificacao = acoes[acao];
+    if (notificacao) {
+        mostrarAlerta(
+            `${notificacao.icone} ${notificacao.mensagem}`,
+            notificacao.tipo,
+            acao === 'sem_estoque' ? 10000 : 5000
+        );
+    }
+}
+
+// Função para criar notificação no banco de dados
+function criarNotificacao(titulo, mensagem, tipo = 'info', produtoId = null, acao = null) {
+    const formData = new FormData();
+    formData.append('action', 'criar_notificacao');
+    formData.append('titulo', titulo);
+    formData.append('mensagem', mensagem);
+    formData.append('tipo', tipo);
+    if (produtoId) formData.append('produto_id', produtoId);
+    if (acao) formData.append('acao', acao);
+    
+    fetch('actions.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .catch(error => console.warn('Erro ao criar notificação:', error));
+}
+
+// Funções de exportação e backup
+function exportarVendas() {
+    const startDate = document.getElementById('exportStartDate')?.value;
+    const endDate = document.getElementById('exportEndDate')?.value;
+    
+    let url = 'export_data.php?action=vendas';
+    
+    if (startDate) url += '&start_date=' + encodeURIComponent(startDate);
+    if (endDate) url += '&end_date=' + encodeURIComponent(endDate);
+    
+    mostrarAlerta('Preparando exportação...', 'info', 2000);
+    
+    // Criar link temporário para download
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = '';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    setTimeout(() => {
+        mostrarAlerta('✅ Dados de vendas exportados com sucesso!', 'success');
+    }, 1000);
+}
+
+function exportarProdutos() {
+    mostrarAlerta('Preparando exportação...', 'info', 2000);
+    
+    const link = document.createElement('a');
+    link.href = 'export_data.php?action=produtos';
+    link.download = '';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    setTimeout(() => {
+        mostrarAlerta('✅ Dados de produtos exportados com sucesso!', 'success');
+    }, 1000);
+}
+
+function criarBackup() {
+    if (!confirm('Deseja criar um backup dos seus dados?\n\nEste processo pode demorar alguns segundos.')) {
+        return;
+    }
+    
+    mostrarAlerta('💾 Criando backup...', 'info', 3000);
+    
+    const link = document.createElement('a');
+    link.href = 'backup_system.php?action=backup';
+    link.download = '';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    setTimeout(() => {
+        mostrarAlerta('✅ Backup criado com sucesso!\n\nO arquivo foi baixado para o seu computador.', 'success', 8000);
+    }, 2000);
+}
+
+// Função para definir datas padrão nos campos de exportação
+function configurarDatasExportacao() {
+    const startDateEl = document.getElementById('exportStartDate');
+    const endDateEl = document.getElementById('exportEndDate');
+    
+    if (startDateEl && endDateEl) {
+        // Data de início: primeiro dia do mês atual
+        const hoje = new Date();
+        const primeiroDiaDoMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+        
+        // Formatar datas no formato YYYY-MM-DD
+        const formatarData = (data) => {
+            return data.toISOString().split('T')[0];
+        };
+        
+        startDateEl.value = formatarData(primeiroDiaDoMes);
+        endDateEl.value = formatarData(hoje);
+    }
 }
 
 // Loading state management

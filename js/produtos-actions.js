@@ -28,9 +28,16 @@ function editarProduto(id) {
                 const modal = new bootstrap.Modal(document.getElementById('modalNovoProduto'));
                 modal.show();
                 
-                alert('✅ Produto carregado para edição!');
+                // Notificação visual sem popup
+                if (typeof mostrarAlerta === 'function') {
+                    mostrarAlerta('Produto carregado para edição', 'info', 3000);
+                }
             } else {
-                alert('❌ Erro: ' + (data.message || 'Não foi possível carregar o produto'));
+                if (typeof mostrarAlerta === 'function') {
+                    mostrarAlerta('Erro: ' + (data.message || 'Não foi possível carregar o produto'), 'danger', 5000);
+                } else {
+                    console.error('Erro ao carregar produto:', data.message);
+                }
             }
         })
         .catch(error => {
@@ -42,29 +49,50 @@ function editarProduto(id) {
 function excluirProduto(id) {
     console.log('Excluindo produto ID:', id);
     
-    if (confirm('⚠️ Tem certeza que deseja excluir este produto?')) {
-        const formData = new FormData();
-        formData.append('action', 'excluir_produto');
-        formData.append('id', id);
+    // Confirmação visual mais sutil
+    if (typeof mostrarAlerta === 'function') {
+        mostrarAlerta('Clique novamente para confirmar a exclusão', 'warning', 3000);
         
-        fetch('actions.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('✅ Produto excluído com sucesso!');
-                location.reload();
-            } else {
-                alert('❌ Erro: ' + (data.message || 'Não foi possível excluir o produto'));
-            }
-        })
-        .catch(error => {
-            console.error('Erro ao excluir produto:', error);
-            alert('❌ Erro ao excluir produto: ' + error.message);
-        });
+        // Adicionar classe visual para indicar que precisa confirmar
+        const botao = document.querySelector(`button[onclick="excluirProduto(${id})"]`);
+        if (botao && !botao.classList.contains('confirmar-exclusao')) {
+            botao.classList.add('confirmar-exclusao', 'btn-warning');
+            botao.classList.remove('btn-outline-danger');
+            botao.innerHTML = '<i class="bi bi-check"></i> Confirmar';
+            return;
+        }
     }
+    
+    const formData = new FormData();
+    formData.append('action', 'excluir_produto');
+    formData.append('id', id);
+    
+    fetch('actions.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (typeof mostrarAlerta === 'function') {
+                mostrarAlerta('Produto excluído com sucesso!', 'success', 3000);
+            }
+            if (typeof notificarAcaoProduto === 'function') {
+                notificarAcaoProduto('excluido', data.data.nome || 'Produto');
+            }
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            if (typeof mostrarAlerta === 'function') {
+                mostrarAlerta('Erro: ' + (data.message || 'Não foi possível excluir o produto'), 'danger', 5000);
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Erro ao excluir produto:', error);
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta('Erro ao excluir produto: ' + error.message, 'danger', 5000);
+        }
+    });
 }
 
 function reabastecerProduto(id) {
@@ -87,9 +115,16 @@ function reabastecerProduto(id) {
                 const modal = new bootstrap.Modal(document.getElementById('modalReabastecimento'));
                 modal.show();
                 
-                alert('✅ Modal de reabastecimento aberto!');
+                // Notificação visual sem popup
+                if (typeof mostrarAlerta === 'function') {
+                    mostrarAlerta('Modal de reabastecimento aberto', 'info', 2000);
+                }
             } else {
-                alert('❌ Erro: ' + (data.message || 'Não foi possível carregar o produto'));
+                if (typeof mostrarAlerta === 'function') {
+                    mostrarAlerta('Erro: ' + (data.message || 'Não foi possível carregar o produto'), 'danger', 5000);
+                } else {
+                    console.error('Erro ao carregar produto:', data.message);
+                }
             }
         })
         .catch(error => {
@@ -109,7 +144,9 @@ function salvarNovoProduto() {
     const observacoes = document.getElementById('observacoesProduto').value;
     
     if (!nome || !categoria || !preco || !quantidade || !limiteMinimo) {
-        alert('❌ Preencha todos os campos obrigatórios!');
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta('Preencha todos os campos obrigatórios!', 'warning', 4000);
+        }
         return;
     }
     
@@ -130,7 +167,12 @@ function salvarNovoProduto() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('✅ Produto cadastrado com sucesso!');
+            if (typeof mostrarAlerta === 'function') {
+                mostrarAlerta('Produto cadastrado com sucesso!', 'success', 3000);
+            }
+            if (typeof notificarAcaoProduto === 'function') {
+                notificarAcaoProduto('cadastrado', nome);
+            }
             
             // Fechar modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('modalNovoProduto'));
@@ -140,14 +182,18 @@ function salvarNovoProduto() {
             document.getElementById('formNovoProduto').reset();
             
             // Atualizar página
-            location.reload();
+            setTimeout(() => location.reload(), 1500);
         } else {
-            alert('❌ Erro: ' + (data.message || 'Não foi possível salvar o produto'));
+            if (typeof mostrarAlerta === 'function') {
+                mostrarAlerta('Erro: ' + (data.message || 'Não foi possível salvar o produto'), 'danger', 5000);
+            }
         }
     })
     .catch(error => {
         console.error('Erro ao salvar produto:', error);
-        alert('❌ Erro ao salvar produto: ' + error.message);
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta('Erro ao salvar produto: ' + error.message, 'danger', 5000);
+        }
     });
 }
 
@@ -157,7 +203,9 @@ function confirmarReabastecimento() {
     const quantidade = document.getElementById('quantidadeReabastecimento').value;
     
     if (!quantidade || quantidade <= 0) {
-        alert('❌ Quantidade inválida!');
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta('Quantidade inválida!', 'warning', 4000);
+        }
         return;
     }
     
@@ -173,21 +221,30 @@ function confirmarReabastecimento() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('✅ Estoque reabastecido com sucesso!');
+            if (typeof mostrarAlerta === 'function') {
+                mostrarAlerta('Estoque reabastecido com sucesso!', 'success', 3000);
+            }
+            if (typeof notificarAcaoProduto === 'function') {
+                notificarAcaoProduto('reabastecido', data.data.nome || 'Produto');
+            }
             
             // Fechar modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('modalReabastecimento'));
             modal.hide();
             
             // Atualizar página
-            location.reload();
+            setTimeout(() => location.reload(), 1500);
         } else {
-            alert('❌ Erro: ' + (data.message || 'Não foi possível reabastecer o estoque'));
+            if (typeof mostrarAlerta === 'function') {
+                mostrarAlerta('Erro: ' + (data.message || 'Não foi possível reabastecer o estoque'), 'danger', 5000);
+            }
         }
     })
     .catch(error => {
         console.error('Erro ao reabastecer:', error);
-        alert('❌ Erro ao reabastecer: ' + error.message);
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta('Erro ao reabastecer: ' + error.message, 'danger', 5000);
+        }
     });
 }
 

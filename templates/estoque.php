@@ -8,14 +8,29 @@
                 <div id="alertasEstoque">
                     <?php
                     $conn = getConnection();
-                    $sql = "SELECT * FROM produtos WHERE quantidade <= limite_minimo AND quantidade > 0";
-                    $result = $conn->query($sql);
+                    // Obter o ID do usuário da sessão (session_start já foi chamado no index.php)
+                    $usuarioId = $_SESSION['usuario_id'] ?? null;
+                    
+                    if ($usuarioId) {
+                        $sql = "SELECT * FROM produtos WHERE quantidade <= limite_minimo AND quantidade >= 0 AND usuario_id = ? ORDER BY quantidade ASC";
+                        $stmt = $conn->prepare($sql);
+                        $stmt->bind_param("i", $usuarioId);
+                        $stmt->execute();
+                        $result = $stmt->get_result();
+                    } else {
+                        $result = null;
+                    }
 
-                    if ($result->num_rows > 0) {
+                    if ($result && $result->num_rows > 0) {
                         while($row = $result->fetch_assoc()) {
-                            echo '<div class="alert alert-warning">';
-                            echo '<i class="bi bi-exclamation-triangle"></i> ';
-                            echo 'Só restam ' . $row["quantidade"] . ' unidades de <strong>' . $row["nome"] . '</strong>';
+                            $alertClass = $row["quantidade"] == 0 ? 'alert-danger' : 'alert-warning';
+                            $icon = $row["quantidade"] == 0 ? 'bi-exclamation-triangle-fill' : 'bi-exclamation-triangle';
+                            $message = $row["quantidade"] == 0 ? 
+                                'SEM ESTOQUE: <strong>' . $row["nome"] . '</strong>' :
+                                'Só restam ' . $row["quantidade"] . ' unidades de <strong>' . $row["nome"] . '</strong> (mínimo: ' . $row["limite_minimo"] . ')';
+                                
+                            echo '<div class="alert ' . $alertClass . '">';
+                            echo '<i class="bi ' . $icon . '"></i> ' . $message;
                             echo '</div>';
                         }
                     } else {
@@ -46,12 +61,23 @@
                         <tbody id="historicoMovimentacoes">
                             <?php
                             $conn = getConnection();
-                            $sql = "SELECT m.*, p.nome as produto_nome FROM movimentacoes m 
-                                    JOIN produtos p ON m.produto_id = p.id 
-                                    ORDER BY m.data DESC LIMIT 10";
-                            $result = $conn->query($sql);
+                            // Obter o ID do usuário da sessão (session_start já foi chamado no index.php)
+                            $usuarioId = $_SESSION['usuario_id'] ?? null;
+                            
+                            if ($usuarioId) {
+                                $sql = "SELECT m.*, p.nome as produto_nome FROM movimentacoes m 
+                                        JOIN produtos p ON m.produto_id = p.id 
+                                        WHERE p.usuario_id = ?
+                                        ORDER BY m.data DESC LIMIT 10";
+                                $stmt = $conn->prepare($sql);
+                                $stmt->bind_param("i", $usuarioId);
+                                $stmt->execute();
+                                $result = $stmt->get_result();
+                            } else {
+                                $result = null;
+                            }
 
-                            if ($result->num_rows > 0) {
+                            if ($result && $result->num_rows > 0) {
                                 while($row = $result->fetch_assoc()) {
                                     echo '<tr>';
                                     echo '<td>' . date('d/m/Y H:i', strtotime($row["data"])) . '</td>';

@@ -1,7 +1,6 @@
 <?php
-// Verifica se o usuário está logado via sessionStorage
-// Como estamos usando sessionStorage no frontend, não precisamos de session_start()
-// O controle será feito via JavaScript
+// Inicializar sessão PHP para suporte multi-usuário
+session_start();
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -181,42 +180,15 @@
     <script src="js/produtos-actions.js"></script>
     <script src="js/main.js"></script>
     
-    <!-- Google Maps com callback -->
+    <!-- Scripts principais -->
     <script>
-        // Função para inicializar o mapa quando o Google Maps estiver disponível
+        // Função global para compatibilidade (sem Google Maps)
         function initMap() {
-            const centro = { lat: -23.550520, lng: -46.633308 };
+            console.log('Inicialização de mapa chamada (usando OpenStreetMap)');
             
-            const map = new google.maps.Map(document.getElementById('map'), {
-                zoom: 15,
-                center: centro
-            });
-            
-            // Verifique se AdvancedMarkerElement está disponível
-            if (typeof google.maps.marker !== 'undefined' && typeof google.maps.marker.AdvancedMarkerElement !== 'undefined') {
-                // Use AdvancedMarkerElement se disponível
-                const marker = new google.maps.marker.AdvancedMarkerElement({
-                    position: centro,
-                    map: map,
-                    title: 'Ponto de Venda'
-                });
-            } else {
-                // Use o Marker antigo como fallback
-                const marker = new google.maps.Marker({
-                    position: centro,
-                    map: map,
-                    title: 'Ponto de Venda'
-                });
-            }
-        }
-        
-        // Carregar o Google Maps com callback
-        function loadGoogleMaps() {
-            if (typeof google !== 'undefined' && google.maps) {
-                initMap();
-            } else {
-                // Tentar novamente após 1 segundo se ainda não estiver disponível
-                setTimeout(loadGoogleMaps, 1000);
+            // Se existe a função da aba de localização, chamar ela
+            if (typeof window.initLocalizacaoMap === 'function') {
+                window.initLocalizacaoMap();
             }
         }
         
@@ -275,7 +247,6 @@
         });
     </script>
     
-    <!-- Script do Google Maps com sua chave e bibliotecas adicionais -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAd_IHsV5NuNkz2xAt-etL9x5eJcsaO3VQ&libraries=visualization,marker&callback=loadGoogleMaps" loading="eager"></script>
+    <!-- OpenStreetMap usado na aba de localização (carregado via Leaflet) -->
 </body>
 </html>
