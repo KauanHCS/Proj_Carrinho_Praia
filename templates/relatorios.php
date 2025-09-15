@@ -57,7 +57,10 @@
                 $usuarioId = $_SESSION['usuario_id'] ?? null;
                 
                 if ($usuarioId) {
-                    $sql = "SELECT SUM(v.total) as total FROM vendas v 
+                    // Calcular lucro real baseado nos preços de compra e venda
+                    $sql = "SELECT 
+                                SUM((p.preco_venda - COALESCE(p.preco_compra, 0)) * iv.quantidade) as lucro_real
+                            FROM vendas v 
                             JOIN itens_venda iv ON v.id = iv.venda_id 
                             JOIN produtos p ON iv.produto_id = p.id 
                             WHERE DATE(v.data) = CURDATE() AND p.usuario_id = ?";
@@ -66,14 +69,14 @@
                     $stmt->execute();
                     $result = $stmt->get_result();
                     $row = $result->fetch_assoc();
-                    $lucro = ($row['total'] ?? 0) * 0.5; // Margem de 50%
+                    $lucro = $row['lucro_real'] ?? 0;
                     echo number_format($lucro, 2, ',', '.');
                 } else {
                     echo "0,00";
                 }
                 $conn->close();
                 ?></h2>
-                <small>Margem média estimada</small>
+                <small>Lucro real calculado (Venda - Compra)</small>
             </div>
         </div>
     </div>
@@ -133,31 +136,27 @@
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-4">
-                        <h6>Exportar Vendas</h6>
-                        <p class="small text-muted">Baixar dados de vendas em formato CSV</p>
-                        <div class="mb-2">
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-file-earmark-excel"></i> Exportar Vendas</h6>
+                        <p class="small text-muted">Baixar dados de vendas em formato CSV com análise de lucro</p>
+                        <div class="mb-3">
+                            <label class="form-label small">Período:</label>
                             <input type="date" class="form-control form-control-sm mb-1" id="exportStartDate" placeholder="Data inicial">
                             <input type="date" class="form-control form-control-sm" id="exportEndDate" placeholder="Data final">
                         </div>
-                        <button class="btn btn-primary btn-sm" onclick="exportarVendas()">
-                            <i class="bi bi-file-earmark-excel"></i> Exportar Vendas
+                        <button class="btn btn-primary btn-sm w-100" onclick="exportarVendas()">
+                            <i class="bi bi-file-earmark-excel"></i> Exportar Relatório de Vendas
                         </button>
                     </div>
-                    <div class="col-md-4">
-                        <h6>Exportar Produtos</h6>
-                        <p class="small text-muted">Baixar cadastro de produtos em CSV</p>
-                        <br><br>
-                        <button class="btn btn-success btn-sm" onclick="exportarProdutos()">
-                            <i class="bi bi-file-earmark-excel"></i> Exportar Produtos
-                        </button>
-                    </div>
-                    <div class="col-md-4">
-                        <h6>Backup dos Meus Dados</h6>
-                        <p class="small text-muted">Fazer backup dos seus produtos, vendas e movimentações</p>
-                        <br><br>
-                        <button class="btn btn-warning btn-sm" onclick="criarBackup()">
-                            <i class="bi bi-hdd"></i> Backup dos Meus Dados
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-box-seam"></i> Exportar Produtos</h6>
+                        <p class="small text-muted">Baixar cadastro completo de produtos com margem de lucro</p>
+                        <div class="mb-3">
+                            <small class="text-muted">Inclui preços de compra, venda e margem calculada</small><br>
+                            <small class="text-success">Formato: CSV compatível com Excel</small>
+                        </div>
+                        <button class="btn btn-success btn-sm w-100" onclick="exportarProdutos()">
+                            <i class="bi bi-file-earmark-excel"></i> Exportar Cadastro de Produtos
                         </button>
                     </div>
                 </div>

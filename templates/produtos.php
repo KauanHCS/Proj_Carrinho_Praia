@@ -41,7 +41,7 @@
                             echo '<tr class="' . $lowStock . '">';
                             echo '<td>' . $row["nome"] . '</td>';
                             echo '<td>' . $row["categoria"] . '</td>';
-                            echo '<td>R$ ' . number_format($row["preco"], 2, ',', '.') . '</td>';
+                            echo '<td>R$ ' . number_format($row["preco_venda"], 2, ',', '.') . '</td>';
                             echo '<td>' . $row["quantidade"] . '</td>';
                             echo '<td>' . $row["limite_minimo"] . '</td>';
                             echo '<td>';

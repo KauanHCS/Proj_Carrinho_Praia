@@ -93,11 +93,39 @@
         .forgot-password a:hover {
             text-decoration: underline;
         }
-        .demo-info {
+        .social-login {
             margin-top: 20px;
             text-align: center;
             padding-top: 20px;
             border-top: 1px solid #e9ecef;
+        }
+        .social-login p {
+            color: #6c757d;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+        .social-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-social {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            font-size: 1.2rem;
+        }
+        .btn-google {
+            background-color: #ea4335;
+            color: white;
+        }
+        .btn-facebook {
+            background-color: #3b5998;
+            color: white;
         }
         .register-link {
             text-align: center;
@@ -113,6 +141,53 @@
         }
         .register-link a:hover {
             text-decoration: underline;
+        }
+        /* Estilo para o botão do Google */
+        .google-signin {
+            display: flex;
+            justify-content: center;
+            margin: 15px 0;
+        }
+        .btn-google-custom {
+            background: white;
+            color: #ea4335;
+            border: 2px solid #ea4335;
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            cursor: pointer;
+        }
+        .btn-google-custom:hover {
+            background: #f8f9fa;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .btn-google-custom i {
+            font-size: 1.5rem;
+        }
+        /* Container para o botão do Google */
+        #google-login-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+        #google-login-container > div {
+            width: 100% !important;
+        }
+        /* Estilo para garantir que o botão sempre apareça */
+        .g_id_signin {
+            width: 100% !important;
+            display: flex !important;
+            justify-content: center !important;
+        }
+        .g_id_signin > div {
+            width: 100% !important;
         }
     </style>
 </head>
@@ -165,11 +240,11 @@
                             <i class="bi bi-box-arrow-in-right"></i> Entrar
                         </button>
                         <div class="forgot-password">
-                            <a href="#" onclick="alert('Funcionalidade ainda não implementada')">Esqueceu sua senha?</a>
+                            <a href="#">Esqueceu sua senha?</a>
                         </div>
                         
-                        <!-- Informações de demonstração -->
-                        <div class="demo-info">
+                        <!-- Login demo -->
+                        <div class="social-login">
                             <div class="alert alert-info">
                                 <i class="bi bi-info-circle"></i> 
                                 <strong>Login de Demonstração:</strong><br>
@@ -251,22 +326,20 @@
                         <div class="mb-3 form-check">
                             <input type="checkbox" class="form-check-input" id="terms" required>
                             <label class="form-check-label" for="terms">
-                                Concordo com os <a href="#" style="color: #0066cc;" onclick="alert('Funcionalidade ainda não implementada')">termos de uso</a> e <a href="#" style="color: #0066cc;" onclick="alert('Funcionalidade ainda não implementada')">política de privacidade</a>
+                                Concordo com os <a href="#" style="color: #0066cc;">termos de uso</a> e <a href="#" style="color: #0066cc;">política de privacidade</a>
                             </label>
                         </div>
                         <button type="submit" class="btn btn-primary w-100">
                             <i class="bi bi-person-plus"></i> Cadastrar
                         </button>
-                        
                         <!-- Informações sobre cadastro -->
-                        <div class="demo-info">
+                        <div class="social-login">
                             <div class="alert alert-success">
                                 <i class="bi bi-check-circle"></i>
                                 <strong>Cadastro gratuito!</strong><br>
                                 <small>Crie sua conta para gerenciar suas vendas</small>
                             </div>
                         </div>
-                        
                         <div class="register-link">
                             <p>Já tem uma conta? <a href="#" onclick="switchToLogin()">Faça login</a></p>
                         </div>
@@ -275,7 +348,6 @@
             </div>
         </div>
     </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/validation.js"></script>
     
@@ -285,9 +357,11 @@
             const registerTab = document.getElementById('register-tab');
             const loginTab = document.getElementById('login-tab');
             
+            // Remover active do login
             loginTab.classList.remove('active');
             document.getElementById('login').classList.remove('show', 'active');
             
+            // Adicionar active ao register
             registerTab.classList.add('active');
             document.getElementById('register').classList.add('show', 'active');
         }
@@ -296,14 +370,16 @@
             const registerTab = document.getElementById('register-tab');
             const loginTab = document.getElementById('login-tab');
             
+            // Remover active do register
             registerTab.classList.remove('active');
             document.getElementById('register').classList.remove('show', 'active');
             
+            // Adicionar active ao login
             loginTab.classList.add('active');
             document.getElementById('login').classList.add('show', 'active');
         }
         
-        // Inicialização
+        // Funções para alternar visibilidade da senha
         document.addEventListener('DOMContentLoaded', function() {
             // Alternar visibilidade da senha no login
             document.getElementById('toggleLoginPassword').addEventListener('click', function() {
@@ -364,121 +440,183 @@
                 
                 e.target.value = value;
             });
+        });
+        
+        // Alternar visibilidade da senha no login
+        document.getElementById('toggleLoginPassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('loginPassword');
+            const icon = this.querySelector('i');
             
-            // Handler do formulário de login
-            document.getElementById('loginForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                const email = document.getElementById('loginEmail').value;
-                const password = document.getElementById('loginPassword').value;
-                
-                if (!email || !password) {
-                    alert('Por favor, preencha todos os campos.');
-                    return;
-                }
-                
-                // Verificar login demo
-                if (email === 'demo@carrinho.com' && password === '123456') {
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.replace('bi-eye-slash', 'bi-eye');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.replace('bi-eye', 'bi-eye-slash');
+            }
+        });
+        
+        // Alternar visibilidade da senha no cadastro
+        document.getElementById('toggleRegisterPassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('registerPassword');
+            const icon = this.querySelector('i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.replace('bi-eye-slash', 'bi-eye');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.replace('bi-eye', 'bi-eye-slash');
+            }
+        });
+        
+        // Alternar visibilidade da confirmação de senha
+        document.getElementById('toggleConfirmPassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('confirmPassword');
+            const icon = this.querySelector('i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.replace('bi-eye-slash', 'bi-eye');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.replace('bi-eye', 'bi-eye-slash');
+            }
+        });
+        
+        // Validação do formulário de login
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!email || !password) {
+                alert('Por favor, preencha todos os campos.');
+                return;
+            }
+            
+            // Enviar dados para o servidor
+            const formData = new FormData();
+            formData.append('action', 'login');
+            formData.append('email', email);
+            formData.append('password', password);
+            
+            fetch('actions.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Login bem-sucedido
                     const user = {
-                        name: 'Usuário Demo',
+                        name: data.data.nome,
                         email: email,
-                        imageUrl: "https://ui-avatars.com/api/?name=Usuario+Demo&background=0066cc&color=fff"
+                        imageUrl: "https://ui-avatars.com/api/?name=" + data.data.nome + "&background=0066cc&color=fff"
                     };
                     
+                    // Salvar informações do usuário
                     sessionStorage.setItem('user', JSON.stringify(user));
-                    sessionStorage.setItem('user_type', 'demo');
-                    alert('Login demo realizado com sucesso!');
+                    sessionStorage.setItem('user_type', 'local');
+                    
+                    alert('Login realizado com sucesso!');
+                    // Redirecionar para a página principal
                     window.location.href = 'index.php';
-                    return;
+                } else {
+                    alert('Erro: ' + data.message);
                 }
-                
-                // Enviar dados para o servidor
-                const formData = new FormData();
-                formData.append('action', 'login');
-                formData.append('email', email);
-                formData.append('password', password);
-                
-                fetch('actions.php', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        const user = {
-                            name: data.data.nome,
-                            email: email,
-                            imageUrl: "https://ui-avatars.com/api/?name=" + data.data.nome + "&background=0066cc&color=fff"
-                        };
-                        
-                        sessionStorage.setItem('user', JSON.stringify(user));
-                        sessionStorage.setItem('user_type', 'local');
-                        alert('Login realizado com sucesso!');
-                        window.location.href = 'index.php';
-                    } else {
-                        alert('Erro: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Erro:', error);
-                    alert('Erro de conexão: ' + error);
-                });
+            })
+            .catch(error => {
+                alert('Erro de conexão: ' + error);
             });
+        });
+        
+        // Validação do formulário de cadastro
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const firstName = document.getElementById('firstName').value;
+            const lastName = document.getElementById('lastName').value;
+            const email = document.getElementById('registerEmail').value;
+            const phone = document.getElementById('registerPhone').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const terms = document.getElementById('terms').checked;
             
-            // Handler do formulário de cadastro
-            document.getElementById('registerForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                const firstName = document.getElementById('firstName').value;
-                const lastName = document.getElementById('lastName').value;
-                const email = document.getElementById('registerEmail').value;
-                const phone = document.getElementById('registerPhone').value;
-                const password = document.getElementById('registerPassword').value;
-                const confirmPassword = document.getElementById('confirmPassword').value;
-                const terms = document.getElementById('terms').checked;
-                
-                // Validações
-                if (!firstName || !lastName || !email || !phone || !password || !confirmPassword) {
-                    alert('Por favor, preencha todos os campos.');
-                    return;
+            // Validações
+            if (!firstName || !lastName || !email || !phone || !password || !confirmPassword) {
+                alert('Por favor, preencha todos os campos.');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                alert('As senhas não coincidem.');
+                return;
+            }
+            
+            if (!terms) {
+                alert('Você precisa aceitar os termos de uso e política de privacidade.');
+                return;
+            }
+            
+            // Enviar dados para o servidor
+            const formData = new FormData();
+            formData.append('action', 'register');
+            formData.append('nome', firstName);
+            formData.append('sobrenome', lastName);
+            formData.append('email', email);
+            formData.append('telefone', phone);
+            formData.append('password', password);
+            formData.append('confirm_password', confirmPassword);
+            
+            fetch('actions.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Cadastro bem-sucedido
+                    alert('Cadastro realizado com sucesso!');
+                    // Redirecionar para a aba de login
+                    switchToLogin();
+                } else {
+                    alert('Erro: ' + data.message);
                 }
-                
-                if (password !== confirmPassword) {
-                    alert('As senhas não coincidem.');
-                    return;
-                }
-                
-                if (!terms) {
-                    alert('Você precisa aceitar os termos de uso e política de privacidade.');
-                    return;
-                }
-                
-                // Enviar dados para o servidor
-                const formData = new FormData();
-                formData.append('action', 'register');
-                formData.append('nome', firstName);
-                formData.append('sobrenome', lastName);
-                formData.append('email', email);
-                formData.append('telefone', phone);
-                formData.append('password', password);
-                formData.append('confirm_password', confirmPassword);
-                
-                fetch('actions.php', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('Cadastro realizado com sucesso!');
-                        switchToLogin();
-                    } else {
-                        alert('Erro: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Erro:', error);
-                    alert('Erro de conexão: ' + error);
-                });
+            })
+            .catch(error => {
+                alert('Erro de conexão: ' + error);
             });
+        });
+        
+        // Adicionar máscara de telefone
+        document.getElementById('registerPhone').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 11) {
+                value = value.slice(0, 11);
+            }
+            
+            if (value.length > 6) {
+                value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+            } else if (value.length > 2) {
+                value = value.replace(/(\d{2})(\d{0,5})/, '($1) $2');
+            } else {
+                value = value.replace(/(\d{0,2})/, '($1');
+            }
+            
+            e.target.value = value;
+        });
+        
+        // Inicializar quando a página carregar
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM carregado, iniciando Google Sign-In...');
+            
+            // Mostrar botões personalizados inicialmente
+            showFallbackButtons();
+            
+            // Inicializar o Google Sign-In após um pequeno delay
+            setTimeout(function() {
+                initializeGoogleSignIn();
+            }, 1000);
         });
     </script>
 </body>

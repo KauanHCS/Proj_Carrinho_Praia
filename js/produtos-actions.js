@@ -13,11 +13,15 @@ function editarProduto(id) {
                 // Preencher formulário
                 document.getElementById('nomeProduto').value = produto.nome;
                 document.getElementById('categoriaProduto').value = produto.categoria;
-                document.getElementById('precoProduto').value = produto.preco;
+                document.getElementById('precoCompraProduto').value = produto.preco_compra || produto.preco_compra;
+                document.getElementById('precoVendaProduto').value = produto.preco_venda || produto.preco;
                 document.getElementById('quantidadeProduto').value = produto.quantidade;
                 document.getElementById('limiteMinimo').value = produto.limite_minimo;
                 document.getElementById('validadeProduto').value = produto.validade || '';
                 document.getElementById('observacoesProduto').value = produto.observacoes || '';
+                
+                // Calcular margem após carregar os dados
+                setTimeout(calcularMargemLucro, 100);
                 
                 // Alterar texto do botão
                 const botaoSalvar = document.getElementById('salvarProduto');
@@ -49,18 +53,40 @@ function editarProduto(id) {
 function excluirProduto(id) {
     console.log('Excluindo produto ID:', id);
     
-    // Confirmação visual mais sutil
-    if (typeof mostrarAlerta === 'function') {
-        mostrarAlerta('Clique novamente para confirmar a exclusão', 'warning', 3000);
-        
-        // Adicionar classe visual para indicar que precisa confirmar
-        const botao = document.querySelector(`button[onclick="excluirProduto(${id})"]`);
-        if (botao && !botao.classList.contains('confirmar-exclusao')) {
-            botao.classList.add('confirmar-exclusao', 'btn-warning');
-            botao.classList.remove('btn-outline-danger');
-            botao.innerHTML = '<i class="bi bi-check"></i> Confirmar';
-            return;
+    const botao = document.querySelector(`button[onclick="excluirProduto(${id})"]`);
+    
+    if (botao && !botao.classList.contains('confirmar-exclusao')) {
+        // Primeiro clique - mostrar confirmação
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta('⚠️ Tem certeza? Clique em "Confirmar" ou "Cancelar"', 'warning', 8000);
         }
+        
+        // Criar container para os botões
+        const containerBotoes = document.createElement('div');
+        containerBotoes.className = 'btn-group';
+        containerBotoes.setAttribute('data-produto-id', id);
+        
+        // Criar botão de cancelar
+        const botaoCancelar = document.createElement('button');
+        botaoCancelar.className = 'btn btn-sm btn-secondary';
+        botaoCancelar.innerHTML = '<i class="bi bi-x-circle"></i> Cancelar';
+        botaoCancelar.onclick = function() {
+            cancelarExclusao(id);
+        };
+        
+        // Modificar botão original para confirmar
+        botao.classList.add('confirmar-exclusao', 'btn-danger');
+        botao.classList.remove('btn-outline-danger');
+        botao.innerHTML = '<i class="bi bi-check-circle"></i> Confirmar';
+        
+        // Inserir os botões
+        containerBotoes.appendChild(botaoCancelar);
+        containerBotoes.appendChild(botao.cloneNode(true));
+        
+        // Substituir o botão original pelo container
+        botao.parentNode.replaceChild(containerBotoes, botao);
+        
+        return;
     }
     
     const formData = new FormData();
@@ -93,6 +119,26 @@ function excluirProduto(id) {
             mostrarAlerta('Erro ao excluir produto: ' + error.message, 'danger', 5000);
         }
     });
+}
+
+// Função para cancelar exclusão e restaurar estado original
+function cancelarExclusao(id) {
+    const container = document.querySelector(`[data-produto-id="${id}"]`);
+    
+    if (container) {
+        // Criar botão original restaurado
+        const botaoOriginal = document.createElement('button');
+        botaoOriginal.className = 'btn btn-sm btn-outline-danger';
+        botaoOriginal.innerHTML = '<i class="bi bi-trash"></i>';
+        botaoOriginal.setAttribute('onclick', `excluirProduto(${id})`);
+        
+        // Substituir container pelos botão original
+        container.parentNode.replaceChild(botaoOriginal, container);
+        
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta('❌ Exclusão cancelada', 'info', 2000);
+        }
+    }
 }
 
 function reabastecerProduto(id) {
@@ -133,28 +179,49 @@ function reabastecerProduto(id) {
         });
 }
 
-// Função para salvar novo produto
+// Função para salvar novo produto ou editar existente
 function salvarNovoProduto() {
     const nome = document.getElementById('nomeProduto').value;
     const categoria = document.getElementById('categoriaProduto').value;
-    const preco = document.getElementById('precoProduto').value;
+    const precoCompra = document.getElementById('precoCompraProduto').value;
+    const precoVenda = document.getElementById('precoVendaProduto').value;
     const quantidade = document.getElementById('quantidadeProduto').value;
     const limiteMinimo = document.getElementById('limiteMinimo').value;
     const validade = document.getElementById('validadeProduto').value;
     const observacoes = document.getElementById('observacoesProduto').value;
     
-    if (!nome || !categoria || !preco || !quantidade || !limiteMinimo) {
+    if (!nome || !categoria || !precoCompra || !precoVenda || !quantidade || !limiteMinimo) {
         if (typeof mostrarAlerta === 'function') {
             mostrarAlerta('Preencha todos os campos obrigatórios!', 'warning', 4000);
         }
         return;
     }
     
+    // Validar se preço de venda é maior que preço de compra
+    const compra = parseFloat(precoCompra);
+    const venda = parseFloat(precoVenda);
+    
+    if (venda <= compra) {
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta('⚠️ Preço de venda deve ser maior que preço de compra!', 'danger', 5000);
+        }
+        return;
+    }
+    
+    // Verificar se é edição ou novo produto
+    const botaoSalvar = document.getElementById('salvarProduto');
+    const produtoId = botaoSalvar.getAttribute('data-produto-id');
+    const isEdicao = produtoId && produtoId !== '';
+    
     const formData = new FormData();
-    formData.append('action', 'salvar_produto');
+    formData.append('action', isEdicao ? 'atualizar_produto' : 'salvar_produto');
+    if (isEdicao) {
+        formData.append('id', produtoId);
+    }
     formData.append('nome', nome);
     formData.append('categoria', categoria);
-    formData.append('preco', preco);
+    formData.append('preco_compra', precoCompra);
+    formData.append('preco_venda', precoVenda);
     formData.append('quantidade', quantidade);
     formData.append('limite_minimo', limiteMinimo);
     formData.append('validade', validade);
@@ -167,19 +234,24 @@ function salvarNovoProduto() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            const mensagem = isEdicao ? 'Produto atualizado com sucesso!' : 'Produto cadastrado com sucesso!';
+            const acao = isEdicao ? 'atualizado' : 'cadastrado';
+            
             if (typeof mostrarAlerta === 'function') {
-                mostrarAlerta('Produto cadastrado com sucesso!', 'success', 3000);
+                mostrarAlerta(mensagem, 'success', 3000);
             }
             if (typeof notificarAcaoProduto === 'function') {
-                notificarAcaoProduto('cadastrado', nome);
+                notificarAcaoProduto(acao, nome);
             }
             
             // Fechar modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('modalNovoProduto'));
             modal.hide();
             
-            // Limpar formulário
+            // Limpar formulário e resetar estado
             document.getElementById('formNovoProduto').reset();
+            botaoSalvar.textContent = 'Salvar Produto';
+            botaoSalvar.removeAttribute('data-produto-id');
             
             // Atualizar página
             setTimeout(() => location.reload(), 1500);

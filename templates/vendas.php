@@ -52,10 +52,10 @@
                             echo '<button class="btn btn-light w-100 product-btn' . $lowStock . '" ';
                             echo 'data-categoria="' . $categoria . '" ';
                             echo 'data-nome="' . $nome . '" ';
-                            echo 'onclick="adicionarAoCarrinho(' . $row["id"] . ', \'' . $nomeJs . '\', ' . $row["preco"] . ', ' . $row["quantidade"] . ')">';
+                            echo 'onclick="adicionarAoCarrinho(' . $row["id"] . ', \'' . $nomeJs . '\', ' . $row["preco_venda"] . ', ' . $row["quantidade"] . ')">';
                             echo '<div class="text-start">';
                             echo '<strong>' . $nome . '</strong><br>';
-                            echo '<small class="text-muted">R$ ' . number_format($row["preco"], 2, ',', '.') . ' | ' . $row["quantidade"] . ' unid.</small><br>';
+                            echo '<small class="text-muted">R$ ' . number_format($row["preco_venda"], 2, ',', '.') . ' | ' . $row["quantidade"] . ' unid.</small><br>';
                             echo '<span class="badge bg-secondary">' . ucfirst($categoria) . '</span>';
                             if ($lowStock) {
                                 echo ' <span class="badge bg-warning">Estoque baixo</span>';

@@ -403,20 +403,11 @@ function finalizarVenda() {
             $estoqueAnterior = $produto['quantidade'];
             $estoqueAtual = $estoqueAnterior - $item['quantidade'];
             
-            // Inserir item da venda
+            // Inserir item da venda - O trigger tr_item_venda_inserted automaticamente:
+            // 1. Atualizará o estoque do produto
+            // 2. Registrará a movimentação de saída
             $stmt = $conn->prepare("INSERT INTO itens_venda (venda_id, produto_id, quantidade, preco_unitario) VALUES (?, ?, ?, ?)");
             $stmt->bind_param("iiid", $vendaId, $item['id'], $item['quantidade'], $item['preco']);
-            $stmt->execute();
-            
-            // Atualizar estoque
-            $stmt = $conn->prepare("UPDATE produtos SET quantidade = ? WHERE id = ?");
-            $stmt->bind_param("ii", $estoqueAtual, $item['id']);
-            $stmt->execute();
-            
-            // Registrar movimentação com dados completos
-            $descricao = "Venda - {$produto['nome']}";
-            $stmt = $conn->prepare("INSERT INTO movimentacoes (data, produto_id, tipo, quantidade, quantidade_anterior, quantidade_atual, descricao, venda_id) VALUES (NOW(), ?, 'saida', ?, ?, ?, ?, ?)");
-            $stmt->bind_param("iiiisi", $item['id'], $item['quantidade'], $estoqueAnterior, $estoqueAtual, $descricao, $vendaId);
             $stmt->execute();
         }
         
@@ -454,15 +445,10 @@ function reabastecerEstoque() {
         $estoqueAnterior = $produto['quantidade'];
         $estoqueAtual = $estoqueAnterior + $quantidade;
         
-        // Atualizar estoque
+        // Atualizar estoque - O trigger tr_produto_estoque_updated automaticamente
+        // registrará a movimentação quando o estoque for atualizado
         $stmt = $conn->prepare("UPDATE produtos SET quantidade = ? WHERE id = ?");
         $stmt->bind_param("ii", $estoqueAtual, $produtoId);
-        $stmt->execute();
-        
-        // Registrar movimentação com dados completos
-        $descricao = 'Reabastecimento';
-        $stmt = $conn->prepare("INSERT INTO movimentacoes (data, produto_id, tipo, quantidade, quantidade_anterior, quantidade_atual, descricao) VALUES (NOW(), ?, 'entrada', ?, ?, ?, ?)");
-        $stmt->bind_param("iiiis", $produtoId, $quantidade, $estoqueAnterior, $estoqueAtual, $descricao);
         $stmt->execute();
         
         jsonResponse(true, [
@@ -489,7 +475,8 @@ function salvarProduto() {
         // Sanitize inputs
         $nome = sanitizeInput($_POST['nome'] ?? '');
         $categoria = sanitizeInput($_POST['categoria'] ?? '');
-        $preco = sanitizeInput($_POST['preco'] ?? '');
+        $precoCompra = sanitizeInput($_POST['preco_compra'] ?? '');
+        $precoVenda = sanitizeInput($_POST['preco_venda'] ?? '');
         $quantidade = sanitizeInput($_POST['quantidade'] ?? '');
         $limiteMinimo = sanitizeInput($_POST['limite_minimo'] ?? '');
         $validade = sanitizeInput($_POST['validade'] ?? '') ?: null;
@@ -504,8 +491,16 @@ function salvarProduto() {
             jsonResponse(false, null, 'Categoria inválida');
         }
         
-        if (!validatePrice($preco)) {
-            jsonResponse(false, null, 'Preço deve ser um valor positivo');
+        if (!validatePrice($precoCompra)) {
+            jsonResponse(false, null, 'Preço de compra deve ser um valor positivo');
+        }
+        
+        if (!validatePrice($precoVenda)) {
+            jsonResponse(false, null, 'Preço de venda deve ser um valor positivo');
+        }
+        
+        if ($precoVenda <= $precoCompra) {
+            jsonResponse(false, null, 'Preço de venda deve ser maior que preço de compra');
         }
         
         if (!validateQuantity($quantidade)) {
@@ -534,19 +529,14 @@ function salvarProduto() {
             jsonResponse(false, null, 'Você já possui um produto com este nome');
         }
         
-        // Inserir produto com usuario_id
-        $stmt = $conn->prepare("INSERT INTO produtos (nome, preco, quantidade, categoria, limite_minimo, validade, observacoes, usuario_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("sdissisi", $nome, $preco, $quantidade, $categoria, $limiteMinimo, $validade, $observacoes, $usuarioId);
+        // Inserir produto com usuario_id e novos campos de preço
+        $stmt = $conn->prepare("INSERT INTO produtos (nome, preco_compra, preco_venda, quantidade, categoria, limite_minimo, validade, observacoes, usuario_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("sddisissi", $nome, $precoCompra, $precoVenda, $quantidade, $categoria, $limiteMinimo, $validade, $observacoes, $usuarioId);
         $stmt->execute();
         $produtoId = $conn->insert_id;
         
-        // Registrar movimentação de entrada com dados completos
-        if ($quantidade > 0) {
-            $descricao = 'Cadastro inicial';
-            $stmt = $conn->prepare("INSERT INTO movimentacoes (data, produto_id, tipo, quantidade, quantidade_anterior, quantidade_atual, descricao) VALUES (NOW(), ?, 'entrada', ?, 0, ?, ?)");
-            $stmt->bind_param("iiis", $produtoId, $quantidade, $quantidade, $descricao);
-            $stmt->execute();
-        }
+        // Não é necessário registrar movimentação manualmente
+        // O trigger tr_produto_inserted já faz isso automaticamente
         
         jsonResponse(true, ['produto_id' => $produtoId], 'Produto cadastrado com sucesso');
         
@@ -566,7 +556,8 @@ function atualizarProduto() {
         $id = $_POST['id'];
         $nome = $_POST['nome'];
         $categoria = $_POST['categoria'];
-        $preco = $_POST['preco'];
+        $precoCompra = $_POST['preco_compra'];
+        $precoVenda = $_POST['preco_venda'];
         $quantidade = $_POST['quantidade'];
         $limiteMinimo = $_POST['limite_minimo'];
         $validade = $_POST['validade'] ?: null;
@@ -582,9 +573,22 @@ function atualizarProduto() {
             jsonResponse(false, null, 'Produto não encontrado ou não pertence a você');
         }
         
+        // Validar preços
+        if (!validatePrice($precoCompra)) {
+            jsonResponse(false, null, 'Preço de compra deve ser um valor positivo');
+        }
+        
+        if (!validatePrice($precoVenda)) {
+            jsonResponse(false, null, 'Preço de venda deve ser um valor positivo');
+        }
+        
+        if ($precoVenda <= $precoCompra) {
+            jsonResponse(false, null, 'Preço de venda deve ser maior que preço de compra');
+        }
+        
         // Atualizar produto
-        $stmt = $conn->prepare("UPDATE produtos SET nome = ?, preco = ?, quantidade = ?, categoria = ?, limite_minimo = ?, validade = ?, observacoes = ? WHERE id = ? AND usuario_id = ?");
-        $stmt->bind_param("sdississi", $nome, $preco, $quantidade, $categoria, $limiteMinimo, $validade, $observacoes, $id, $usuarioId);
+        $stmt = $conn->prepare("UPDATE produtos SET nome = ?, preco_compra = ?, preco_venda = ?, quantidade = ?, categoria = ?, limite_minimo = ?, validade = ?, observacoes = ? WHERE id = ? AND usuario_id = ?");
+        $stmt->bind_param("sddississi", $nome, $precoCompra, $precoVenda, $quantidade, $categoria, $limiteMinimo, $validade, $observacoes, $id, $usuarioId);
         $stmt->execute();
         
         jsonResponse(true, ['produto_id' => $id], 'Produto atualizado com sucesso');
@@ -615,16 +619,8 @@ function excluirProduto() {
         
         $produto = $result->fetch_assoc();
         
-        // Verificar se o produto tem vendas
-        $stmt = $conn->prepare("SELECT COUNT(*) as total FROM itens_venda WHERE produto_id = ?");
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $row = $result->fetch_assoc();
-        
-        if ($row['total'] > 0) {
-            jsonResponse(false, null, 'Não é possível excluir um produto que já teve vendas');
-        }
+        // Produto pode ser excluído independentemente de ter vendas
+        // As vendas serão mantidas no histórico para auditoria
         
         // Excluir produto
         $stmt = $conn->prepare("DELETE FROM produtos WHERE id = ? AND usuario_id = ?");

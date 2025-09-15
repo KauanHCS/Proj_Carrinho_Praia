@@ -167,7 +167,7 @@ session_start();
     <!-- Footer -->
     <div class="footer text-center">
         <div class="container">
-            <small>Sistema de Gestão para Carrinhos de Praia | © 2023</small>
+            <small>Sistema de Gestão para Carrinhos de Praia | © 2025</small>
         </div>
     </div>
 
@@ -182,15 +182,7 @@ session_start();
     
     <!-- Scripts principais -->
     <script>
-        // Função global para compatibilidade (sem Google Maps)
-        function initMap() {
-            console.log('Inicialização de mapa chamada (usando OpenStreetMap)');
-            
-            // Se existe a função da aba de localização, chamar ela
-            if (typeof window.initLocalizacaoMap === 'function') {
-                window.initLocalizacaoMap();
-            }
-        }
+        // Função global removida para evitar conflitos com Google Maps
         
         // Função para mostrar a tab correta
         function showTab(tabName) {
