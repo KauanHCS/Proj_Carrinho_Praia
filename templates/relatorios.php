@@ -237,7 +237,7 @@
 <script>
 // Dados dos produtos mais vendidos (será carregado via AJAX)
 function carregarGraficoProdutos() {
-    fetch('../controllers/actions.php?action=get_produtos_mais_vendidos')
+    fetch('actions.php?action=get_produtos_mais_vendidos')
         .then(response => response.json())
         .then(data => {
             if (data.success && data.data && data.data.length > 0) {

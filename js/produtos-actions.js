@@ -3,7 +3,7 @@
 function editarProduto(id) {
     console.log('Editando produto ID:', id);
     
-    fetch(`../src/controllers/actions.php?action=get_produto&id=${id}`)
+    fetch(`actions.php?action=get_produto&id=${id}`)
         .then(response => response.json())
         .then(data => {
             if (data.success && data.data && data.data.produto) {
@@ -93,7 +93,7 @@ function excluirProduto(id) {
     formData.append('action', 'excluir_produto');
     formData.append('id', id);
     
-    fetch('../src/controllers/actions.php', {
+    fetch('actions.php', {
         method: 'POST',
         body: formData
     })
@@ -144,7 +144,7 @@ function cancelarExclusao(id) {
 function reabastecerProduto(id) {
     console.log('Reabastecendo produto ID:', id);
     
-    fetch(`../src/controllers/actions.php?action=get_produto&id=${id}`)
+    fetch(`actions.php?action=get_produto&id=${id}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -227,7 +227,7 @@ function salvarNovoProduto() {
     formData.append('validade', validade);
     formData.append('observacoes', observacoes);
     
-    fetch('../src/controllers/actions.php', {
+    fetch('actions.php', {
         method: 'POST',
         body: formData
     })
@@ -286,7 +286,7 @@ function confirmarReabastecimento() {
     formData.append('produto_id', id);
     formData.append('quantidade', quantidade);
     
-    fetch('../src/controllers/actions.php', {
+    fetch('actions.php', {
         method: 'POST',
         body: formData
     })

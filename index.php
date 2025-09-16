@@ -10,7 +10,7 @@ session_start();
     <title>Sistema de Vendas - Carrinho de Praia</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="css/style.css">
     <style>
         /* Estilo para o cabeçalho do usuário */
         .user-header {
@@ -125,40 +125,40 @@ session_start();
             <!-- Tab Vendas -->
             <div class="tab-pane fade" id="vendas">
                 <?php 
-                require_once '../database/database.php';
-                include '../src/views/vendas.php';
+                require_once 'config/database.php';
+                include 'templates/vendas.php'; 
                 ?>
             </div>
 
             <!-- Tab Produtos -->
             <div class="tab-pane fade" id="produtos">
                 <?php 
-                require_once '../database/database.php';
-                include '../src/views/produtos.php';
+                require_once 'config/database.php';
+                include 'templates/produtos.php'; 
                 ?>
             </div>
 
             <!-- Tab Estoque -->
             <div class="tab-pane fade" id="estoque">
                 <?php 
-                require_once '../database/database.php';
-                include '../src/views/estoque.php';
+                require_once 'config/database.php';
+                include 'templates/estoque.php'; 
                 ?>
             </div>
 
             <!-- Tab Relatórios -->
             <div class="tab-pane fade" id="relatorios">
                 <?php 
-                require_once '../database/database.php';
-                include '../src/views/relatorios.php';
+                require_once 'config/database.php';
+                include 'templates/relatorios.php'; 
                 ?>
             </div>
 
             <!-- Tab Localização -->
             <div class="tab-pane fade" id="localizacao">
                 <?php 
-                require_once '../database/database.php';
-                include '../src/views/localizacao.php';
+                require_once 'config/database.php';
+                include 'templates/localizacao.php'; 
                 ?>
             </div>
         </div>
@@ -172,13 +172,13 @@ session_start();
     </div>
 
     <!-- Modais -->
-    <?php include '../src/views/modais.php'; ?>
+    <?php include 'templates/modais.php'; ?>
 
     <!-- Scripts - ORDEM CORRETA -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="../assets/js/validation.js"></script>
-    <script src="../assets/js/produtos-actions.js"></script>
-    <script src="../assets/js/main.js"></script>
+    <script src="js/validation.js"></script>
+    <script src="js/produtos-actions.js"></script>
+    <script src="js/main.js"></script>
     
     <!-- Scripts principais -->
     <script>

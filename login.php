@@ -277,7 +277,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="../assets/js/validation.js"></script>
+    <script src="js/validation.js"></script>
     
     <script>
         // Funções auxiliares para alternância de abas
@@ -397,7 +397,7 @@
                 formData.append('email', email);
                 formData.append('password', password);
                 
-                fetch('../src/controllers/actions.php', {
+                fetch('actions.php', {
                     method: 'POST',
                     body: formData
                 })
@@ -461,7 +461,7 @@
                 formData.append('password', password);
                 formData.append('confirm_password', confirmPassword);
                 
-                fetch('../src/controllers/actions.php', {
+                fetch('actions.php', {
                     method: 'POST',
                     body: formData
                 })

@@ -218,7 +218,7 @@ function inicializarEventListeners() {
                 }
             }
 
-            fetch('../src/controllers/actions.php', {
+            fetch('actions.php', {
                 method: 'POST',
                 body: formData
             })
@@ -256,7 +256,7 @@ function inicializarEventListeners() {
 
 // Verificar alerta de estoque baixo
 function verificarAlertaEstoque() {
-    fetch('../src/controllers/actions.php?action=verificar_estoque_baixo')
+    fetch('actions.php?action=verificar_estoque_baixo')
     .then(response => {
         if (!response.ok) {
             throw new Error('Erro na resposta do servidor');
@@ -328,7 +328,7 @@ function atualizarGraficoVendas() {
         return; // Elemento não existe, sair da função
     }
     
-    fetch('../src/controllers/actions.php?action=get_produtos_mais_vendidos')
+    fetch('actions.php?action=get_produtos_mais_vendidos')
         .then(response => response.json())
         .then(data => {
             // Verifique se os dados são válidos
@@ -550,7 +550,7 @@ function criarNotificacao(titulo, mensagem, tipo = 'info', produtoId = null, aca
     if (produtoId) formData.append('produto_id', produtoId);
     if (acao) formData.append('acao', acao);
     
-    fetch('../src/controllers/actions.php', {
+    fetch('actions.php', {
         method: 'POST',
         body: formData
     })
@@ -683,7 +683,7 @@ function exportarVendas() {
     const startDate = document.getElementById('exportStartDate')?.value || '';
     const endDate = document.getElementById('exportEndDate')?.value || '';
     
-    let url = '../src/controllers/backup_export.php?action=export_sales';
+    let url = 'utils/backup_export.php?action=export_sales';
     if (startDate) url += '&start_date=' + encodeURIComponent(startDate);
     if (endDate) url += '&end_date=' + encodeURIComponent(endDate);
     
@@ -699,7 +699,7 @@ function exportarVendas() {
 }
 
 function exportarProdutos() {
-    const url = '../src/controllers/backup_export.php?action=export_products';
+    const url = 'utils/backup_export.php?action=export_products';
     
     const link = document.createElement('a');
     link.href = url;
@@ -716,7 +716,7 @@ function criarBackup() {
         return;
     }
     
-    const url = '../src/controllers/backup_export.php?action=backup_database';
+    const url = 'utils/backup_export.php?action=backup_database';
     
     const link = document.createElement('a');
     link.href = url;
