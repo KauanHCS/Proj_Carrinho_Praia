@@ -168,8 +168,11 @@
 <div class="row mt-4">
     <div class="col-md-8">
         <div class="card">
-            <div class="card-header">
-                <i class="bi bi-bar-chart"></i> Produtos Mais Vendidos
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-bar-chart"></i> Produtos Mais Vendidos</span>
+                <button class="btn btn-secondary btn-sm" onclick="corrigirGrafico()" title="Corrigir renderização do gráfico">
+                    <i class="bi bi-arrow-repeat"></i> Corrigir
+                </button>
             </div>
             <div class="card-body">
                 <canvas id="graficoVendas" style="max-height: 400px;"></canvas>
@@ -232,105 +235,5 @@
     </div>
 </div>
 
-<!-- Script para gráfico -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-// Dados dos produtos mais vendidos (será carregado via AJAX)
-function carregarGraficoProdutos() {
-    fetch('actions.php?action=get_produtos_mais_vendidos')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.data && data.data.length > 0) {
-                const ctx = document.getElementById('graficoVendas').getContext('2d');
-                
-                const chart = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: data.data.map(item => item.nome.length > 15 ? item.nome.substring(0, 15) + '...' : item.nome),
-                        datasets: [{
-                            label: 'Quantidade Vendida',
-                            data: data.data.map(item => item.total_vendido),
-                            backgroundColor: [
-                                'rgba(255, 206, 86, 0.8)',
-                                'rgba(75, 192, 192, 0.8)',
-                                'rgba(153, 102, 255, 0.8)',
-                                'rgba(255, 159, 64, 0.8)',
-                                'rgba(199, 199, 199, 0.8)',
-                                'rgba(83, 102, 255, 0.8)',
-                                'rgba(255, 99, 132, 0.8)'
-                            ],
-                            borderColor: [
-                                'rgba(255, 206, 86, 1)',
-                                'rgba(75, 192, 192, 1)',
-                                'rgba(153, 102, 255, 1)',
-                                'rgba(255, 159, 64, 1)',
-                                'rgba(199, 199, 199, 1)',
-                                'rgba(83, 102, 255, 1)',
-                                'rgba(255, 99, 132, 1)'
-                            ],
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    stepSize: 1
-                                }
-                            }
-                        },
-                        plugins: {
-                            legend: {
-                                display: false
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        const produto = data.data[context.dataIndex];
-                                        return [
-                                            'Produto: ' + produto.nome,
-                                            'Quantidade: ' + produto.total_vendido,
-                                            'Categoria: ' + produto.categoria,
-                                            'N° de vendas: ' + produto.num_vendas
-                                        ];
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            } else {
-                document.getElementById('graficoVendas').style.display = 'none';
-                document.querySelector('#graficoVendas').parentElement.innerHTML = 
-                    '<p class="text-center text-muted">Nenhum dado de vendas disponível para gráfico</p>';
-            }
-        })
-        .catch(error => {
-            console.error('Erro ao carregar gráfico:', error);
-            document.querySelector('#graficoVendas').parentElement.innerHTML = 
-                '<p class="text-center text-danger">Erro ao carregar dados do gráfico</p>';
-        });
-}
-
-// Carregar gráfico quando a aba de relatórios for ativada
-document.addEventListener('DOMContentLoaded', function() {
-    // Verificar se estamos na aba de relatórios
-    if (document.getElementById('graficoVendas')) {
-        carregarGraficoProdutos();
-    }
-});
-
-// Recarregar gráfico quando a aba de relatórios for clicada
-if (typeof showTab === 'function') {
-    const originalShowTab = showTab;
-    showTab = function(tabName) {
-        originalShowTab(tabName);
-        if (tabName === 'relatorios') {
-            setTimeout(carregarGraficoProdutos, 100);
-        }
-    }
-}
-</script>
+<!-- Chart.js já é carregado no main HTML -->
+<!-- Gráficos gerenciados pelo main.js para evitar conflitos -->

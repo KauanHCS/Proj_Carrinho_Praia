@@ -397,7 +397,7 @@
                 formData.append('email', email);
                 formData.append('password', password);
                 
-                fetch('actions.php', {
+                fetch('../src/Controllers/actions.php', {
                     method: 'POST',
                     body: formData
                 })
@@ -461,7 +461,7 @@
                 formData.append('password', password);
                 formData.append('confirm_password', confirmPassword);
                 
-                fetch('actions.php', {
+                fetch('../src/Controllers/actions.php', {
                     method: 'POST',
                     body: formData
                 })

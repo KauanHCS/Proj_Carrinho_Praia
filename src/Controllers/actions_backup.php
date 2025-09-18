@@ -6,11 +6,26 @@
  * Mas agora usa as classes POO internamente para melhor organização
  */
 
-// Incluir configuração original para compatibilidade
-require_once 'config/database.php';
+// Iniciar buffer de saída para capturar qualquer output indesejado
+ob_start();
 
-// Incluir autoloader POO
-require_once 'autoload.php';
+// Configurar headers para JSON
+header('Content-Type: application/json; charset=utf-8');
+
+// Desabilitar qualquer output de erro no navegador
+error_reporting(E_ALL & ~E_NOTICE & ~E_WARNING);
+ini_set('display_errors', 0);
+
+// Definir PROJECT_ROOT se não estiver definido
+if (!defined('PROJECT_ROOT')) {
+    define('PROJECT_ROOT', dirname(dirname(__DIR__)));
+}
+
+// Incluir autoloader POO primeiro
+require_once PROJECT_ROOT . '/autoload.php';
+
+// Incluir configuração original para compatibilidade
+require_once PROJECT_ROOT . '/config/database.php';
 
 use CarrinhoDePreia\Database;
 use CarrinhoDePreia\User;

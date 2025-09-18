@@ -27,12 +27,18 @@ spl_autoload_register(function ($className) {
     // Substituir namespace separators por directory separators
     $relativeClass = str_replace('\\', DIRECTORY_SEPARATOR, $relativeClass);
     
-    // Construir caminho para o arquivo da classe
-    $filePath = __DIR__ . DIRECTORY_SEPARATOR . 'classes' . DIRECTORY_SEPARATOR . $relativeClass . '.php';
+    // Construir caminho para o arquivo da classe (nova estrutura)
+    $filePath = __DIR__ . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'Classes' . DIRECTORY_SEPARATOR . $relativeClass . '.php';
     
-    // Incluir arquivo se existir
+    // Fallback para estrutura antiga (compatibilidade)
+    $oldFilePath = __DIR__ . DIRECTORY_SEPARATOR . 'classes' . DIRECTORY_SEPARATOR . $relativeClass . '.php';
+    
+    // Incluir arquivo se existir (nova estrutura)
     if (file_exists($filePath)) {
         require_once $filePath;
+    } elseif (file_exists($oldFilePath)) {
+        // Fallback para estrutura antiga
+        require_once $oldFilePath;
     }
 });
 
@@ -43,12 +49,26 @@ if (!function_exists('jsonResponse')) {
      * Função de compatibilidade para resposta JSON
      */
     function jsonResponse($success, $data = null, $message = '') {
-        header('Content-Type: application/json');
-        echo json_encode([
+        // Limpar qualquer output anterior
+        if (ob_get_level()) {
+            ob_clean();
+        }
+        
+        // Configurar headers JSON
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-cache, must-revalidate');
+        
+        // Resposta JSON
+        $response = [
             'success' => $success,
-            'data' => $data,
             'message' => $message
-        ]);
+        ];
+        
+        if ($data !== null) {
+            $response['data'] = $data;
+        }
+        
+        echo json_encode($response, JSON_UNESCAPED_UNICODE);
         exit;
     }
 }
@@ -113,6 +133,19 @@ if (!function_exists('verificarLogin')) {
         }
         return $usuarioId;
     }
+}
+
+// Definir constantes de caminho para facilitar includes
+if (!defined('PROJECT_ROOT')) {
+    define('PROJECT_ROOT', __DIR__);
+    define('SRC_PATH', PROJECT_ROOT . '/src');
+    define('PUBLIC_PATH', PROJECT_ROOT . '/public');
+    define('CONFIG_PATH', PROJECT_ROOT . '/config');
+    define('VIEWS_PATH', SRC_PATH . '/Views');
+    define('CLASSES_PATH', SRC_PATH . '/Classes');
+    define('CONTROLLERS_PATH', SRC_PATH . '/Controllers');
+    define('SCRIPTS_PATH', PROJECT_ROOT . '/scripts');
+    define('ASSETS_PATH', PUBLIC_PATH . '/assets');
 }
 
 // Inicializar namespace aliases para facilitar o uso

@@ -10,7 +10,7 @@ session_start();
     <title>Sistema de Vendas - Carrinho de Praia</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="assets/css/style.css">
     <style>
         /* Estilo para o cabeçalho do usuário */
         .user-header {
@@ -125,40 +125,40 @@ session_start();
             <!-- Tab Vendas -->
             <div class="tab-pane fade" id="vendas">
                 <?php 
-                require_once 'config/database.php';
-                include 'templates/vendas.php'; 
+                require_once '../config/database.php';
+                include '../src/Views/vendas.php';
                 ?>
             </div>
 
             <!-- Tab Produtos -->
             <div class="tab-pane fade" id="produtos">
                 <?php 
-                require_once 'config/database.php';
-                include 'templates/produtos.php'; 
+                require_once '../config/database.php';
+                include '../src/Views/produtos.php';
                 ?>
             </div>
 
             <!-- Tab Estoque -->
             <div class="tab-pane fade" id="estoque">
                 <?php 
-                require_once 'config/database.php';
-                include 'templates/estoque.php'; 
+                require_once '../config/database.php';
+                include '../src/Views/estoque.php';
                 ?>
             </div>
 
             <!-- Tab Relatórios -->
             <div class="tab-pane fade" id="relatorios">
                 <?php 
-                require_once 'config/database.php';
-                include 'templates/relatorios.php'; 
+                require_once '../config/database.php';
+                include '../src/Views/relatorios.php';
                 ?>
             </div>
 
             <!-- Tab Localização -->
             <div class="tab-pane fade" id="localizacao">
                 <?php 
-                require_once 'config/database.php';
-                include 'templates/localizacao.php'; 
+                require_once '../config/database.php';
+                include '../src/Views/localizacao.php';
                 ?>
             </div>
         </div>
@@ -172,13 +172,15 @@ session_start();
     </div>
 
     <!-- Modais -->
-    <?php include 'templates/modais.php'; ?>
+    <?php include '../src/Views/modais.php'; ?>
 
     <!-- Scripts - ORDEM CORRETA -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="js/validation.js"></script>
-    <script src="js/produtos-actions.js"></script>
-    <script src="js/main.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="assets/js/validation.js"></script>
+    <script src="assets/js/main.js"></script>
+    <script src="assets/js/produtos-actions.js"></script>
+    <script src="assets/js/filtro-simple.js"></script>
     
     <!-- Scripts principais -->
     <script>
@@ -206,6 +208,31 @@ session_start();
             const navLink = document.querySelector(`[data-bs-target="#${tabName}"]`);
             if (navLink) {
                 navLink.classList.add('active');
+            }
+            
+            // Carregar gráficos específicos da aba quando necessário
+            if (tabName === 'relatorios') {
+                console.log('📈 Aba de relatórios ativada, carregando gráficos...');
+                setTimeout(() => {
+                    console.log('🔍 Verificando função atualizarGraficoVendas...', typeof atualizarGraficoVendas);
+                    if (typeof atualizarGraficoVendas === 'function') {
+                        console.log('✅ Chamando atualizarGraficoVendas...');
+                        atualizarGraficoVendas();
+                    } else {
+                        console.error('❌ Função atualizarGraficoVendas não encontrada!');
+                    }
+                }, 100);
+            }
+        }
+        
+        // Função para corrigir gráficos
+        function corrigirGrafico() {
+            if (typeof corrigirGraficoDashboard === 'function') {
+                corrigirGraficoDashboard();
+            } else if (typeof atualizarGraficoVendas === 'function') {
+                atualizarGraficoVendas();
+            } else {
+                console.warn('Função de gráfico não encontrada');
             }
         }
         

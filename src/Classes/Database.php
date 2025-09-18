@@ -60,7 +60,7 @@ class Database
             $this->connection->set_charset("utf8mb4");
             
         } catch (\Exception $e) {
-            die("Erro na conexão com o banco: " . $e->getMessage());
+            throw new \Exception("Erro na conexão com o banco: " . $e->getMessage());
         }
     }
 

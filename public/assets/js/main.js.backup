@@ -53,7 +53,7 @@ function carregarDados() {
         atualizarCarrinho();
         inicializarEventListeners(); // Inicializar event listeners
         verificarAlertaEstoque();
-        atualizarGraficoVendas();
+        // atualizarGraficoVendas(); // Removido - só executa na aba de relatórios
         configurarDatasExportacao(); // Configurar datas padrão
         // inicializarMapa(); // Removido - agora usando OpenStreetMap na aba de localização
     } catch (error) {
@@ -218,7 +218,7 @@ function inicializarEventListeners() {
                 }
             }
 
-            fetch('actions.php', {
+        fetch('../src/Controllers/actions.php', {
                 method: 'POST',
                 body: formData
             })
@@ -256,7 +256,7 @@ function inicializarEventListeners() {
 
 // Verificar alerta de estoque baixo
 function verificarAlertaEstoque() {
-    fetch('actions.php?action=verificar_estoque_baixo')
+    fetch('../src/Controllers/actions.php?action=verificar_estoque_baixo')
     .then(response => {
         if (!response.ok) {
             throw new Error('Erro na resposta do servidor');
@@ -328,7 +328,7 @@ function atualizarGraficoVendas() {
         return; // Elemento não existe, sair da função
     }
     
-    fetch('actions.php?action=get_produtos_mais_vendidos')
+    fetch('../src/Controllers/actions.php?action=get_produtos_mais_vendidos')
         .then(response => response.json())
         .then(data => {
             // Verifique se os dados são válidos
@@ -368,17 +368,30 @@ function atualizarGraficoVendas() {
                         },
                         options: {
                             responsive: true,
+                            maintainAspectRatio: false,
                             scales: {
                                 y: {
                                     beginAtZero: true,
+                                    ticks: {
+                                        stepSize: 1
+                                    },
                                     title: {
                                         display: true,
                                         text: 'Quantidade'
                                     }
                                 }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'top'
+                                }
                             }
                         }
                     });
+                } else {
+                    console.warn('Chart.js não está carregado');
+                    graficoElement.parentElement.innerHTML = '<p class="text-center text-muted">Chart.js não disponível</p>';
                 }
             } catch (error) {
                 console.warn('Erro ao criar gráfico:', error);
@@ -391,7 +404,51 @@ function atualizarGraficoVendas() {
                 window.vendasChart.destroy();
                 window.vendasChart = null;
             }
+            
+            // Mostrar mensagem de erro no elemento do gráfico
+            const graficoElement = document.getElementById('graficoVendas');
+            if (graficoElement && graficoElement.parentElement) {
+                graficoElement.parentElement.innerHTML = '<p class="text-center text-danger">Erro ao carregar dados do gráfico</p>';
+            }
         });
+}
+
+// Função para corrigir renderização de gráficos
+function corrigirGraficoDashboard() {
+    try {
+        // Destruir gráfico anterior se existir
+        if (window.vendasChart) {
+            console.log('Destruindo gráfico do dashboard...');
+            window.vendasChart.destroy();
+            window.vendasChart = null;
+        }
+        
+        console.log('Recarregando gráfico do dashboard...');
+        setTimeout(() => {
+            atualizarGraficoVendas();
+        }, 100);
+        
+        // Mostrar feedback diretamente para evitar recursão
+        console.log('✅ Gráfico do dashboard recarregado!');
+        
+        // Criar alerta simples sem recursão
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-success position-fixed';
+        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 300px;';
+        alertDiv.innerHTML = '🔧 Gráfico recarregado!';
+        document.body.appendChild(alertDiv);
+        
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 2000);
+    } catch (error) {
+        console.error('Erro ao corrigir gráfico:', error);
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta('❌ Erro ao corrigir gráfico', 'danger', 3000);
+        }
+    }
 }
 
 // Inicializar mapa (apenas para outras abas que não sejam localização)
@@ -550,7 +607,7 @@ function criarNotificacao(titulo, mensagem, tipo = 'info', produtoId = null, aca
     if (produtoId) formData.append('produto_id', produtoId);
     if (acao) formData.append('acao', acao);
     
-    fetch('actions.php', {
+    fetch('../src/Controllers/actions.php', {
         method: 'POST',
         body: formData
     })
