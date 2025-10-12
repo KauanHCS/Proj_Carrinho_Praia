@@ -17,6 +17,11 @@ if (session_status() === PHP_SESSION_NONE) {
 // Incluir autoloader
 require_once __DIR__ . '/autoload.php';
 
+// Definir modo de depuração (DEBUG_MODE)
+if (!defined('DEBUG_MODE')) {
+    define('DEBUG_MODE', true); // Altere para false em produção
+}
+
 // Incluir configuração do banco de dados
 require_once CONFIG_PATH . '/database.php';
 

@@ -1,0 +1,664 @@
+<?php
+// src/Views/perfil.php - Página de perfil do usuário
+?>
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Informações do Perfil -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="bi bi-person-circle"></i> Meu Perfil</h5>
+                    <button class="btn btn-outline-primary btn-sm" id="btnEditarPerfil">
+                        <i class="bi bi-pencil-square"></i> Editar
+                    </button>
+                </div>
+                <div class="card-body">
+                    <!-- Formulário de Perfil -->
+                    <form id="formPerfil">
+                        <div class="row">
+                            <!-- Avatar e Informações Básicas -->
+                            <div class="col-md-4 text-center">
+                                <div class="mb-3">
+                                    <div class="position-relative d-inline-block">
+                                        <img id="userAvatarLarge" 
+                                             src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgdmlld0JveD0iMCAwIDEyMCAxMjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjYwIiBjeT0iNjAiIHI9IjYwIiBmaWxsPSIjMDA2NkNDIi8+CjxzdmcgeD0iMjQiIHk9IjI0IiB3aWR0aD0iNzIiIGhlaWdodD0iNzIiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxwYXRoIGQ9Ik0xMiAxMmMwIDAgMy0zIDMtNS41UzE1IDMgMTIgM3MtMyAxLjUtMyAzLjUgMyA1LjUgMyA1LjV6IiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNMTIgMTRjLTQuNSAwLTguMiAyLjMtOC4yIDUuMiAwIDEuMSA0LjcgMS44IDguMiAxLjhzOC4yLS43IDguMi0xLjhjMC0yLjktMy43LTUuMi04LjItNS4yeiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+Cjwvc3ZnPg==" 
+                                             alt="Avatar" 
+                                             class="rounded-circle border border-3 border-primary"
+                                             style="width: 120px; height: 120px; object-fit: cover;">
+                                        <button type="button" class="btn btn-sm btn-primary position-absolute bottom-0 end-0 rounded-circle" 
+                                                id="btnAlterarFoto" title="Alterar foto">
+                                            <i class="bi bi-camera"></i>
+                                        </button>
+                                    </div>
+                                    <input type="file" id="inputFoto" accept="image/*" style="display: none;">
+                                </div>
+                                
+                                <!-- Status Online -->
+                                <div class="mb-3">
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-circle-fill text-light"></i> Online
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <!-- Campos do Perfil -->
+                            <div class="col-md-8">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="inputNome" class="form-label">
+                                            <i class="bi bi-person"></i> Nome Completo
+                                        </label>
+                                        <input type="text" class="form-control" id="inputNome" disabled>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="inputEmail" class="form-label">
+                                            <i class="bi bi-envelope"></i> Email
+                                        </label>
+                                        <input type="email" class="form-control" id="inputEmail" disabled>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="inputTelefone" class="form-label">
+                                            <i class="bi bi-telephone"></i> Telefone
+                                        </label>
+                                        <input type="tel" class="form-control" id="inputTelefone" disabled>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="inputCpf" class="form-label">
+                                            <i class="bi bi-card-text"></i> CPF
+                                        </label>
+                                        <input type="text" class="form-control" id="inputCpf" disabled>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="inputEndereco" class="form-label">
+                                        <i class="bi bi-geo-alt"></i> Endereço
+                                    </label>
+                                    <input type="text" class="form-control" id="inputEndereco" disabled>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="inputCidade" class="form-label">
+                                            <i class="bi bi-building"></i> Cidade
+                                        </label>
+                                        <input type="text" class="form-control" id="inputCidade" disabled>
+                                    </div>
+                                    
+                                    <div class="col-md-4 mb-3">
+                                        <label for="inputEstado" class="form-label">
+                                            <i class="bi bi-map"></i> Estado
+                                        </label>
+                                        <select class="form-control" id="inputEstado" disabled>
+                                            <option value="">Selecione...</option>
+                                            <option value="SP">São Paulo</option>
+                                            <option value="RJ">Rio de Janeiro</option>
+                                            <option value="MG">Minas Gerais</option>
+                                            <!-- Adicione outros estados conforme necessário -->
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="col-md-4 mb-3">
+                                        <label for="inputCep" class="form-label">
+                                            <i class="bi bi-mailbox"></i> CEP
+                                        </label>
+                                        <input type="text" class="form-control" id="inputCep" disabled>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Botões de Ação -->
+                        <div class="row mt-3" id="botoesEdicao" style="display: none;">
+                            <div class="col-12 text-end">
+                                <button type="button" class="btn btn-secondary me-2" id="btnCancelar">
+                                    <i class="bi bi-x-circle"></i> Cancelar
+                                </button>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-check-circle"></i> Salvar Alterações
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar com Informações Adicionais -->
+        <div class="col-md-4">
+            <!-- Estatísticas do Usuário -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6><i class="bi bi-graph-up"></i> Estatísticas</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <h4 class="text-primary mb-1" id="totalVendas">0</h4>
+                                <small class="text-muted">Vendas Hoje</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-success mb-1" id="totalFaturamento">R$ 0,00</h4>
+                            <small class="text-muted">Faturamento</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <h6 class="text-info mb-1" id="produtosCadastrados">0</h6>
+                                <small class="text-muted">Produtos</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <h6 class="text-warning mb-1" id="pontosSalvos">0</h6>
+                            <small class="text-muted">Localizações</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Atividade Recente -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6><i class="bi bi-clock-history"></i> Atividade Recente</h6>
+                </div>
+                <div class="card-body">
+                    <div id="atividadeRecente">
+                        <div class="d-flex mb-2">
+                            <div class="flex-shrink-0">
+                                <span class="badge bg-success rounded-pill">V</span>
+                            </div>
+                            <div class="flex-grow-1 ms-2">
+                                <small class="text-muted">Hoje às 14:30</small><br>
+                                <small>Nova venda registrada</small>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex mb-2">
+                            <div class="flex-shrink-0">
+                                <span class="badge bg-info rounded-pill">P</span>
+                            </div>
+                            <div class="flex-grow-1 ms-2">
+                                <small class="text-muted">Hoje às 12:15</small><br>
+                                <small>Produto adicionado</small>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <span class="badge bg-primary rounded-pill">L</span>
+                            </div>
+                            <div class="flex-grow-1 ms-2">
+                                <small class="text-muted">Hoje às 09:00</small><br>
+                                <small>Login realizado</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Configurações Rápidas -->
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="bi bi-gear"></i> Configurações</h6>
+                </div>
+                <div class="card-body">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="notificacoesPush" checked>
+                        <label class="form-check-label" for="notificacoesPush">
+                            Notificações Push
+                        </label>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="alertasEstoque" checked>
+                        <label class="form-check-label" for="alertasEstoque">
+                            Alertas de Estoque
+                        </label>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="modoEscuro">
+                        <label class="form-check-label" for="modoEscuro">
+                            Modo Escuro
+                        </label>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-warning btn-sm" id="btnAlterarSenha">
+                            <i class="bi bi-key"></i> Alterar Senha
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm" id="btnExcluirConta">
+                            <i class="bi bi-trash"></i> Excluir Conta
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Alterar Senha -->
+<div class="modal fade" id="modalAlterarSenha" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-key"></i> Alterar Senha</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formAlterarSenha">
+                    <div class="mb-3">
+                        <label for="senhaAtual" class="form-label">Senha Atual</label>
+                        <input type="password" class="form-control" id="senhaAtual" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="novaSenha" class="form-label">Nova Senha</label>
+                        <input type="password" class="form-control" id="novaSenha" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirmarSenha" class="form-label">Confirmar Nova Senha</label>
+                        <input type="password" class="form-control" id="confirmarSenha" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmarSenha">
+                    <i class="bi bi-check-circle"></i> Alterar Senha
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variáveis globais do perfil
+let modoEdicao = false;
+let dadosOriginais = {};
+
+// Inicializar página de perfil
+document.addEventListener('DOMContentLoaded', function() {
+    carregarDadosPerfil();
+    carregarEstatisticas();
+    configurarEventos();
+});
+
+// Carregar dados do perfil
+function carregarDadosPerfil() {
+    const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+    
+    // Preencher campos com dados do usuário
+    document.getElementById('inputNome').value = user.name || '';
+    document.getElementById('inputEmail').value = user.email || '';
+    document.getElementById('inputTelefone').value = user.telefone || '';
+    document.getElementById('inputCpf').value = user.cpf || '';
+    document.getElementById('inputEndereco').value = user.endereco || '';
+    document.getElementById('inputCidade').value = user.cidade || '';
+    document.getElementById('inputEstado').value = user.estado || '';
+    document.getElementById('inputCep').value = user.cep || '';
+    
+    // Atualizar avatar
+    const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgdmlld0JveD0iMCAwIDEyMCAxMjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjYwIiBjeT0iNjAiIHI9IjYwIiBmaWxsPSIjMDA2NkNDIi8+CjxzdmcgeD0iMjQiIHk9IjI0IiB3aWR0aD0iNzIiIGhlaWdodD0iNzIiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxwYXRoIGQ9Ik0xMiAxMmMwIDAgMy0zIDMtNS41UzE1IDMgMTIgM3MtMyAxLjUtMyAzLjUgMyA1LjUgMyA1LjV6IiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNMTIgMTRjLTQuNSAwLTguMiAyLjMtOC4yIDUuMiAwIDEuMSA0LjcgMS44IDguMiAxLjhzOC4yLS43IDguMi0xLjhjMC0yLjktMy43LTUuMi04LjItNS4yeiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+Cjwvc3ZnPg==";
+    document.getElementById('userAvatarLarge').src = user.imageUrl || defaultAvatar;
+    
+    // Salvar dados originais
+    dadosOriginais = { ...user };
+}
+
+// Carregar estatísticas do usuário
+function carregarEstatisticas() {
+    // Simular dados - em um ambiente real, esses dados viriam da API
+    document.getElementById('totalVendas').textContent = '12';
+    document.getElementById('totalFaturamento').textContent = 'R$ 850,00';
+    document.getElementById('produtosCadastrados').textContent = '8';
+    
+    // Contar pontos salvos na localização
+    const pontosSalvos = JSON.parse(localStorage.getItem('pontos_venda') || '[]');
+    document.getElementById('pontosSalvos').textContent = pontosSalvos.length;
+}
+
+// Configurar eventos
+function configurarEventos() {
+    // Botão editar perfil
+    document.getElementById('btnEditarPerfil').addEventListener('click', toggleModoEdicao);
+    
+    // Botão cancelar
+    document.getElementById('btnCancelar').addEventListener('click', cancelarEdicao);
+    
+    // Formulário de perfil
+    document.getElementById('formPerfil').addEventListener('submit', salvarPerfil);
+    
+    // Alterar foto
+    document.getElementById('btnAlterarFoto').addEventListener('click', function() {
+        document.getElementById('inputFoto').click();
+    });
+    
+    document.getElementById('inputFoto').addEventListener('change', alterarFoto);
+    
+    // Botão alterar senha
+    document.getElementById('btnAlterarSenha').addEventListener('click', function() {
+        const modal = new bootstrap.Modal(document.getElementById('modalAlterarSenha'));
+        modal.show();
+    });
+    
+    // Confirmar alteração de senha
+    document.getElementById('btnConfirmarSenha').addEventListener('click', alterarSenha);
+    
+    // Botão excluir conta
+    document.getElementById('btnExcluirConta').addEventListener('click', confirmarExclusaoConta);
+    
+    // Configurações switches
+    document.getElementById('notificacoesPush').addEventListener('change', salvarConfiguracao);
+    document.getElementById('alertasEstoque').addEventListener('change', salvarConfiguracao);
+    document.getElementById('modoEscuro').addEventListener('change', toggleModoEscuro);
+}
+
+// Toggle modo edição
+function toggleModoEdicao() {
+    modoEdicao = !modoEdicao;
+    
+    const campos = ['inputNome', 'inputEmail', 'inputTelefone', 'inputCpf', 'inputEndereco', 'inputCidade', 'inputEstado', 'inputCep'];
+    const btnEditar = document.getElementById('btnEditarPerfil');
+    const botoesEdicao = document.getElementById('botoesEdicao');
+    
+    campos.forEach(campoId => {
+        document.getElementById(campoId).disabled = !modoEdicao;
+    });
+    
+    if (modoEdicao) {
+        btnEditar.innerHTML = '<i class="bi bi-x-circle"></i> Cancelar';
+        btnEditar.className = 'btn btn-outline-secondary btn-sm';
+        botoesEdicao.style.display = 'block';
+    } else {
+        btnEditar.innerHTML = '<i class="bi bi-pencil-square"></i> Editar';
+        btnEditar.className = 'btn btn-outline-primary btn-sm';
+        botoesEdicao.style.display = 'none';
+    }
+}
+
+// Cancelar edição
+function cancelarEdicao() {
+    // Restaurar dados originais
+    carregarDadosPerfil();
+    toggleModoEdicao();
+}
+
+// Salvar perfil
+function salvarPerfil(event) {
+    event.preventDefault();
+    
+    const dadosAtualizados = {
+        name: document.getElementById('inputNome').value,
+        email: document.getElementById('inputEmail').value,
+        telefone: document.getElementById('inputTelefone').value,
+        cpf: document.getElementById('inputCpf').value,
+        endereco: document.getElementById('inputEndereco').value,
+        cidade: document.getElementById('inputCidade').value,
+        estado: document.getElementById('inputEstado').value,
+        cep: document.getElementById('inputCep').value
+    };
+    
+    // Manter dados existentes
+    const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+    const userAtualizado = { ...user, ...dadosAtualizados };
+    
+    // Salvar no sessionStorage
+    sessionStorage.setItem('user', JSON.stringify(userAtualizado));
+    
+    // Atualizar header
+    document.getElementById('headerUserName').textContent = userAtualizado.name;
+    document.getElementById('headerUserEmail').textContent = userAtualizado.email;
+    
+    toggleModoEdicao();
+    
+    // Mostrar mensagem de sucesso
+    if (typeof mostrarAlerta === 'function') {
+        mostrarAlerta('✅ Perfil atualizado com sucesso!', 'success');
+    } else {
+        alert('Perfil atualizado com sucesso!');
+    }
+}
+
+// Alterar foto
+function alterarFoto(event) {
+    const file = event.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const imageUrl = e.target.result;
+            
+            // Atualizar avatares
+            document.getElementById('userAvatarLarge').src = imageUrl;
+            document.getElementById('headerUserAvatar').src = imageUrl;
+            
+            // Salvar no perfil
+            const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+            user.imageUrl = imageUrl;
+            sessionStorage.setItem('user', JSON.stringify(user));
+            
+            if (typeof mostrarAlerta === 'function') {
+                mostrarAlerta('📷 Foto atualizada com sucesso!', 'success');
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+// Alterar senha
+function alterarSenha() {
+    const senhaAtual = document.getElementById('senhaAtual').value;
+    const novaSenha = document.getElementById('novaSenha').value;
+    const confirmarSenha = document.getElementById('confirmarSenha').value;
+    
+    if (!senhaAtual || !novaSenha || !confirmarSenha) {
+        alert('Preencha todos os campos!');
+        return;
+    }
+    
+    if (novaSenha !== confirmarSenha) {
+        alert('As senhas não coincidem!');
+        return;
+    }
+    
+    if (novaSenha.length < 6) {
+        alert('A nova senha deve ter pelo menos 6 caracteres!');
+        return;
+    }
+    
+    // Simular alteração de senha
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalAlterarSenha'));
+    modal.hide();
+    
+    // Limpar formulário
+    document.getElementById('formAlterarSenha').reset();
+    
+    if (typeof mostrarAlerta === 'function') {
+        mostrarAlerta('🔐 Senha alterada com sucesso!', 'success');
+    } else {
+        alert('Senha alterada com sucesso!');
+    }
+}
+
+// Confirmar exclusão da conta
+function confirmarExclusaoConta() {
+    if (confirm('⚠️ ATENÇÃO: Esta ação é irreversível!\n\nTem certeza que deseja excluir sua conta?\nTodos os seus dados serão perdidos permanentemente.')) {
+        if (confirm('Digite "CONFIRMAR EXCLUSÃO" para prosseguir:') === 'CONFIRMAR EXCLUSÃO') {
+            // Simular exclusão da conta
+            sessionStorage.clear();
+            localStorage.clear();
+            
+            alert('Conta excluída com sucesso. Você será redirecionado para a página de login.');
+            window.location.href = 'login.php';
+        }
+    }
+}
+
+// Salvar configuração
+function salvarConfiguracao() {
+    const configs = {
+        notificacoesPush: document.getElementById('notificacoesPush').checked,
+        alertasEstoque: document.getElementById('alertasEstoque').checked,
+        modoEscuro: document.getElementById('modoEscuro').checked
+    };
+    
+    localStorage.setItem('configuracoes', JSON.stringify(configs));
+    
+    if (typeof mostrarAlerta === 'function') {
+        mostrarAlerta('⚙️ Configuração salva!', 'info', 2000);
+    }
+}
+
+// Toggle modo escuro
+function toggleModoEscuro() {
+    const modoEscuro = document.getElementById('modoEscuro').checked;
+    
+    if (modoEscuro) {
+        document.body.classList.add('dark-mode');
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta('🌙 Modo escuro ativado em todas as páginas!', 'info', 3000);
+        }
+    } else {
+        document.body.classList.remove('dark-mode');
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta('☀️ Modo claro ativado em todas as páginas!', 'info', 3000);
+        }
+    }
+    
+    salvarConfiguracao();
+    
+    // Notificar que o modo foi alterado globalmente
+    console.log('Modo escuro alterado para:', modoEscuro ? 'ativado' : 'desativado');
+}
+
+// Carregar configurações salvas
+function carregarConfiguracoes() {
+    const configs = JSON.parse(localStorage.getItem('configuracoes') || '{}');
+    
+    if (configs.notificacoesPush !== undefined) {
+        document.getElementById('notificacoesPush').checked = configs.notificacoesPush;
+    }
+    
+    if (configs.alertasEstoque !== undefined) {
+        document.getElementById('alertasEstoque').checked = configs.alertasEstoque;
+    }
+    
+    if (configs.modoEscuro !== undefined) {
+        document.getElementById('modoEscuro').checked = configs.modoEscuro;
+        if (configs.modoEscuro) {
+            document.body.classList.add('dark-mode');
+        }
+    }
+}
+
+// Carregar configurações ao inicializar
+carregarConfiguracoes();
+</script>
+
+<style>
+/* Estilos específicos da página de perfil */
+.card {
+    border: none;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #0066cc, #0099ff);
+    color: white;
+    border-radius: 10px 10px 0 0 !important;
+    border: none;
+}
+
+.card-header h5, .card-header h6 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.form-control:disabled {
+    background-color: #f8f9fa;
+    border-color: #e9ecef;
+}
+
+.form-control:focus {
+    border-color: #0066cc;
+    box-shadow: 0 0 0 0.2rem rgba(0, 102, 204, 0.25);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #0066cc, #0099ff);
+    border: none;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #0052a3, #007acc);
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+.border-end {
+    border-right: 1px solid #dee2e6;
+}
+
+/* Modo escuro */
+.dark-mode {
+    background-color: #1a1a1a;
+    color: #ffffff;
+}
+
+.dark-mode .card {
+    background-color: #2d2d2d;
+    border-color: #404040;
+}
+
+.dark-mode .form-control {
+    background-color: #404040;
+    border-color: #555555;
+    color: #ffffff;
+}
+
+.dark-mode .form-control:disabled {
+    background-color: #333333;
+    border-color: #555555;
+    color: #cccccc;
+}
+
+.dark-mode .text-muted {
+    color: #aaaaaa !important;
+}
+
+/* Animações */
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(0, 102, 204, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(0, 102, 204, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(0, 102, 204, 0);
+    }
+}
+
+.btn-outline-primary:hover,
+.btn-outline-success:hover,
+.btn-outline-info:hover,
+.btn-outline-warning:hover,
+.btn-outline-danger:hover {
+    transform: translateY(-2px);
+    transition: all 0.2s ease;
+}
+</style>

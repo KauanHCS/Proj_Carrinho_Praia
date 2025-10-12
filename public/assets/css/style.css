@@ -190,3 +190,67 @@ body {
         padding: 6px 10px;
     }
 }
+
+/* Estilos específicos para compatibilidade com sidebar */
+.main-content .tab-content {
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin: 0;
+    padding: 20px;
+}
+
+.main-content .card {
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    border: none;
+    transition: transform 0.2s;
+}
+
+/* Ajuste do footer para sidebar */
+.footer {
+    margin-left: 280px;
+    transition: margin-left 0.3s ease;
+}
+
+@media (max-width: 768px) {
+    .footer {
+        margin-left: 0;
+    }
+}
+
+.main-content.collapsed .footer {
+    margin-left: 70px;
+}
+
+/* Ajustar alert-banner para novo layout */
+.alert-banner {
+    position: fixed;
+    top: 60px;
+    left: 280px;
+    right: 20px;
+    z-index: 999;
+    border-radius: 8px;
+    margin: 0;
+    transition: left 0.3s ease;
+}
+
+.main-content.collapsed ~ .alert-banner {
+    left: 70px;
+}
+
+@media (max-width: 768px) {
+    .alert-banner {
+        left: 20px;
+        right: 20px;
+    }
+}
+
+/* Ajustes do mapa para a nova estrutura */
+.main-content #map {
+    height: 400px;
+    width: 100%;
+    border-radius: 12px;
+    margin-top: 10px;
+}

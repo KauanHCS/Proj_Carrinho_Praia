@@ -165,7 +165,7 @@
                             <i class="bi bi-box-arrow-in-right"></i> Entrar
                         </button>
                         <div class="forgot-password">
-                            <a href="#" onclick="alert('Funcionalidade ainda não implementada')">Esqueceu sua senha?</a>
+                            <a href="forgot-password.php">Esqueceu sua senha?</a>
                         </div>
                         
                         <!-- Informações de demonstração -->

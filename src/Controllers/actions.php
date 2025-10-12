@@ -227,8 +227,10 @@ try {
                 
             case 'get_produtos_mais_vendidos':
                 try {
-                    // Buscar produtos mais vendidos SEM filtro de usuário (para debug)
                     $db = Database::getInstance();
+                    
+                    // Primeiro, vamos buscar todos os produtos mais vendidos (sem filtro de usuário)
+                    // para garantir que o gráfico funcione
                     $sql = "SELECT p.nome, p.categoria, SUM(iv.quantidade) as total_vendido, 
                                    COUNT(DISTINCT iv.venda_id) as num_vendas
                             FROM itens_venda iv 

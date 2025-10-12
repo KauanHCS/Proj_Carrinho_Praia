@@ -822,6 +822,7 @@ function adicionarMarcadorSalvo(ponto) {
                     👁️ Ver
                 </button>
                 <button class="btn btn-xs btn-success" onclick="criarRota(${ponto.lat}, ${ponto.lng}, '${ponto.nome.replace(/'/g, "\\'")}')"
+                    title="Criar rota">
                     🗺️ Rota
                 </button>
             </div>
@@ -870,6 +871,7 @@ function atualizarListaPontos() {
                         <i class="bi bi-eye"></i>
                     </button>
                     <button class="btn btn-sm btn-outline-success mb-1" onclick="criarRota(${ponto.lat}, ${ponto.lng}, '${ponto.nome.replace(/'/g, "\\'")}')"
+                        title="Criar rota">
                         <i class="bi bi-signpost-2"></i>
                     </button>
                     <button class="btn btn-sm btn-outline-info mb-1" onclick="copiarCoordenadas(${ponto.lat}, ${ponto.lng})" title="Copiar coordenadas">
@@ -1259,8 +1261,45 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
+// Função para criar pontos de exemplo se não houver nenhum
+function criarPontosExemplo() {
+    const pontosExistentes = JSON.parse(localStorage.getItem('pontos_venda') || '[]');
+    
+    if (pontosExistentes.length === 0) {
+        const pontosExemplo = [
+            {
+                id: Date.now(),
+                nome: "Praia de Copacabana",
+                lat: -22.9711,
+                lng: -43.1822,
+                data: new Date(Date.now() - 86400000).toLocaleString('pt-BR') // 1 dia atrás
+            },
+            {
+                id: Date.now() + 1,
+                nome: "Praia de Ipanema",
+                lat: -22.9838,
+                lng: -43.2096,
+                data: new Date(Date.now() - 172800000).toLocaleString('pt-BR') // 2 dias atrás
+            },
+            {
+                id: Date.now() + 2,
+                nome: "Barra da Tijuca",
+                lat: -23.0129,
+                lng: -43.3203,
+                data: new Date(Date.now() - 259200000).toLocaleString('pt-BR') // 3 dias atrás
+            }
+        ];
+        
+        localStorage.setItem('pontos_venda', JSON.stringify(pontosExemplo));
+        console.log('📍 Pontos de exemplo criados para demonstração');
+    }
+}
+
 // Inicializar quando carregar
 document.addEventListener('DOMContentLoaded', function() {
+    // Criar pontos de exemplo se necessário
+    criarPontosExemplo();
+    
     // Verificar se Leaflet carregou
     if (typeof L !== 'undefined') {
         initMap();

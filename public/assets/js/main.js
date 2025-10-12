@@ -343,16 +343,36 @@ function verificarEstoqueBaixo() {
 // Atualizar gráfico de vendas - VERSÃO CORRIGIDA
 function atualizarGraficoVendas() {
     console.log('🔄 Iniciando atualizarGraficoVendas...');
-    const graficoElement = document.getElementById('graficoVendas');
-    if (!graficoElement) {
-        console.warn('❌ Elemento graficoVendas não encontrado!');
-        return; // Elemento não existe, sair da função
-    }
-    console.log('✅ Elemento graficoVendas encontrado:', graficoElement);
     
-    // CORREÇÃO: URL correta para o endpoint
-    console.log('🚀 Fazendo fetch para produtos mais vendidos...');
-    fetch('/Proj_Carrinho_Praia/src/Controllers/actions.php?action=get_produtos_mais_vendidos')
+    // Tentar várias vezes para encontrar o elemento
+    let tentativas = 0;
+    const maxTentativas = 5;
+    
+    function buscarElemento() {
+        tentativas++;
+        console.log(`🔍 Tentativa ${tentativas} de encontrar elemento graficoVendas...`);
+        
+        const graficoElement = document.getElementById('graficoVendas');
+        if (!graficoElement) {
+            console.warn(`❌ Elemento graficoVendas não encontrado! Tentativa ${tentativas}/${maxTentativas}`);
+            
+            if (tentativas < maxTentativas) {
+                setTimeout(buscarElemento, 500); // Tentar novamente em 500ms
+                return;
+            } else {
+                console.error('❌ Elemento graficoVendas não encontrado após todas as tentativas!');
+                return;
+            }
+        }
+        
+        console.log('✅ Elemento graficoVendas encontrado:', graficoElement);
+        carregarGrafico(graficoElement);
+    }
+    
+    function carregarGrafico(graficoElement) {
+        // CORREÇÃO: URL correta para o endpoint
+        console.log('🚀 Fazendo fetch para produtos mais vendidos...');
+        fetch('/Proj_Carrinho_Praia/src/Controllers/actions.php?action=get_produtos_mais_vendidos')
         .then(response => {
             console.log('📡 Resposta recebida:', response);
             return response.json();
@@ -366,11 +386,9 @@ function atualizarGraficoVendas() {
             // Verifique se os dados são válidos
             if (!data || !data.success || !produtos || produtos.length === 0) {
                 console.warn('⚠️ Dados inválidos ou vazios:', data);
-                // Mostrar mensagem de erro no canvas
-                const graficoElement = document.getElementById('graficoVendas');
-                if (graficoElement && graficoElement.parentElement) {
-                    graficoElement.parentElement.innerHTML = '<p class="text-center text-muted mt-4">Nenhum dado de vendas disponível para gráfico</p>';
-                }
+                // Mostrar mensagem de erro sem substituir o canvas
+                console.log('⚠️ Nenhum dado disponível para o gráfico');
+                // NÃO substituir o elemento, apenas mostrar mensagem no console
                 // Se não houver dados, limpe o gráfico
                 if (window.vendasChart) {
                     window.vendasChart.destroy();
@@ -445,20 +463,91 @@ function atualizarGraficoVendas() {
                 window.vendasChart = null;
             }
             
-            // CORREÇÃO: Tratamento adequado de erros
-            const graficoElement = document.getElementById('graficoVendas');
-            if (graficoElement && graficoElement.parentElement) {
-                graficoElement.parentElement.innerHTML = '<p class="text-center text-danger">Erro ao carregar dados do gráfico</p>';
-            }
+            // Log do erro sem substituir o elemento
+            console.error('❌ Erro ao carregar dados do gráfico');
+            // NÃO substituir o elemento para não quebrar futuras chamadas
         });
+    }
+    
+    // Iniciar a busca pelo elemento
+    buscarElemento();
 }
 
 // Expor função atualizarGraficoVendas globalmente
 window.atualizarGraficoVendas = atualizarGraficoVendas;
 
+// Função de debug para testar gráfico
+function debugGrafico() {
+    console.log('🐛 Iniciando debug do gráfico...');
+    
+    // Verificar se estamos na aba correta
+    const relatoriosTab = document.getElementById('relatorios');
+    console.log('📊 Aba relatórios:', relatoriosTab);
+    console.log('📊 Aba ativa?', relatoriosTab && relatoriosTab.classList.contains('active'));
+    
+    // Verificar se o elemento existe
+    const graficoElement = document.getElementById('graficoVendas');
+    console.log('📈 Elemento gráfico:', graficoElement);
+    
+    if (graficoElement) {
+        console.log('📐 Dimensões do elemento:', {
+            width: graficoElement.offsetWidth,
+            height: graficoElement.offsetHeight,
+            visible: graficoElement.offsetWidth > 0 && graficoElement.offsetHeight > 0
+        });
+    }
+    
+    // Verificar Chart.js
+    console.log('📊 Chart.js disponível?', typeof Chart !== 'undefined');
+    
+    // Tentar carregar o gráfico
+    if (graficoElement) {
+        console.log('🚀 Tentando carregar gráfico...');
+        atualizarGraficoVendas();
+    }
+}
+
+// Expor função de debug globalmente
+window.debugGrafico = debugGrafico;
+
+// Função global para mostrar sidebar (para debug)
+window.mostrarSidebar = function() {
+    console.log('🔧 Forçando exibição da sidebar...');
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    
+    if (sidebar) {
+        sidebar.classList.remove('collapsed');
+        sidebar.style.transform = 'translateX(0)';
+        console.log('✅ Sidebar forçada a aparecer');
+    }
+    
+    if (mainContent) {
+        mainContent.classList.remove('collapsed');
+        console.log('✅ Main content ajustado');
+    }
+};
+
+// Função global para debug da sidebar
+window.debugSidebar = function() {
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    const toggleButton = document.getElementById('sidebarToggle');
+    
+    console.log('🐛 Debug da sidebar:', {
+        sidebar: !!sidebar,
+        mainContent: !!mainContent,
+        toggleButton: !!toggleButton,
+        sidebarVisible: sidebar ? getComputedStyle(sidebar).transform : 'N/A',
+        sidebarClasses: sidebar ? Array.from(sidebar.classList) : [],
+        mainContentClasses: mainContent ? Array.from(mainContent.classList) : []
+    });
+};
+
 // NOVA FUNÇÃO: Corrigir renderização de gráficos
 function corrigirGraficoDashboard() {
     try {
+        console.log('🔧 Corrigindo gráfico do dashboard...');
         // Destruir gráfico anterior se existir
         if (window.vendasChart) {
             console.log('Destruindo gráfico do dashboard...');
