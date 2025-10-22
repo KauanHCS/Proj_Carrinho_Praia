@@ -1,3 +1,93 @@
+// UTILITY FUNCTIONS MODERNOS ES6+
+const Utils = {
+    // Debounce function
+    debounce: (func, wait) => {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func.apply(this, args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    },
+    
+    // Throttle function
+    throttle: (func, limit) => {
+        let inThrottle;
+        return function() {
+            const args = arguments;
+            const context = this;
+            if (!inThrottle) {
+                func.apply(context, args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+            }
+        };
+    },
+    
+    // Format currency using Intl API
+    formatCurrency: (valor) => {
+        return new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+        }).format(valor);
+    },
+    
+    // Format number
+    formatNumber: (valor, decimais = 2) => {
+        return new Intl.NumberFormat('pt-BR', {
+            minimumFractionDigits: decimais,
+            maximumFractionDigits: decimais
+        }).format(valor);
+    },
+    
+    // Sanitize HTML
+    sanitizeHtml: (str) => {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    },
+    
+    // Get current date formatted
+    getCurrentDate: () => {
+        return new Intl.DateTimeFormat('pt-BR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        }).format(new Date());
+    },
+    
+    // Format date
+    formatDate: (date) => {
+        return new Intl.DateTimeFormat('pt-BR').format(new Date(date));
+    },
+    
+    // Deep clone object
+    deepClone: (obj) => {
+        return JSON.parse(JSON.stringify(obj));
+    },
+    
+    // Generate unique ID
+    generateId: () => {
+        return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    }
+};
+
+// CONFIG object with ES6+ features
+const CONFIG = {
+    SEARCH_DEBOUNCE_DELAY: 300,
+    ALERT_DURATION: 4000,
+    STORAGE_KEY: 'carrinho_praia',
+    API_ENDPOINT: '../src/Controllers/actions.php',
+    CHART_COLORS: {
+        primary: 'rgba(40, 167, 69, 0.7)',
+        border: 'rgba(40, 167, 69, 1)',
+        secondary: 'rgba(0, 102, 204, 0.7)'
+    }
+};
+
 // FUNÇÕES GLOBAIS PARA TESTE E DEBUG
 function testarGrafico() {
     console.log('🧪 TESTE MANUAL DO GRÁFICO INICIADO');
@@ -12,8 +102,8 @@ function testarGrafico() {
     }
 }
 
-// Expor função no window para uso global
-window.testarGrafico = testarGrafico;
+// Expor funções no window para uso global
+Object.assign(window, { testarGrafico, Utils, CONFIG });
 
 // Dados iniciais
 let carrinho = [];
@@ -48,14 +138,15 @@ function limparCarrinho() {
     atualizarCarrinho();
 }
 
-// Funções auxiliares
+// Funções auxiliares (mantendo compatibilidade)
 function formatarMoeda(valor) {
-    return valor.toFixed(2).replace('.', ',');
+    // Usar Utils.formatCurrency para formatação moderna
+    return Utils.formatNumber(valor, 2).replace('.', ',');
 }
 
 function getDataAtual() {
-    const hoje = new Date();
-    return hoje.toLocaleDateString('pt-BR');
+    // Usar Utils.getCurrentDate para formatação moderna
+    return Utils.getCurrentDate();
 }
 
 // Carregar dados iniciais
@@ -222,11 +313,23 @@ function inicializarEventListeners() {
             const botaoFinalizar = document.getElementById('finalizarVenda');
             mostrarCarregamento(botaoFinalizar, 'Finalizando...');
 
+            // Obter informações do cliente e checkbox de criar pedido
+            const nomeClienteEl = document.getElementById('nomeCliente');
+            const telefoneClienteEl = document.getElementById('telefoneCliente');
+            const criarPedidoEl = document.getElementById('criarPedido');
+            
+            const nomeCliente = nomeClienteEl ? nomeClienteEl.value.trim() : '';
+            const telefoneCliente = telefoneClienteEl ? telefoneClienteEl.value.trim() : '';
+            const criarPedido = criarPedidoEl ? criarPedidoEl.checked : false;
+
             // Enviar venda para o servidor
             const formData = new FormData();
             formData.append('action', 'finalizar_venda');
             formData.append('carrinho', JSON.stringify(carrinho));
             formData.append('forma_pagamento', formaPagamento);
+            formData.append('nome_cliente', nomeCliente);
+            formData.append('telefone_cliente', telefoneCliente);
+            formData.append('criar_pedido', criarPedido ? '1' : '0');
             
             if (formaPagamento === 'dinheiro') {
                 const valorPagoEl = document.getElementById('valorPago');
@@ -250,16 +353,28 @@ function inicializarEventListeners() {
                 ocultarCarregamento(botaoFinalizar);
                 
                 if (data.success) {
-                    // Limpar carrinho
+                    // Limpar carrinho e campos
+                    const totalVenda = carrinho.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
                     limparCarrinho();
                     
-                    const total = carrinho.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
-                    mostrarAlerta(`Venda finalizada! Total: R$ ${formatarMoeda(total)}`, 'success');
+                    // Limpar campos do cliente
+                    if (nomeClienteEl) nomeClienteEl.value = '';
+                    if (telefoneClienteEl) telefoneClienteEl.value = '';
+                    if (criarPedidoEl) criarPedidoEl.checked = false;
+                    
+                    let mensagem = `Venda finalizada! Total: R$ ${formatarMoeda(totalVenda)}`;
+                    
+                    // Mostrar informação sobre pedido criado
+                    if (data.data && data.data.pedido_criado) {
+                        mensagem += `<br><small>Pedido #${data.data.pedido_id} criado para preparo!</small>`;
+                    }
+                    
+                    mostrarAlerta(mensagem, 'success', 3000);
                     
                     // Atualizar interface após um breve delay
                     setTimeout(() => {
                         location.reload();
-                    }, 1500);
+                    }, 2000);
                 } else {
                     mostrarAlerta(data.message || 'Erro ao finalizar venda', 'danger');
                 }
@@ -370,9 +485,22 @@ function atualizarGraficoVendas() {
     }
     
     function carregarGrafico(graficoElement) {
-        // CORREÇÃO: URL correta para o endpoint
-        console.log('🚀 Fazendo fetch para produtos mais vendidos...');
-        fetch('/Proj_Carrinho_Praia/src/Controllers/actions.php?action=get_produtos_mais_vendidos')
+        // Obter usuário ID da sessão
+        const userData = sessionStorage.getItem('user');
+        let usuarioId = 1; // Default
+        
+        if (userData) {
+            try {
+                const user = JSON.parse(userData);
+                usuarioId = user.id || user.usuario_id || 1;
+            } catch (e) {
+                console.warn('⚠️ Erro ao parsear dados do usuário:', e);
+            }
+        }
+        
+        // CORREÇÃO: URL correta com usuário ID
+        console.log('🚀 Fazendo fetch para produtos mais vendidos do usuário:', usuarioId);
+        fetch(`/Proj_Carrinho_Praia/src/Controllers/actions.php?action=get_produtos_mais_vendidos&usuario_id=${usuarioId}`)
         .then(response => {
             console.log('📡 Resposta recebida:', response);
             return response.json();

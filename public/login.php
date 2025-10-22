@@ -1,3 +1,23 @@
+<?php
+// Headers de segurança
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
+header('X-XSS-Protection: 1; mode=block');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
+
+// CSP para página de login com CDNs
+$csp = "default-src 'self'; ";
+$csp .= "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://accounts.google.com https://www.gstatic.com; ";
+$csp .= "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://fonts.googleapis.com; ";
+$csp .= "img-src 'self' data: https: blob:; ";
+$csp .= "font-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://fonts.gstatic.com; ";
+$csp .= "connect-src 'self' https:; ";
+$csp .= "frame-src 'self' https://accounts.google.com; ";
+$csp .= "worker-src 'self' blob:; ";
+$csp .= "object-src 'none';";
+header("Content-Security-Policy: $csp");
+?>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -186,6 +206,38 @@
                 <!-- Register Tab -->
                 <div class="tab-pane fade" id="register" role="tabpanel" aria-labelledby="register-tab">
                     <form id="registerForm">
+                        <!-- Seleção de Tipo de Cadastro -->
+                        <div class="mb-3">
+                            <label class="form-label">Tipo de Cadastro</label>
+                            <div class="row">
+                                <div class="col-6">
+                                    <input type="radio" class="form-check-input" id="cadastroAdmin" name="tipoCadastro" value="administrador" checked style="display:none;">
+                                    <label class="form-check-label" for="cadastroAdmin">
+                                        <div class="card text-center h-100" style="cursor: pointer; border: 2px solid #0066cc;">
+                                            <div class="card-body p-3">
+                                                <i class="bi bi-person-gear" style="font-size: 2rem; color: #0066cc;"></i>
+                                                <h6 class="mt-2 mb-0">Administrador</h6>
+                                                <small class="text-muted">Conta principal</small>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                                <div class="col-6">
+                                    <input type="radio" class="form-check-input" id="cadastroFunc" name="tipoCadastro" value="funcionario" style="display:none;">
+                                    <label class="form-check-label" for="cadastroFunc">
+                                        <div class="card text-center h-100" style="cursor: pointer; border: 2px solid #e9ecef;">
+                                            <div class="card-body p-3">
+                                                <i class="bi bi-person-badge" style="font-size: 2rem; color: #6c757d;"></i>
+                                                <h6 class="mt-2 mb-0">Funcionário</h6>
+                                                <small class="text-muted">Precisa de código</small>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Campos Comuns -->
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="firstName" class="form-label">Nome</label>
@@ -224,28 +276,73 @@
                                 <input type="tel" class="form-control" id="registerPhone" placeholder="(XX) XXXXX-XXXX" required>
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="registerPassword" class="form-label">Senha</label>
-                            <div class="input-group">
-                                <span class="input-group-text">
-                                    <i class="bi bi-lock"></i>
-                                </span>
-                                <input type="password" class="form-control" id="registerPassword" placeholder="Sua senha" required>
-                                <button class="btn btn-outline-secondary" type="button" id="toggleRegisterPassword">
-                                    <i class="bi bi-eye-slash"></i>
-                                </button>
+                        <!-- Campos apenas para Administrador -->
+                        <div id="camposAdminCadastro">
+                            <div class="mb-3">
+                                <label for="registerPassword" class="form-label">Senha</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="bi bi-lock"></i>
+                                    </span>
+                                    <input type="password" class="form-control" id="registerPassword" placeholder="Sua senha" required>
+                                    <button class="btn btn-outline-secondary" type="button" id="toggleRegisterPassword">
+                                        <i class="bi bi-eye-slash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="confirmPassword" class="form-label">Confirmar Senha</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="bi bi-lock"></i>
+                                    </span>
+                                    <input type="password" class="form-control" id="confirmPassword" placeholder="Confirme sua senha" required>
+                                    <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPassword">
+                                        <i class="bi bi-eye-slash"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="confirmPassword" class="form-label">Confirmar Senha</label>
-                            <div class="input-group">
-                                <span class="input-group-text">
-                                    <i class="bi bi-lock"></i>
-                                </span>
-                                <input type="password" class="form-control" id="confirmPassword" placeholder="Confirme sua senha" required>
-                                <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPassword">
-                                    <i class="bi bi-eye-slash"></i>
-                                </button>
+                        
+                        <!-- Campos para Funcionário -->
+                        <div id="camposFuncionarioCadastro" style="display: none;">
+                            <div class="mb-3">
+                                <label for="funcionarioPassword" class="form-label">Senha</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="bi bi-lock"></i>
+                                    </span>
+                                    <input type="password" class="form-control" id="funcionarioPassword" placeholder="Sua senha">
+                                    <button class="btn btn-outline-secondary" type="button" id="toggleFuncionarioPassword">
+                                        <i class="bi bi-eye-slash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="funcionarioConfirmPassword" class="form-label">Confirmar Senha</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="bi bi-lock"></i>
+                                    </span>
+                                    <input type="password" class="form-control" id="funcionarioConfirmPassword" placeholder="Confirme sua senha">
+                                    <button class="btn btn-outline-secondary" type="button" id="toggleFuncionarioConfirmPassword">
+                                        <i class="bi bi-eye-slash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="codigoAdminCadastro" class="form-label">Código do Administrador</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="bi bi-key"></i>
+                                    </span>
+                                    <input type="text" class="form-control" id="codigoAdminCadastro" placeholder="Digite o código fornecido" maxlength="6">
+                                </div>
+                                <div class="form-text">Solicite este código ao administrador que irá gerenciá-lo</div>
+                            </div>
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i>
+                                <strong>Atenção:</strong> Após o cadastro, o administrador definirá suas permissões no sistema. Você fará login normalmente com email e senha.
                             </div>
                         </div>
                         <div class="mb-3 form-check">
@@ -277,7 +374,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="js/validation.js"></script>
+    
     
     <script>
         // Funções auxiliares para alternância de abas
@@ -301,6 +398,57 @@
             
             loginTab.classList.add('active');
             document.getElementById('login').classList.add('show', 'active');
+        }
+        
+        
+        // Função para alternar campos de cadastro baseado no tipo
+        function alternarCamposCadastro() {
+            const cadastroAdmin = document.getElementById('cadastroAdmin');
+            const cadastroFunc = document.getElementById('cadastroFunc');
+            const camposAdminCadastro = document.getElementById('camposAdminCadastro');
+            const camposFuncionarioCadastro = document.getElementById('camposFuncionarioCadastro');
+            
+            if (cadastroFunc.checked) {
+                camposAdminCadastro.style.display = 'none';
+                camposFuncionarioCadastro.style.display = 'block';
+                
+                // Remover required dos campos admin
+                document.getElementById('registerPassword').required = false;
+                document.getElementById('confirmPassword').required = false;
+                
+                // Adicionar required aos campos funcionário
+                document.getElementById('funcionarioPassword').required = true;
+                document.getElementById('funcionarioConfirmPassword').required = true;
+                document.getElementById('codigoAdminCadastro').required = true;
+            } else {
+                camposAdminCadastro.style.display = 'block';
+                camposFuncionarioCadastro.style.display = 'none';
+                
+                // Adicionar required aos campos admin
+                document.getElementById('registerPassword').required = true;
+                document.getElementById('confirmPassword').required = true;
+                
+                // Remover required dos campos funcionário
+                document.getElementById('funcionarioPassword').required = false;
+                document.getElementById('funcionarioConfirmPassword').required = false;
+                document.getElementById('codigoAdminCadastro').required = false;
+            }
+        }
+        
+        // Função para atualizar estilo dos cards
+        function atualizarEstilosCards() {
+            // Cards de cadastro
+            const cardsCadastro = document.querySelectorAll('[for="cadastroAdmin"] .card, [for="cadastroFunc"] .card');
+            cardsCadastro.forEach(card => {
+                const input = card.parentElement.previousElementSibling || card.parentElement.parentElement.querySelector('input');
+                if (input && input.checked) {
+                    card.style.border = '2px solid #0066cc';
+                    card.querySelector('i').style.color = '#0066cc';
+                } else {
+                    card.style.border = '2px solid #e9ecef';
+                    card.querySelector('i').style.color = '#6c757d';
+                }
+            });
         }
         
         // Inicialização
@@ -347,7 +495,56 @@
                 }
             });
             
-            // Máscara de telefone
+            // Alternar visibilidade da senha do funcionário
+            document.getElementById('toggleFuncionarioPassword').addEventListener('click', function() {
+                const passwordInput = document.getElementById('funcionarioPassword');
+                const icon = this.querySelector('i');
+                
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    icon.classList.replace('bi-eye-slash', 'bi-eye');
+                } else {
+                    passwordInput.type = 'password';
+                    icon.classList.replace('bi-eye', 'bi-eye-slash');
+                }
+            });
+            
+            // Alternar visibilidade da confirmação de senha do funcionário
+            document.getElementById('toggleFuncionarioConfirmPassword').addEventListener('click', function() {
+                const passwordInput = document.getElementById('funcionarioConfirmPassword');
+                const icon = this.querySelector('i');
+                
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    icon.classList.replace('bi-eye-slash', 'bi-eye');
+                } else {
+                    passwordInput.type = 'password';
+                    icon.classList.replace('bi-eye', 'bi-eye-slash');
+                }
+            });
+            
+            // Event listeners para alternância de tipo de cadastro
+            document.getElementsByName('tipoCadastro').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    alternarCamposCadastro();
+                    atualizarEstilosCards();
+                });
+            });
+            
+            // Event listeners para cliques nos cards
+            document.querySelectorAll('[for="cadastroAdmin"], [for="cadastroFunc"]').forEach(label => {
+                label.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const input = this.previousElementSibling || this.parentElement.querySelector('input');
+                    if (input) {
+                        input.checked = true;
+                        alternarCamposCadastro();
+                        atualizarEstilosCards();
+                    }
+                });
+            });
+            
+            // Máscara de telefone (cadastro)
             document.getElementById('registerPhone').addEventListener('input', function(e) {
                 let value = e.target.value.replace(/\D/g, '');
                 if (value.length > 11) {
@@ -368,6 +565,7 @@
             // Handler do formulário de login
             document.getElementById('loginForm').addEventListener('submit', function(e) {
                 e.preventDefault();
+                
                 const email = document.getElementById('loginEmail').value;
                 const password = document.getElementById('loginPassword').value;
                 
@@ -407,6 +605,9 @@
                         const user = {
                             name: data.data.nome,
                             email: email,
+                            tipo: data.data.tipo_usuario || 'administrador',
+                            funcao: data.data.funcao_funcionario,
+                            codigo_unico: data.data.codigo_unico,
                             imageUrl: "https://ui-avatars.com/api/?name=" + data.data.nome + "&background=0066cc&color=fff"
                         };
                         
@@ -427,22 +628,17 @@
             // Handler do formulário de cadastro
             document.getElementById('registerForm').addEventListener('submit', function(e) {
                 e.preventDefault();
+                
+                const tipoCadastro = document.querySelector('input[name="tipoCadastro"]:checked').value;
                 const firstName = document.getElementById('firstName').value;
                 const lastName = document.getElementById('lastName').value;
                 const email = document.getElementById('registerEmail').value;
                 const phone = document.getElementById('registerPhone').value;
-                const password = document.getElementById('registerPassword').value;
-                const confirmPassword = document.getElementById('confirmPassword').value;
                 const terms = document.getElementById('terms').checked;
                 
-                // Validações
-                if (!firstName || !lastName || !email || !phone || !password || !confirmPassword) {
-                    alert('Por favor, preencha todos os campos.');
-                    return;
-                }
-                
-                if (password !== confirmPassword) {
-                    alert('As senhas não coincidem.');
+                // Campos comuns
+                if (!firstName || !lastName || !email || !phone) {
+                    alert('Por favor, preencha todos os campos obrigatórios.');
                     return;
                 }
                 
@@ -451,15 +647,51 @@
                     return;
                 }
                 
-                // Enviar dados para o servidor
                 const formData = new FormData();
                 formData.append('action', 'register');
+                formData.append('tipo_cadastro', tipoCadastro);
                 formData.append('nome', firstName);
                 formData.append('sobrenome', lastName);
                 formData.append('email', email);
                 formData.append('telefone', phone);
-                formData.append('password', password);
-                formData.append('confirm_password', confirmPassword);
+                
+                if (tipoCadastro === 'funcionario') {
+                    // Cadastro de funcionário
+                    const funcionarioPassword = document.getElementById('funcionarioPassword').value;
+                    const funcionarioConfirmPassword = document.getElementById('funcionarioConfirmPassword').value;
+                    const codigoAdmin = document.getElementById('codigoAdminCadastro').value;
+                    
+                    if (!funcionarioPassword || !funcionarioConfirmPassword || !codigoAdmin) {
+                        alert('Por favor, preencha todos os campos de funcionário.');
+                        return;
+                    }
+                    
+                    if (funcionarioPassword !== funcionarioConfirmPassword) {
+                        alert('As senhas não coincidem.');
+                        return;
+                    }
+                    
+                    formData.append('password', funcionarioPassword);
+                    formData.append('confirm_password', funcionarioConfirmPassword);
+                    formData.append('codigo_admin', codigoAdmin);
+                } else {
+                    // Cadastro de administrador
+                    const password = document.getElementById('registerPassword').value;
+                    const confirmPassword = document.getElementById('confirmPassword').value;
+                    
+                    if (!password || !confirmPassword) {
+                        alert('Por favor, preencha a senha.');
+                        return;
+                    }
+                    
+                    if (password !== confirmPassword) {
+                        alert('As senhas não coincidem.');
+                        return;
+                    }
+                    
+                    formData.append('password', password);
+                    formData.append('confirm_password', confirmPassword);
+                }
                 
                 fetch('../src/Controllers/actions.php', {
                     method: 'POST',
@@ -468,8 +700,14 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        alert('Cadastro realizado com sucesso!');
+                        alert('Cadastro realizado com sucesso! Agora você pode fazer login.');
                         switchToLogin();
+                        // Limpar formulário
+                        document.getElementById('registerForm').reset();
+                        // Resetar para administrador
+                        document.getElementById('cadastroAdmin').checked = true;
+                        alternarCamposCadastro();
+                        atualizarEstilosCards();
                     } else {
                         alert('Erro: ' + data.message);
                     }
@@ -479,6 +717,10 @@
                     alert('Erro de conexão: ' + error);
                 });
             });
+            
+            // Inicializar estado dos campos e estilos
+            alternarCamposCadastro();
+            atualizarEstilosCards();
         });
     </script>
 </body>

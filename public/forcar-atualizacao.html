@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forçar Atualização</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .btn {
+            background: #0066cc;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .btn:hover {
+            background: #0052a3;
+        }
+        .success {
+            color: green;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .info {
+            background: #f0f8ff;
+            border-left: 4px solid #0066cc;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔄 Forçar Atualização Completa</h1>
+    
+    <div class="info">
+        <strong>Este processo vai:</strong>
+        <ol>
+            <li>Remover todos os Service Workers</li>
+            <li>Limpar todo o cache do site</li>
+            <li>Limpar sessionStorage e localStorage</li>
+            <li>Recarregar a página</li>
+        </ol>
+    </div>
+    
+    <button class="btn" onclick="executarAtualizacao()">Executar Atualização Completa</button>
+    
+    <div id="status"></div>
+    
+    <script>
+        async function executarAtualizacao() {
+            const status = document.getElementById('status');
+            status.innerHTML = '<p>Processando...</p>';
+            
+            let passos = [];
+            
+            try {
+                // 1. Remover Service Workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (let registration of registrations) {
+                        await registration.unregister();
+                    }
+                    passos.push('✓ Service Workers removidos');
+                }
+                
+                // 2. Limpar todos os caches
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(
+                        cacheNames.map(cacheName => caches.delete(cacheName))
+                    );
+                    passos.push('✓ Cache limpo (' + cacheNames.length + ' caches removidos)');
+                }
+                
+                // 3. Limpar Storage
+                sessionStorage.clear();
+                localStorage.clear();
+                passos.push('✓ sessionStorage e localStorage limpos');
+                
+                // 4. Mostrar resultado
+                status.innerHTML = `
+                    <div class="success">
+                        <h3>Atualização Concluída!</h3>
+                        ${passos.map(p => '<p>' + p + '</p>').join('')}
+                        <p><strong>Redirecionando para login em 2 segundos...</strong></p>
+                    </div>
+                `;
+                
+                // 5. Redirecionar
+                setTimeout(() => {
+                    window.location.href = 'login-simples.php?v=' + Date.now();
+                }, 2000);
+                
+            } catch (error) {
+                status.innerHTML = `<p style="color: red;">❌ Erro: ${error.message}</p>`;
+                console.error('Erro:', error);
+            }
+        }
+        
+        // Auto-executar após 1 segundo
+        setTimeout(() => {
+            executarAtualizacao();
+        }, 1000);
+    </script>
+</body>
+</html>

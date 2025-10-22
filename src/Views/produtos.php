@@ -1,10 +1,28 @@
+<?php
+// Verificar função do usuário para controle de acesso
+$user = json_decode($_SESSION['user'] ?? '{}', true);
+$tipoUsuario = $user['tipo'] ?? $user['tipo_usuario'] ?? 'administrador';
+$funcaoUsuario = $user['funcao'] ?? $user['funcao_funcionario'] ?? '';
+$isEmployee = ($tipoUsuario === 'funcionario' && ($funcaoUsuario === 'anotar_pedido' || $funcaoUsuario === 'ambos'));
+$isAdmin = ($tipoUsuario === 'administrador' || (!$funcaoUsuario && $tipoUsuario !== 'funcionario'));
+?>
+
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-box-seam"></i> Gestão de Produtos</span>
+        <span><i class="bi bi-box-seam"></i> <?php echo $isEmployee ? 'Reabastecimento de Produtos' : 'Gestão de Produtos'; ?></span>
+        <?php if ($isAdmin): ?>
         <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#modalNovoProduto">
             <i class="bi bi-plus"></i> Novo Produto
         </button>
+        <?php endif; ?>
     </div>
+    
+    <?php if ($isEmployee): ?>
+    <div class="alert alert-info m-3">
+        <i class="bi bi-info-circle"></i>
+        <strong>Acesso Limitado:</strong> Você pode apenas reabastecer produtos. Para editar ou criar novos produtos, entre em contato com o administrador.
+    </div>
+    <?php endif; ?>
     <div class="card-body">
         <div class="table-responsive">
             <table class="table table-hover">
@@ -45,15 +63,23 @@
                             echo '<td>' . $row["quantidade"] . '</td>';
                             echo '<td>' . $row["limite_minimo"] . '</td>';
                             echo '<td>';
-                            echo '<button class="btn btn-sm btn-outline-primary" onclick="editarProduto(' . $row["id"] . ')">';
-                            echo '<i class="bi bi-pencil"></i>';
-                            echo '</button>';
-                            echo '<button class="btn btn-sm btn-outline-success" onclick="reabastecerProduto(' . $row["id"] . ')">';
-                            echo '<i class="bi bi-arrow-repeat"></i>';
-                            echo '</button>';
-                            echo '<button class="btn btn-sm btn-outline-danger" onclick="excluirProduto(' . $row["id"] . ')">';
-                            echo '<i class="bi bi-trash"></i>';
-                            echo '</button>';
+                            // Mostrar apenas botão de reabastecer para funcionários que anotam pedidos
+                            if ($isEmployee) {
+                                echo '<button class="btn btn-sm btn-outline-success" onclick="reabastecerProduto(' . $row["id"] . ')" title="Reabastecer">';
+                                echo '<i class="bi bi-arrow-repeat"></i> Reabastecer';
+                                echo '</button>';
+                            } else {
+                                // Admin tem acesso completo
+                                echo '<button class="btn btn-sm btn-outline-primary" onclick="editarProduto(' . $row["id"] . ')" title="Editar">';
+                                echo '<i class="bi bi-pencil"></i>';
+                                echo '</button> ';
+                                echo '<button class="btn btn-sm btn-outline-success" onclick="reabastecerProduto(' . $row["id"] . ')" title="Reabastecer">';
+                                echo '<i class="bi bi-arrow-repeat"></i>';
+                                echo '</button> ';
+                                echo '<button class="btn btn-sm btn-outline-danger" onclick="excluirProduto(' . $row["id"] . ')" title="Excluir">';
+                                echo '<i class="bi bi-trash"></i>';
+                                echo '</button>';
+                            }
                             echo '</td>';
                             echo '</tr>';
                         }

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Limpar Cache - Sistema Carrinho</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .btn {
+            background: #0066cc;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .btn:hover {
+            background: #0052a3;
+        }
+        .success {
+            color: green;
+            margin: 20px 0;
+        }
+        .error {
+            color: red;
+            margin: 20px 0;
+        }
+        .info {
+            background: #f0f8ff;
+            border-left: 4px solid #0066cc;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧹 Limpar Cache do Sistema</h1>
+    
+    <div class="info">
+        <strong>Por que limpar o cache?</strong>
+        <ul>
+            <li>Resolve problemas de requisições antigas</li>
+            <li>Garante que você está vendo a versão mais recente</li>
+            <li>Corrige erros de "erro de conexão" falsos</li>
+        </ul>
+    </div>
+    
+    <button class="btn" onclick="limparCache()">Limpar Cache Agora</button>
+    <button class="btn" onclick="window.location.href='index.php'">Voltar ao Sistema</button>
+    
+    <div id="resultado"></div>
+    
+    <script>
+        async function limparCache() {
+            const resultado = document.getElementById('resultado');
+            resultado.innerHTML = '<p>Limpando cache...</p>';
+            
+            try {
+                // Unregister service workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (let registration of registrations) {
+                        await registration.unregister();
+                        console.log('Service Worker removido');
+                    }
+                }
+                
+                // Clear all caches
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(
+                        cacheNames.map(cacheName => caches.delete(cacheName))
+                    );
+                    console.log(`${cacheNames.length} caches removidos`);
+                }
+                
+                // Clear session storage
+                sessionStorage.clear();
+                
+                resultado.innerHTML = `
+                    <p class="success">✅ Cache limpo com sucesso!</p>
+                    <p>Service Workers: Removidos</p>
+                    <p>Caches: Removidos</p>
+                    <p>Session Storage: Limpo</p>
+                    <p><strong>Recarregando página em 2 segundos...</strong></p>
+                `;
+                
+                setTimeout(() => {
+                    window.location.href = 'login.php';
+                }, 2000);
+                
+            } catch (error) {
+                resultado.innerHTML = `<p class="error">❌ Erro ao limpar cache: ${error.message}</p>`;
+                console.error('Erro:', error);
+            }
+        }
+        
+        // Verificar status atual
+        window.addEventListener('load', async () => {
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                console.log(`Service Workers ativos: ${registrations.length}`);
+            }
+            
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                console.log(`Caches existentes: ${cacheNames.length}`, cacheNames);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,134 @@
+{
+    "name": "Sistema Carrinho de Praia",
+    "short_name": "Carrinho Praia",
+    "description": "Sistema completo de gestão para vendas em carrinhos de praia com controle de estoque e relatórios",
+    "start_url": "./index.php",
+    "display": "standalone",
+    "background_color": "#f8f9fa",
+    "theme_color": "#0066cc",
+    "orientation": "portrait-primary",
+    "categories": ["business", "productivity", "finance"],
+    "lang": "pt-BR",
+    "dir": "ltr",
+    "scope": "./",
+    "icons": [
+        {
+            "src": "icon-72.png",
+            "sizes": "72x72",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "icon-96.png",
+            "sizes": "96x96",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "icon-128.png",
+            "sizes": "128x128",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "icon-384.png",
+            "sizes": "384x384",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Nova Venda",
+            "short_name": "Vendas",
+            "description": "Registrar uma nova venda rapidamente",
+            "url": "./index.php#vendas",
+            "icons": [
+                {
+                    "src": "icon-192.png",
+                    "sizes": "192x192",
+                    "type": "image/png"
+                }
+            ]
+        },
+        {
+            "name": "Produtos",
+            "short_name": "Produtos",
+            "description": "Gerenciar catálogo de produtos",
+            "url": "./index.php#produtos",
+            "icons": [
+                {
+                    "src": "icon-192.png",
+                    "sizes": "192x192",
+                    "type": "image/png"
+                }
+            ]
+        },
+        {
+            "name": "Estoque",
+            "short_name": "Estoque",
+            "description": "Controlar níveis de estoque",
+            "url": "./index.php#estoque",
+            "icons": [
+                {
+                    "src": "icon-192.png",
+                    "sizes": "192x192",
+                    "type": "image/png"
+                }
+            ]
+        },
+        {
+            "name": "Relatórios",
+            "short_name": "Relatórios",
+            "description": "Visualizar relatórios de vendas e performance",
+            "url": "./index.php#relatorios",
+            "icons": [
+                {
+                    "src": "icon-192.png",
+                    "sizes": "192x192",
+                    "type": "image/png"
+                }
+            ]
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "screenshot-desktop.png",
+            "sizes": "1280x720",
+            "type": "image/png",
+            "form_factor": "wide"
+        },
+        {
+            "src": "screenshot-mobile.png",
+            "sizes": "375x812",
+            "type": "image/png",
+            "form_factor": "narrow"
+        }
+    ],
+    "features": [
+        "Cross Platform",
+        "Offline Support",
+        "Push Notifications",
+        "Background Sync"
+    ],
+    "related_applications": [],
+    "prefer_related_applications": false,
+    "edge_side_panel": {
+        "preferred_width": 400
+    },
+    "launch_handler": {
+        "client_mode": "auto"
+    }
+}

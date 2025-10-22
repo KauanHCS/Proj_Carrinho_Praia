@@ -1,4 +1,24 @@
 <?php
+// Headers de segurança
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: SAMEORIGIN'); // Permitir iframe no mesmo domínio
+header('X-XSS-Protection: 1; mode=block');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+header('Permissions-Policy: geolocation=(self), microphone=(), camera=()');
+
+// Content Security Policy adaptado para o projeto com CDNs de mapa
+$csp = "default-src 'self'; ";
+$csp .= "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://accounts.google.com https://www.gstatic.com; ";
+$csp .= "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://fonts.googleapis.com; ";
+$csp .= "img-src 'self' data: https: blob: https://*.openstreetmap.org https://*.tile.openstreetmap.org; ";
+$csp .= "font-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://fonts.gstatic.com; ";
+$csp .= "connect-src 'self' https: https://*.openstreetmap.org https://*.tile.openstreetmap.org; ";
+$csp .= "frame-src 'self' https://accounts.google.com; ";
+$csp .= "worker-src 'self' blob:; ";
+$csp .= "object-src 'none'; ";
+$csp .= "base-uri 'self';";
+header("Content-Security-Policy: $csp");
+
 // Inicializar sessão PHP para suporte multi-usuário
 session_start();
 ?>
@@ -8,6 +28,16 @@ session_start();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Vendas - Carrinho de Praia</title>
+    <meta name="description" content="Sistema completo de gestão para vendas em carrinhos de praia com controle de estoque e relatórios">
+    <meta name="theme-color" content="#0066cc">
+    
+    <!-- PWA features -->
+    <link rel="manifest" href="manifest.json">
+    <!-- <link rel="apple-touch-icon" href="icon-192.png"> -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Carrinho Praia">
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css">
@@ -673,6 +703,24 @@ session_start();
                 </a>
             </li>
             <li>
+                <a href="#" onclick="showTab('pedidos')" data-tab="pedidos">
+                    <i class="bi bi-clipboard-check"></i>
+                    <span>Pedidos</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showTab('financeiro')" data-tab="financeiro">
+                    <i class="bi bi-cash-stack"></i>
+                    <span>Financeiro</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showTab('funcionarios')" data-tab="funcionarios">
+                    <i class="bi bi-people"></i>
+                    <span>Funcionários</span>
+                </a>
+            </li>
+            <li>
                 <a href="#" onclick="showTab('perfil')" data-tab="perfil">
                     <i class="bi bi-person-circle"></i>
                     <span>Perfil</span>
@@ -721,6 +769,27 @@ session_start();
                     <?php 
                     require_once '../config/database.php';
                     include '../src/Views/localizacao.php';
+                    ?>
+                </div>
+
+                <!-- Tab Pedidos -->
+                <div class="tab-pane fade" id="pedidos">
+                    <?php 
+                    include '../src/Views/pedidos.php';
+                    ?>
+                </div>
+
+                <!-- Tab Financeiro -->
+                <div class="tab-pane fade" id="financeiro">
+                    <?php 
+                    include '../src/Views/financeiro.php';
+                    ?>
+                </div>
+
+                <!-- Tab Funcionários -->
+                <div class="tab-pane fade" id="funcionarios">
+                    <?php 
+                    include '../src/Views/gerenciar_funcionarios.php';
                     ?>
                 </div>
 
@@ -787,6 +856,8 @@ session_start();
                 'estoque': 'Estoque',
                 'relatorios': 'Relatórios',
                 'localizacao': 'Localização',
+                'pedidos': 'Pedidos',
+                'funcionarios': 'Funcionários',
                 'perfil': 'Meu Perfil'
             };
             if (pageTitle && titles[tabName]) {
@@ -846,7 +917,129 @@ session_start();
             const defaultAvatarSmall = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDUiIGhlaWdodD0iNDUiIHZpZXdCb3g9IjAgMCA0NSA0NSIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjIuNSIgY3k9IjIyLjUiIHI9IjIyLjUiIGZpbGw9IiMwMDY2Q0MiLz4KPHN2ZyB4PSI5IiB5PSI5IiB3aWR0aD0iMjciIGhlaWdodD0iMjciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxwYXRoIGQ9Ik0xMiAxMmMwIDAgMy0zIDMtNS41UzE1IDMgMTIgM3MtMyAxLjUtMyAzLjUgMyA1LjUgMyA1LjV6IiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNMTIgMTRjLTQuNSAwLTguMiAyLjMtOC4yIDUuMiAwIDEuMSA0LjcgMS44IDguMiAxLjhzOC4yLS43IDguMi0xLjhjMC0yLjktMy43LTUuMi04LjItNS4yeiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+Cjwvc3ZnPg==";
             document.getElementById('headerUserAvatar').src = userData.imageUrl || defaultAvatarSmall;
             document.getElementById('headerUserName').textContent = userData.name;
-            document.getElementById('headerUserEmail').textContent = userData.email;
+            
+            // Mostrar informações do tipo de usuário no header
+            const emailElement = document.getElementById('headerUserEmail');
+            if (userData.tipo === 'administrador' || userData.tipo_usuario === 'administrador' || !userData.tipo) {
+                emailElement.innerHTML = `
+                    <i class="bi bi-crown text-warning"></i> Administrador
+                    ${userData.codigo_unico ? '<br><small>Código: ' + userData.codigo_unico + '</small>' : ''}
+                `;
+            } else if (userData.tipo === 'funcionario' || userData.tipo_usuario === 'funcionario') {
+                const funcaoTexto = {
+                    'anotar_pedido': 'Anota Pedidos',
+                    'fazer_pedido': 'Faz Pedidos',
+                    'ambos': 'Anota/Faz Pedidos'
+                };
+                const funcao = userData.funcao || userData.funcao_funcionario || 'Funcionário';
+                emailElement.innerHTML = `
+                    <i class="bi bi-person-badge text-success"></i> ${funcaoTexto[funcao] || funcao}
+                `;
+            } else {
+                emailElement.textContent = userData.email;
+            }
+            
+            // Adicionar tooltip ao avatar com informações do usuário
+            const avatar = document.getElementById('headerUserAvatar');
+            if (userData.codigo_unico) {
+                avatar.title = `${userData.name}\\nAdministrador\\nCódigo: ${userData.codigo_unico}\\nClique para ver perfil`;
+            } else {
+                avatar.title = `${userData.name}\\nClique para ver perfil`;
+            }
+            
+            // Controlar visibilidade das abas baseado na função
+            controlarVisibilidadeAbas(userData);
+        }
+        
+        // Função para controlar visibilidade das abas baseado na função do usuário
+        function controlarVisibilidadeAbas(userData) {
+            const abas = {
+                vendas: document.querySelector('[data-tab="vendas"]'),
+                produtos: document.querySelector('[data-tab="produtos"]'),
+                estoque: document.querySelector('[data-tab="estoque"]'),
+                relatorios: document.querySelector('[data-tab="relatorios"]'),
+                localizacao: document.querySelector('[data-tab="localizacao"]'),
+                funcionarios: document.querySelector('[data-tab="funcionarios"]'),
+                pedidos: document.querySelector('[data-tab="pedidos"]'),
+                financeiro: document.querySelector('[data-tab="financeiro"]'),
+                perfil: document.querySelector('[data-tab="perfil"]')
+            };
+            
+            // Esconder todas as abas primeiro
+            Object.values(abas).forEach(aba => {
+                if (aba) aba.parentElement.style.display = 'none';
+            });
+            
+            const tipoUsuario = userData.tipo || userData.tipo_usuario || 'administrador';
+            const funcao = userData.funcao || userData.funcao_funcionario;
+            
+            if (tipoUsuario === 'administrador') {
+                // Administrador - mostrar todas as abas exceto pedidos
+                Object.keys(abas).forEach(key => {
+                    if (key !== 'pedidos' && abas[key]) {
+                        abas[key].parentElement.style.display = 'block';
+                    }
+                });
+            } else if (tipoUsuario === 'funcionario') {
+                // Funcionário sem função - só perfil
+                if (!funcao || funcao === '') {
+                    if (abas.perfil) abas.perfil.parentElement.style.display = 'block';
+                    
+                } else if (funcao === 'anotar_pedido') {
+                    // Funcionário que anota pedidos - vendas, produtos (restrito) e perfil
+                    if (abas.vendas) abas.vendas.parentElement.style.display = 'block';
+                    if (abas.produtos) abas.produtos.parentElement.style.display = 'block';
+                    if (abas.perfil) abas.perfil.parentElement.style.display = 'block';
+                    
+                } else if (funcao === 'fazer_pedido') {
+                    // Funcionário que faz pedidos - só pedidos e perfil
+                    if (abas.pedidos) abas.pedidos.parentElement.style.display = 'block';
+                    if (abas.perfil) abas.perfil.parentElement.style.display = 'block';
+                    
+                } else if (funcao === 'financeiro') {
+                    // Funcionário do financeiro - só financeiro e perfil
+                    if (abas.financeiro) abas.financeiro.parentElement.style.display = 'block';
+                    if (abas.perfil) abas.perfil.parentElement.style.display = 'block';
+                    
+                } else if (funcao === 'financeiro_e_anotar') {
+                    // Funcionário financeiro + anotar - vendas, financeiro e perfil
+                    if (abas.vendas) abas.vendas.parentElement.style.display = 'block';
+                    if (abas.produtos) abas.produtos.parentElement.style.display = 'block';
+                    if (abas.financeiro) abas.financeiro.parentElement.style.display = 'block';
+                    if (abas.perfil) abas.perfil.parentElement.style.display = 'block';
+                    
+                } else if (funcao === 'ambos') {
+                    // Funcionário com ambas funções - vendas, produtos (restrito), pedidos e perfil
+                    if (abas.vendas) abas.vendas.parentElement.style.display = 'block';
+                    if (abas.produtos) abas.produtos.parentElement.style.display = 'block';
+                    if (abas.pedidos) abas.pedidos.parentElement.style.display = 'block';
+                    if (abas.perfil) abas.perfil.parentElement.style.display = 'block';
+                }
+            }
+            
+            // Redirecionar para primeira aba disponível se a atual não estiver visível
+            redirecionarParaPrimeiraAbaDisponivel();
+        }
+        
+        // Função para redirecionar para primeira aba disponível
+        function redirecionarParaPrimeiraAbaDisponivel() {
+            const abasVisiveis = document.querySelectorAll('.sidebar-nav a[data-tab]');
+            let primeiraAbaVisivel = null;
+            
+            abasVisiveis.forEach(aba => {
+                if (aba.parentElement.style.display !== 'none' && !primeiraAbaVisivel) {
+                    primeiraAbaVisivel = aba.getAttribute('data-tab');
+                }
+            });
+            
+            // Se existe uma aba ativa mas ela não está visível, mudar para a primeira visível
+            const abaAtiva = document.querySelector('.tab-pane.active');
+            if (abaAtiva) {
+                const abaAtivaLink = document.querySelector(`[data-tab="${abaAtiva.id}"]`);
+                if (abaAtivaLink && abaAtivaLink.parentElement.style.display === 'none' && primeiraAbaVisivel) {
+                    setTimeout(() => showTab(primeiraAbaVisivel), 100);
+                }
+            }
         }
         
         // Controle da sidebar otimizado
@@ -1014,6 +1207,34 @@ session_start();
         // Aplicar modo escuro imediatamente se configurado
         carregarModoEscuroGlobal();
         
+        // Service Worker registration para PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async () => {
+                try {
+                    const registration = await navigator.serviceWorker.register('./sw.js');
+                    console.log('🛠️ SW registered:', registration.scope);
+                    
+                    // Listen for updates
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        if (newWorker) {
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // Show update available notification
+                                    if (typeof mostrarAlerta === 'function') {
+                                        mostrarAlerta('🆕 Atualização disponível! Recarregue a página.', 'info', 8000);
+                                    }
+                                }
+                            });
+                        }
+                    });
+                    
+                } catch (error) {
+                    console.warn('🔴 SW registration failed:', error);
+                }
+            });
+        }
+        
         // Inicializar
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 DOM carregado, inicializando...');
@@ -1048,9 +1269,35 @@ session_start();
             }
             
             console.log('✅ Estado inicial configurado');
-            showTab('vendas');
+            
+            // Definir aba inicial baseada no tipo de usuário
+            const user = sessionStorage.getItem('user');
+            if (user) {
+                const userData = JSON.parse(user);
+                const tipoUsuario = userData.tipo || userData.tipo_usuario || 'administrador';
+                const funcao = userData.funcao || userData.funcao_funcionario;
+                
+                if (tipoUsuario === 'administrador') {
+                    showTab('vendas');
+                } else if (tipoUsuario === 'funcionario') {
+                    if (!funcao || funcao === '') {
+                        showTab('perfil');
+                    } else if (funcao === 'anotar_pedido' || funcao === 'ambos') {
+                        showTab('vendas');
+                    } else if (funcao === 'fazer_pedido') {
+                        showTab('pedidos');
+                    } else if (funcao === 'financeiro') {
+                        showTab('financeiro');
+                    } else if (funcao === 'financeiro_e_anotar') {
+                        showTab('vendas');
+                    }
+                }
+            } else {
+                showTab('vendas');
+            }
         });
     </script>
+    
     
     <!-- OpenStreetMap usado na aba de localização (carregado via Leaflet) -->
 </body>

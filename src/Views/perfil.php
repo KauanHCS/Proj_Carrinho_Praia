@@ -166,6 +166,55 @@
                 </div>
             </div>
             
+            <!-- Código do Administrador -->
+            <div class="card mb-3" id="cardCodigoAdmin" style="display: none;">
+                <div class="card-header bg-primary text-white">
+                    <h6><i class="bi bi-key"></i> Seu Código Único</h6>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <h2 class="text-primary mb-2" id="codigoUnicoDisplay">------</h2>
+                        <p class="text-muted mb-3">
+                            <small>Este é seu código único para gerar códigos de funcionários</small>
+                        </p>
+                        <button class="btn btn-outline-primary btn-sm" onclick="copiarCodigoUnico()">
+                            <i class="bi bi-clipboard"></i> Copiar Código
+                        </button>
+                    </div>
+                    <div class="alert alert-info mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        <small>
+                            <strong>Como usar:</strong><br>
+                            Vá na aba "Funcionários" para gerar códigos para seus funcionarios
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Informações de Funcionário -->
+            <div class="card mb-3" id="cardInfoFuncionario" style="display: none;">
+                <div class="card-header bg-success text-white">
+                    <h6><i class="bi bi-person-badge"></i> Informações do Funcionário</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <strong>Função:</strong>
+                        <span class="badge bg-primary ms-2" id="funcaoFuncionario">-</span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>Administrador Responsável:</strong>
+                        <div id="adminResponsavel" class="text-muted">Carregando...</div>
+                    </div>
+                    <div class="alert alert-warning mt-3 mb-0">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <small>
+                            <strong>Lembre-se:</strong><br>
+                            Suas permissões foram definidas pelo administrador que forneceu seu código de acesso.
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Atividade Recente -->
             <div class="card mb-3">
                 <div class="card-header">
@@ -313,8 +362,89 @@ function carregarDadosPerfil() {
     const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgdmlld0JveD0iMCAwIDEyMCAxMjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjYwIiBjeT0iNjAiIHI9IjYwIiBmaWxsPSIjMDA2NkNDIi8+CjxzdmcgeD0iMjQiIHk9IjI0IiB3aWR0aD0iNzIiIGhlaWdodD0iNzIiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxwYXRoIGQ9Ik0xMiAxMmMwIDAgMy0zIDMtNS41UzE1IDMgMTIgM3MtMyAxLjUtMyAzLjUgMyA1LjUgMyA1LjV6IiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNMTIgMTRjLTQuNSAwLTguMiAyLjMtOC4yIDUuMiAwIDEuMSA0LjcgMS44IDguMiAxLjhzOC4yLS43IDguMi0xLjhjMC0yLjktMy43LTUuMi04LjItNS4yeiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+Cjwvc3ZnPg==";
     document.getElementById('userAvatarLarge').src = user.imageUrl || defaultAvatar;
     
+    // Mostrar informações específicas baseadas no tipo de usuário
+    mostrarInformacoesTipoUsuario(user);
+    
     // Salvar dados originais
     dadosOriginais = { ...user };
+}
+
+// Mostrar informações específicas do tipo de usuário
+function mostrarInformacoesTipoUsuario(user) {
+    const cardCodigoAdmin = document.getElementById('cardCodigoAdmin');
+    const cardInfoFuncionario = document.getElementById('cardInfoFuncionario');
+    
+    // Verificar tipo de usuário
+    if (user.tipo === 'administrador' || user.tipo_usuario === 'administrador' || !user.tipo) {
+        // É administrador - mostrar código único
+        cardCodigoAdmin.style.display = 'block';
+        cardInfoFuncionario.style.display = 'none';
+        
+        // Exibir código único
+        const codigoUnico = user.codigo_unico || '------';
+        document.getElementById('codigoUnicoDisplay').textContent = codigoUnico;
+        
+        console.log('👑 Usuário administrador - Código:', codigoUnico);
+        
+    } else if (user.tipo === 'funcionario' || user.tipo_usuario === 'funcionario') {
+        // É funcionário - mostrar informações do funcionário
+        cardCodigoAdmin.style.display = 'none';
+        cardInfoFuncionario.style.display = 'block';
+        
+        // Exibir função
+        const funcaoTexto = {
+            'anotar_pedido': 'Anotar Pedidos',
+            'fazer_pedido': 'Fazer Pedidos',
+            'ambos': 'Anotar e Fazer Pedidos'
+        };
+        
+        const funcao = user.funcao || user.funcao_funcionario || 'Não definida';
+        document.getElementById('funcaoFuncionario').textContent = funcaoTexto[funcao] || funcao;
+        
+        // Buscar informações do administrador responsável
+        if (user.admin_id) {
+            buscarDadosAdministrador(user.admin_id);
+        } else {
+            document.getElementById('adminResponsavel').textContent = 'Não encontrado';
+        }
+        
+        console.log('👤 Usuário funcionário - Função:', funcao);
+    }
+}
+
+// Buscar dados do administrador responsável
+function buscarDadosAdministrador(adminId) {
+    // Em um sistema real, isso seria uma consulta à API
+    // Por ora, vamos simular
+    document.getElementById('adminResponsavel').innerHTML = 
+        '<i class="bi bi-person-check text-primary"></i> Administrador (ID: ' + adminId + ')';
+}
+
+// Função para copiar o código único
+function copiarCodigoUnico() {
+    const codigo = document.getElementById('codigoUnicoDisplay').textContent;
+    
+    if (codigo && codigo !== '------') {
+        navigator.clipboard.writeText(codigo).then(() => {
+            // Feedback visual
+            const btn = event.target.closest('button');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="bi bi-check"></i> Copiado!';
+            btn.classList.remove('btn-outline-primary');
+            btn.classList.add('btn-success');
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-outline-primary');
+            }, 2000);
+            
+            console.log('📋 Código copiado:', codigo);
+        }).catch(err => {
+            console.error('Erro ao copiar:', err);
+            alert('Código: ' + codigo);
+        });
+    }
 }
 
 // Carregar estatísticas do usuário
@@ -613,31 +743,88 @@ carregarConfiguracoes();
     border-right: 1px solid #dee2e6;
 }
 
-/* Modo escuro */
+/* Modo escuro para perfil - usando as variáveis globais */
 .dark-mode {
-    background-color: #1a1a1a;
-    color: #ffffff;
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
 }
 
 .dark-mode .card {
-    background-color: #2d2d2d;
-    border-color: #404040;
+    background-color: var(--bg-white) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.dark-mode .card-body {
+    background-color: transparent !important;
+    color: var(--text-primary) !important;
 }
 
 .dark-mode .form-control {
-    background-color: #404040;
-    border-color: #555555;
-    color: #ffffff;
+    background-color: var(--bg-primary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
 }
 
 .dark-mode .form-control:disabled {
-    background-color: #333333;
-    border-color: #555555;
-    color: #cccccc;
+    background-color: var(--bg-light) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-secondary) !important;
+}
+
+.dark-mode .form-control:focus {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 0.2rem rgba(88, 166, 255, 0.25) !important;
+    background-color: var(--bg-primary) !important;
 }
 
 .dark-mode .text-muted {
-    color: #aaaaaa !important;
+    color: var(--text-muted) !important;
+}
+
+.dark-mode .modal-content {
+    background-color: var(--bg-white) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+.dark-mode .modal-header {
+    background: linear-gradient(135deg, var(--primary-color), #4169e1) !important;
+    border-bottom-color: var(--border-color) !important;
+}
+
+.dark-mode .modal-footer {
+    border-top-color: var(--border-color) !important;
+}
+
+.dark-mode .border-end {
+    border-right-color: var(--border-color) !important;
+}
+
+.dark-mode .form-check-input {
+    background-color: var(--bg-light) !important;
+    border-color: var(--border-color) !important;
+}
+
+.dark-mode .form-check-input:checked {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+.dark-mode .form-check-label {
+    color: var(--text-primary) !important;
+}
+
+/* Corrigir elementos específicos */
+.dark-mode .container-fluid,
+.dark-mode .row,
+.dark-mode [class*="col-"] {
+    background-color: transparent !important;
+}
+
+.dark-mode hr {
+    border-color: var(--border-color) !important;
+    opacity: 0.3;
 }
 
 /* Animações */

@@ -421,6 +421,320 @@ class User
     }
 
     /**
+     * Login específico para funcionários
+     */
+    public function loginFuncionario($nome, $telefone, $codigoAdmin)
+    {
+        try {
+            if (empty($nome) || empty($telefone) || empty($codigoAdmin)) {
+                throw new \Exception('Todos os campos são obrigatórios');
+            }
+
+            // Verificar se o código existe e está disponível
+            $codigo = $this->db->selectOne(
+                "SELECT cf.*, u.nome as admin_nome FROM codigos_funcionarios cf 
+                 JOIN usuarios u ON cf.admin_id = u.id 
+                 WHERE cf.codigo = ? AND cf.usado = 0 AND cf.ativo = 1",
+                "s",
+                [$codigoAdmin]
+            );
+
+            if (!$codigo) {
+                throw new \Exception('Código inválido ou já utilizado');
+            }
+
+            // Cadastrar funcionário automaticamente
+            $nomeCompleto = trim($nome);
+            $emailFuncionario = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $nome)) . '@funcionario.local';
+            
+            $funcionarioId = $this->db->insert(
+                "INSERT INTO usuarios (nome, email, telefone, tipo_usuario, funcao_funcionario, codigo_admin, data_cadastro) 
+                 VALUES (?, ?, ?, 'funcionario', ?, ?, NOW())",
+                "ssssi",
+                [$nomeCompleto, $emailFuncionario, $telefone, $codigo['funcao'], $codigo['admin_id']]
+            );
+
+            // Marcar código como usado
+            $this->db->execute(
+                "UPDATE codigos_funcionarios SET usado = 1, usado_por_usuario = ?, data_uso = NOW() WHERE codigo = ?",
+                "is",
+                [$funcionarioId, $codigoAdmin]
+            );
+
+            // Iniciar sessão
+            if (session_status() == PHP_SESSION_NONE) {
+                session_start();
+            }
+            
+            $_SESSION['usuario_id'] = $funcionarioId;
+            $_SESSION['usuario_nome'] = $nomeCompleto;
+            $_SESSION['usuario_email'] = $emailFuncionario;
+            $_SESSION['usuario_tipo'] = 'funcionario';
+            $_SESSION['usuario_funcao'] = $codigo['funcao'];
+            $_SESSION['usuario_admin_id'] = $codigo['admin_id'];
+
+            return [
+                'success' => true,
+                'data' => [
+                    'usuario_id' => $funcionarioId,
+                    'nome' => $nomeCompleto,
+                    'funcao' => $codigo['funcao'],
+                    'admin_id' => $codigo['admin_id'],
+                    'admin_nome' => $codigo['admin_nome']
+                ],
+                'message' => 'Login de funcionário realizado com sucesso'
+            ];
+
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'data' => null,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Cadastro específico para funcionários
+     */
+    public function registerFuncionario($nome, $sobrenome, $email, $telefone, $password, $confirmPassword, $codigoAdmin)
+    {
+        try {
+            if (empty($nome) || empty($sobrenome) || empty($email) || empty($telefone) || empty($password) || empty($codigoAdmin)) {
+                throw new \Exception('Todos os campos são obrigatórios');
+            }
+
+            if ($password !== $confirmPassword) {
+                throw new \Exception('As senhas não coincidem');
+            }
+
+            // Verificar se o email já existe
+            $existingUser = $this->db->selectOne(
+                "SELECT id FROM usuarios WHERE email = ?",
+                "s",
+                [$email]
+            );
+
+            if ($existingUser) {
+                throw new \Exception('Email já cadastrado');
+            }
+
+            // Verificar se o código existe e está disponível
+            $codigo = $this->db->selectOne(
+                "SELECT cf.*, u.nome as admin_nome FROM codigos_funcionarios cf 
+                 JOIN usuarios u ON cf.admin_id = u.id 
+                 WHERE cf.codigo = ? AND cf.usado = 0 AND cf.ativo = 1",
+                "s",
+                [$codigoAdmin]
+            );
+
+            if (!$codigo) {
+                throw new \Exception('Código inválido ou já utilizado');
+            }
+
+            // Criar funcionário com senha
+            $nomeCompleto = $nome . ' ' . $sobrenome;
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            
+            $funcionarioId = $this->db->insert(
+                "INSERT INTO usuarios (nome, email, telefone, senha, tipo_usuario, funcao_funcionario, codigo_admin, data_cadastro) 
+                 VALUES (?, ?, ?, ?, 'funcionario', ?, ?, NOW())",
+                "sssssi",
+                [$nomeCompleto, $email, $telefone, $hashedPassword, $codigo['funcao'], $codigo['admin_id']]
+            );
+
+            // Marcar código como usado
+            $this->db->execute(
+                "UPDATE codigos_funcionarios SET usado = 1, usado_por_usuario = ?, data_uso = NOW() WHERE codigo = ?",
+                "is",
+                [$funcionarioId, $codigoAdmin]
+            );
+
+            return [
+                'success' => true,
+                'data' => [
+                    'usuario_id' => $funcionarioId,
+                    'nome' => $nomeCompleto,
+                    'funcao' => $codigo['funcao'],
+                    'admin_id' => $codigo['admin_id']
+                ],
+                'message' => 'Cadastro de funcionário realizado com sucesso'
+            ];
+
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'data' => null,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Gerar código único para funcionário (apenas administradores)
+     */
+    public function gerarCodigoFuncionario($adminId, $funcao)
+    {
+        try {
+            // Verificar se o usuário é administrador
+            $admin = $this->db->selectOne(
+                "SELECT tipo_usuario FROM usuarios WHERE id = ?",
+                "i",
+                [$adminId]
+            );
+
+            if (!$admin || $admin['tipo_usuario'] !== 'administrador') {
+                throw new \Exception('Apenas administradores podem gerar códigos');
+            }
+
+            // Gerar código único
+            $tentativas = 0;
+            do {
+                $codigo = str_pad(rand(100000, 999999), 6, '0', STR_PAD_LEFT);
+                
+                $existe = $this->db->selectOne(
+                    "SELECT id FROM codigos_funcionarios WHERE codigo = ?",
+                    "s",
+                    [$codigo]
+                );
+                
+                $tentativas++;
+            } while ($existe && $tentativas < 100);
+
+            if ($existe) {
+                throw new \Exception('Erro ao gerar código único');
+            }
+
+            // Inserir código na tabela
+            $codigoId = $this->db->insert(
+                "INSERT INTO codigos_funcionarios (codigo, admin_id, funcao, ativo, data_criacao) 
+                 VALUES (?, ?, ?, 1, NOW())",
+                "sis",
+                [$codigo, $adminId, $funcao]
+            );
+
+            return [
+                'success' => true,
+                'data' => [
+                    'codigo' => $codigo,
+                    'funcao' => $funcao,
+                    'data_criacao' => date('Y-m-d H:i:s')
+                ],
+                'message' => 'Código gerado com sucesso'
+            ];
+
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'data' => null,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Listar códigos gerados pelo administrador
+     */
+    public function listarCodigosFuncionarios($adminId)
+    {
+        try {
+            $codigos = $this->db->selectAll(
+                "SELECT cf.*, u.nome as funcionario_nome 
+                 FROM codigos_funcionarios cf 
+                 LEFT JOIN usuarios u ON cf.usado_por_usuario = u.id 
+                 WHERE cf.admin_id = ? AND cf.ativo = 1 
+                 ORDER BY cf.data_criacao DESC",
+                "i",
+                [$adminId]
+            );
+
+            return [
+                'success' => true,
+                'data' => $codigos,
+                'message' => 'Códigos listados com sucesso'
+            ];
+
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'data' => null,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Atualizar login para incluir código único do administrador
+     */
+    public function login($email, $password)
+    {
+        try {
+            if (empty($email) || empty($password)) {
+                throw new \Exception('Email e senha são obrigatórios');
+            }
+
+            // Verificar se o usuário existe
+            $user = $this->db->selectOne(
+                "SELECT * FROM usuarios WHERE email = ?",
+                "s",
+                [$email]
+            );
+
+            if (!$user) {
+                throw new \Exception('Email ou senha incorretos');
+            }
+
+            // Verificar senha usando hash seguro
+            if (!password_verify($password, $user['senha'])) {
+                throw new \Exception('Email ou senha incorretos');
+            }
+
+            // Gerar código único para administradores se não tiverem
+            if ($user['tipo_usuario'] === 'administrador' && empty($user['codigo_unico'])) {
+                $codigoUnico = str_pad(rand(100000, 999999), 6, '0', STR_PAD_LEFT);
+                $this->db->execute(
+                    "UPDATE usuarios SET codigo_unico = ? WHERE id = ?",
+                    "si",
+                    [$codigoUnico, $user['id']]
+                );
+                $user['codigo_unico'] = $codigoUnico;
+            }
+
+            // Iniciar sessão - mantém compatibilidade
+            if (session_status() == PHP_SESSION_NONE) {
+                session_start();
+            }
+            
+            $_SESSION['usuario_id'] = $user['id'];
+            $_SESSION['usuario_nome'] = $user['nome'];
+            $_SESSION['usuario_email'] = $user['email'];
+            $_SESSION['usuario_tipo'] = $user['tipo_usuario'] ?? 'administrador';
+
+            $this->userData = $user;
+
+            return [
+                'success' => true,
+                'data' => [
+                    'usuario_id' => $user['id'],
+                    'nome' => $user['nome'],
+                    'tipo_usuario' => $user['tipo_usuario'] ?? 'administrador',
+                    'funcao_funcionario' => $user['funcao_funcionario'] ?? null,
+                    'codigo_unico' => $user['codigo_unico'] ?? null,
+                    'admin_id' => $user['codigo_admin'] ?? null
+                ],
+                'message' => 'Login realizado com sucesso'
+            ];
+
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'data' => null,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
      * Sanitizar entrada - mantém função original
      */
     public static function sanitizeInput($input)

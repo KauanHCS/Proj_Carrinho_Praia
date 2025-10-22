@@ -1,5 +1,7 @@
 <!-- Leaflet CSS -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+      crossorigin="" />
 
 <div class="container-fluid">
     <div class="row">
@@ -109,7 +111,9 @@
 </div>
 
 <!-- Leaflet JavaScript -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" 
+        crossorigin=""></script>
 
 <!-- Leaflet Routing Machine para rotas -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
@@ -1295,35 +1299,334 @@ function criarPontosExemplo() {
     }
 }
 
-// Inicializar quando carregar
-document.addEventListener('DOMContentLoaded', function() {
-    // Criar pontos de exemplo se necessário
-    criarPontosExemplo();
+// Função para recarregar bibliotecas com múltiplos CDNs
+function recarregarBibliotecas() {
+    // CDNs alternativos para fallback
+    const cdns = [
+        {
+            name: 'unpkg',
+            css: 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
+            js: 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+            routing: 'https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js',
+            routingCSS: 'https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css'
+        },
+        {
+            name: 'jsdelivr',
+            css: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css',
+            js: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js',
+            routing: 'https://cdn.jsdelivr.net/npm/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js',
+            routingCSS: 'https://cdn.jsdelivr.net/npm/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css'
+        },
+        {
+            name: 'cdnjs',
+            css: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css',
+            js: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js',
+            routing: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.min.js',
+            routingCSS: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.css'
+        }
+    ];
     
-    // Verificar se Leaflet carregou
-    if (typeof L !== 'undefined') {
-        initMap();
-        atualizarListaPontos();
-    } else {
-        // Aguardar carregar
-        setTimeout(() => {
-            if (typeof L !== 'undefined') {
-                initMap();
-                atualizarListaPontos();
-            } else {
-                document.getElementById('map').innerHTML = `
-                    <div class="alert alert-danger h-100 d-flex align-items-center justify-content-center">
-                        <div class="text-center">
-                            <i class="bi bi-exclamation-triangle fs-1"></i><br>
-                            <strong>Erro ao carregar bibliotecas do mapa</strong><br>
-                            <button class="btn btn-sm btn-primary mt-2" onclick="location.reload()">
-                                <i class="bi bi-arrow-clockwise"></i> Recarregar
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }
-        }, 1000);
+    let cdnIndex = 0;
+    
+    function tentarCarregarCDN() {
+        if (cdnIndex >= cdns.length) {
+            console.error('❌ Todos os CDNs falharam');
+            criarMapaAlternativo();
+            return;
+        }
+        
+        const cdn = cdns[cdnIndex];
+        console.log(`🔄 Tentando CDN: ${cdn.name}`);
+        
+        // Remover scripts e CSS antigos
+        const existingScript = document.querySelector('script[src*="leaflet.js"]');
+        const existingCSS = document.querySelector('link[href*="leaflet.css"]');
+        const existingRouting = document.querySelector('script[src*="leaflet-routing-machine"]');
+        
+        if (existingScript) existingScript.remove();
+        if (existingCSS) existingCSS.remove();
+        if (existingRouting) existingRouting.remove();
+        
+        // Carregar CSS do Leaflet
+        const cssLink = document.createElement('link');
+        cssLink.rel = 'stylesheet';
+        cssLink.href = cdn.css;
+        document.head.appendChild(cssLink);
+        
+        // Carregar JavaScript do Leaflet
+        const jsScript = document.createElement('script');
+        jsScript.src = cdn.js;
+        
+        jsScript.onload = function() {
+            console.log(`✅ ${cdn.name} - Leaflet carregado`);
+            
+            // Carregar Routing Machine CSS
+            const routingCSS = document.createElement('link');
+            routingCSS.rel = 'stylesheet';
+            routingCSS.href = cdn.routingCSS;
+            document.head.appendChild(routingCSS);
+            
+            // Carregar Routing Machine JS
+            const routingScript = document.createElement('script');
+            routingScript.src = cdn.routing;
+            
+            routingScript.onload = function() {
+                console.log(`✅ ${cdn.name} - Routing Machine carregado`);
+                setTimeout(() => {
+                    initMap();
+                    atualizarListaPontos();
+                    mostrarAlerta(`🌍 Mapa carregado via ${cdn.name}!`, 'success');
+                }, 100);
+            };
+            
+            routingScript.onerror = function() {
+                console.warn(`⚠️ ${cdn.name} - Routing falhou, mas mapa funciona`);
+                setTimeout(() => {
+                    initMap();
+                    atualizarListaPontos();
+                    mostrarAlerta(`🌍 Mapa carregado (sem rotas)!`, 'warning');
+                }, 100);
+            };
+            
+            document.head.appendChild(routingScript);
+        };
+        
+        jsScript.onerror = function() {
+            console.error(`❌ ${cdn.name} falhou, tentando próximo...`);
+            cdnIndex++;
+            setTimeout(tentarCarregarCDN, 500);
+        };
+        
+        document.head.appendChild(jsScript);
     }
-});
+    
+    tentarCarregarCDN();
+}
+
+// Função para criar mapa alternativo simples quando todos os CDNs falham
+function criarMapaAlternativo() {
+    console.log('🎯 Criando mapa alternativo simples');
+    
+    document.getElementById('map').innerHTML = `
+        <div class="bg-light border rounded d-flex flex-column align-items-center justify-content-center" style="min-height: 400px;">
+            <div class="text-center p-4">
+                <i class="bi bi-geo-alt" style="font-size: 4rem; color: #0066cc; margin-bottom: 1rem;"></i>
+                <h4>Mapa Simplificado</h4>
+                <p class="text-muted mb-4">As bibliotecas do mapa não puderam ser carregadas, mas você ainda pode usar as funcionalidades básicas.</p>
+                
+                <!-- Botões de localização -->
+                <div class="d-grid gap-2 d-md-block mb-3">
+                    <button class="btn btn-primary" onclick="obterLocalizacaoSimples()">
+                        <i class="bi bi-crosshair"></i> Obter Minha Localização
+                    </button>
+                    <button class="btn btn-success" onclick="adicionarPontoManual()">
+                        <i class="bi bi-pin-map"></i> Adicionar Ponto Manual
+                    </button>
+                </div>
+                
+                <!-- Exibir localização atual -->
+                <div id="localizacaoAtual" class="alert alert-info d-none">
+                    <h6><i class="bi bi-geo-alt-fill"></i> Sua Localização Atual</h6>
+                    <p id="coordenadasAtuais">-</p>
+                    <div>
+                        <button class="btn btn-sm btn-outline-primary me-2" onclick="copiarCoordenadas()">
+                            <i class="bi bi-clipboard"></i> Copiar
+                        </button>
+                        <button class="btn btn-sm btn-outline-success" onclick="abrirNoGoogleMaps()">
+                            <i class="bi bi-map"></i> Abrir no Google Maps
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Função para mostrar erro do mapa
+function mostrarErroMapa() {
+    document.getElementById('map').innerHTML = `
+        <div class="alert alert-danger h-100 d-flex align-items-center justify-content-center" style="min-height: 400px;">
+            <div class="text-center">
+                <i class="bi bi-exclamation-triangle" style="font-size: 3rem; color: #dc3545;"></i><br><br>
+                <h5>Erro ao carregar bibliotecas do mapa</h5>
+                <p class="text-muted mb-3">Verifique sua conexão com a internet</p>
+                <div class="d-grid gap-2 d-md-block">
+                    <button class="btn btn-primary" onclick="recarregarBibliotecas()">
+                        <i class="bi bi-arrow-clockwise"></i> Tentar Novamente
+                    </button>
+                    <button class="btn btn-secondary" onclick="location.reload()">
+                        <i class="bi bi-arrow-counterclockwise"></i> Recarregar Página
+                    </button>
+                </div>
+                <small class="text-muted d-block mt-3">Se o problema persistir, verifique se o seu navegador permite scripts externos</small>
+            </div>
+        </div>
+    `;
+}
+
+// Sistema robusto de inicialização
+function inicializarSistemaMapas() {
+    let tentativas = 0;
+    const maxTentativas = 5;
+    
+    function verificarLibraries() {
+        tentativas++;
+        console.log(`🔍 Verificando bibliotecas (tentativa ${tentativas}/${maxTentativas})...`);
+        
+        if (typeof L !== 'undefined') {
+            console.log('✅ Leaflet encontrado!');
+            criarPontosExemplo();
+            initMap();
+            atualizarListaPontos();
+            return;
+        }
+        
+        if (tentativas < maxTentativas) {
+            console.log(`⏳ Aguardando bibliotecas... (${tentativas}/${maxTentativas})`);
+            setTimeout(verificarLibraries, 1000);
+        } else {
+            console.error('❌ Bibliotecas não carregaram após todas as tentativas');
+            mostrarErroMapa();
+        }
+    }
+    
+    verificarLibraries();
+}
+
+// Funções para mapa alternativo simples
+let localizacaoSimples = null;
+
+function obterLocalizacaoSimples() {
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    
+    btn.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Obtendo localização...';
+    btn.disabled = true;
+    
+    if (!navigator.geolocation) {
+        mostrarAlerta('⚠️ Seu navegador não suporta geolocalização', 'warning');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        return;
+    }
+    
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            localizacaoSimples = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+                accuracy: position.coords.accuracy
+            };
+            
+            const coordElement = document.getElementById('coordenadasAtuais');
+            const locElement = document.getElementById('localizacaoAtual');
+            
+            coordElement.innerHTML = `
+                <strong>Latitude:</strong> ${localizacaoSimples.lat.toFixed(6)}<br>
+                <strong>Longitude:</strong> ${localizacaoSimples.lng.toFixed(6)}<br>
+                <small class="text-muted">Precisão: ±${Math.round(localizacaoSimples.accuracy)}m</small>
+            `;
+            
+            locElement.classList.remove('d-none');
+            mostrarAlerta('👍 Localização obtida com sucesso!', 'success');
+            
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        },
+        (error) => {
+            let mensagem = 'Erro ao obter localização: ';
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    mensagem += 'Permissão negada. Permita o acesso à localização.';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    mensagem += 'Localização indisponível.';
+                    break;
+                case error.TIMEOUT:
+                    mensagem += 'Tempo limite esgotado.';
+                    break;
+                default:
+                    mensagem += 'Erro desconhecido.';
+                    break;
+            }
+            mostrarAlerta(mensagem, 'danger');
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 300000
+        }
+    );
+}
+
+function adicionarPontoManual() {
+    const lat = prompt('Digite a latitude:');
+    if (!lat) return;
+    
+    const lng = prompt('Digite a longitude:');
+    if (!lng) return;
+    
+    const nome = prompt('Nome para este ponto:');
+    if (!nome) return;
+    
+    const ponto = {
+        id: Date.now(),
+        nome: nome,
+        lat: parseFloat(lat),
+        lng: parseFloat(lng),
+        data: new Date().toLocaleString('pt-BR')
+    };
+    
+    // Salvar no localStorage
+    let pontosSalvos = JSON.parse(localStorage.getItem('pontos_venda') || '[]');
+    pontosSalvos.push(ponto);
+    localStorage.setItem('pontos_venda', JSON.stringify(pontosSalvos));
+    
+    atualizarListaPontos();
+    mostrarAlerta(`📍 Ponto "${nome}" adicionado!`, 'success');
+}
+
+function copiarCoordenadas() {
+    if (!localizacaoSimples) {
+        mostrarAlerta('⚠️ Primeiro obtenha sua localização', 'warning');
+        return;
+    }
+    
+    const coordenadas = `${localizacaoSimples.lat.toFixed(6)}, ${localizacaoSimples.lng.toFixed(6)}`;
+    
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(coordenadas).then(() => {
+            mostrarAlerta('📋 Coordenadas copiadas!', 'success');
+        });
+    } else {
+        // Fallback para navegadores antigos
+        const textarea = document.createElement('textarea');
+        textarea.value = coordenadas;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        mostrarAlerta('📋 Coordenadas copiadas!', 'success');
+    }
+}
+
+function abrirNoGoogleMaps() {
+    if (!localizacaoSimples) {
+        mostrarAlerta('⚠️ Primeiro obtenha sua localização', 'warning');
+        return;
+    }
+    
+    const url = `https://www.google.com/maps?q=${localizacaoSimples.lat},${localizacaoSimples.lng}`;
+    window.open(url, '_blank');
+    mostrarAlerta('🌍 Abrindo no Google Maps...', 'info');
+}
+
+// Inicializar quando carregar
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', inicializarSistemaMapas);
+} else {
+    inicializarSistemaMapas();
+}
 </script>

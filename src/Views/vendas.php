@@ -85,6 +85,17 @@
                 <div class="mt-3">
                     <h5>Total: R$ <span id="totalCarrinho">0,00</span></h5>
                 </div>
+                <!-- Informações do Cliente -->
+                <div class="mt-3">
+                    <h6 class="text-muted mb-2">Informações do Cliente (Opcional)</h6>
+                    <div class="mb-2">
+                        <input type="text" class="form-control form-control-sm" id="nomeCliente" placeholder="Nome do cliente">
+                    </div>
+                    <div class="mb-2">
+                        <input type="tel" class="form-control form-control-sm" id="telefoneCliente" placeholder="Telefone">
+                    </div>
+                </div>
+                
                 <div class="mt-3">
                     <label for="formaPagamento" class="form-label">Forma de Pagamento</label>
                     <select class="form-select" id="formaPagamento">
@@ -100,6 +111,15 @@
                         <strong>Troco: R$ <span id="valorTroco">0,00</span></strong>
                     </div>
                 </div>
+                <div class="mt-3">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="criarPedido" value="">
+                        <label class="form-check-label" for="criarPedido">
+                            <small>Criar pedido para preparo</small>
+                        </label>
+                    </div>
+                </div>
+                
                 <div class="mt-3">
                     <button class="btn btn-success w-100" id="finalizarVenda">
                         <i class="bi bi-check-circle"></i> Finalizar Venda

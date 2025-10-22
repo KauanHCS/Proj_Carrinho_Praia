@@ -1,58 +1,1002 @@
+:root {
+    /* Cores principais */
+    --primary-color: #0066cc;
+    --primary-light: #0099ff;
+    --secondary-color: #6c757d;
+    --success-color: #28a745;
+    --success-light: #20c997;
+    --danger-color: #dc3545;
+    --danger-light: #c92066;
+    --warning-color: #ffc107;
+    --info-color: #17a2b8;
+    
+    /* Cores de fundo - Modo claro */
+    --bg-primary: #f8f9fa;
+    --bg-white: #ffffff;
+    --bg-light: #e9ecef;
+    --bg-dark: #343a40;
+    
+    /* Cores de texto - Modo claro */
+    --text-primary: #212529;
+    --text-secondary: #6c757d;
+    --text-muted: #767676;
+    
+    /* Bordas e sombras */
+    --border-color: #dee2e6;
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+    --shadow-lg: 0 20px 40px rgba(0,0,0,0.1);
+    
+    /* Espaçamentos */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 3rem;
+    
+    /* Bordas arredondadas */
+    --border-radius-sm: 6px;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --border-radius-xl: 20px;
+    
+    /* Tipografia */
+    --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    
+    /* Transições */
+    --transition-fast: 0.15s ease-in-out;
+    --transition-base: 0.2s ease-in-out;
+    --transition-slow: 0.3s ease-in-out;
+}
+
+/* =================================
+   MODO ESCURO - VERSÃO 2.0 
+   Paleta inspirada no VS Code Dark+
+   ================================= */
+   
+.dark-mode {
+    /* === CORES DE FUNDO === */
+    /* Inspirado no Material Design e GitHub Dark */
+    --bg-primary: #0d1117;      /* GitHub dark - fundo principal */
+    --bg-white: #21262d;        /* Cards e elementos destacados */
+    --bg-light: #30363d;        /* Hover states e elementos secundários */
+    --bg-dark: #010409;         /* Header e sidebar - mais escuro */
+    
+    /* === CORES DE TEXTO === */
+    /* Baseado em recomendações de acessibilidade WCAG */
+    --text-primary: #f0f6fc;    /* Branco azulado suave - principal */
+    --text-secondary: #8b949e;  /* Cinza azulado - secundário */
+    --text-muted: #6e7681;      /* Cinza mais escuro - menos importante */
+    
+    /* === BORDAS E LINHAS === */
+    --border-color: #30363d;    /* Bordas discretas mas visíveis */
+    
+    /* === SOMBRAS === */
+    /* Sombras mais sutis para modo escuro */
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.5);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.3);
+    
+    /* === CORES FUNCIONAIS === */
+    /* Cores ajustadas para melhor contraste no escuro */
+    --primary-color: #58a6ff;   /* Azul GitHub - mais suave */
+    --primary-light: #79c0ff;   /* Azul mais claro */
+    --success-color: #3fb950;   /* Verde GitHub */
+    --success-light: #56d364;   /* Verde mais claro */
+    --danger-color: #f85149;    /* Vermelho GitHub */
+    --danger-light: #ff7b72;    /* Vermelho mais claro */
+    --warning-color: #d29922;   /* Amarelo/laranja suave */
+    --info-color: #58a6ff;      /* Mesmo azul do primário */
+    
+    /* Aplicar cor de texto principal */
+    color: var(--text-primary);
+    
+    /* Transição suave para todas as mudanças */
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ========================================
+   ESTILOS DETALHADOS PARA MODO ESCURO
+   ======================================== */
+
+/* === CARDS E CONTAINERS === */
+.dark-mode .card {
+    background-color: var(--bg-white);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-md);
+}
+
+.dark-mode .card:hover {
+    border-color: rgba(88, 166, 255, 0.3);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+.dark-mode .card-header {
+    background: linear-gradient(135deg, var(--primary-color), #4169e1);
+    border-bottom-color: var(--border-color);
+    color: white;
+}
+
+/* === FORMULÁRIOS === */
+.dark-mode .form-control {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+}
+
+.dark-mode .form-control:focus {
+    background-color: var(--bg-primary);
+    border-color: var(--primary-color);
+    color: var(--text-primary);
+    box-shadow: 0 0 0 0.2rem rgba(88, 166, 255, 0.25);
+}
+
+.dark-mode .form-control::placeholder {
+    color: var(--text-muted);
+}
+
+.dark-mode .form-label {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* === TABELAS === */
+.dark-mode .table {
+    color: var(--text-primary);
+    --bs-table-bg: var(--bg-white);
+}
+
+.dark-mode .table-striped > tbody > tr:nth-of-type(odd) > td,
+.dark-mode .table-striped > tbody > tr:nth-of-type(odd) > th {
+    background-color: rgba(48, 54, 61, 0.3);
+}
+
+.dark-mode .table th {
+    color: var(--text-secondary);
+    border-color: var(--border-color);
+}
+
+.dark-mode .table td {
+    border-color: var(--border-color);
+}
+
+/* === NAVEGAÇÃO === */
+.dark-mode .nav-link {
+    color: var(--text-secondary) !important;
+    transition: all 0.2s ease;
+}
+
+.dark-mode .nav-link:hover {
+    color: var(--primary-color) !important;
+    background-color: rgba(88, 166, 255, 0.1);
+}
+
+.dark-mode .nav-link.active {
+    color: var(--primary-color) !important;
+    background-color: rgba(88, 166, 255, 0.15);
+}
+
+/* === TEXTO === */
+.dark-mode .text-muted {
+    color: var(--text-muted) !important;
+}
+
+.dark-mode small {
+    color: var(--text-muted);
+}
+
+.dark-mode h1, .dark-mode h2, .dark-mode h3, 
+.dark-mode h4, .dark-mode h5, .dark-mode h6 {
+    color: var(--text-primary);
+}
+
+/* === ALERTAS === */
+.dark-mode .alert {
+    border: 1px solid;
+    backdrop-filter: blur(8px);
+}
+
+.dark-mode .alert-info {
+    background: linear-gradient(135deg, rgba(88, 166, 255, 0.15), rgba(88, 166, 255, 0.05));
+    border-color: rgba(88, 166, 255, 0.3);
+    color: #79c0ff;
+}
+
+.dark-mode .alert-success {
+    background: linear-gradient(135deg, rgba(63, 185, 80, 0.15), rgba(63, 185, 80, 0.05));
+    border-color: rgba(63, 185, 80, 0.3);
+    color: #56d364;
+}
+
+.dark-mode .alert-warning {
+    background: linear-gradient(135deg, rgba(210, 153, 34, 0.15), rgba(210, 153, 34, 0.05));
+    border-color: rgba(210, 153, 34, 0.3);
+    color: #f2cc60;
+}
+
+.dark-mode .alert-danger {
+    background: linear-gradient(135deg, rgba(248, 81, 73, 0.15), rgba(248, 81, 73, 0.05));
+    border-color: rgba(248, 81, 73, 0.3);
+    color: #ff7b72;
+}
+
+/* === FOOTER === */
+.dark-mode .footer {
+    background-color: var(--bg-dark);
+    border-top: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+/* === SIDEBAR === */
+.dark-mode .sidebar {
+    background: linear-gradient(180deg, var(--bg-dark) 0%, #151b23 100%);
+    border-right: 1px solid var(--border-color);
+    box-shadow: 4px 0 12px rgba(0,0,0,0.3);
+}
+
+.dark-mode .sidebar .nav-link {
+    color: var(--text-secondary);
+    border-radius: 8px;
+    margin: 2px 8px;
+    padding: 12px 16px;
+    transition: all 0.2s ease;
+}
+
+.dark-mode .sidebar .nav-link:hover {
+    background: linear-gradient(135deg, rgba(88, 166, 255, 0.1), rgba(88, 166, 255, 0.05));
+    color: var(--primary-color);
+    transform: translateX(4px);
+}
+
+.dark-mode .sidebar .nav-link.active {
+    background: linear-gradient(135deg, var(--primary-color), #4169e1);
+    color: white;
+    box-shadow: 0 4px 12px rgba(88, 166, 255, 0.3);
+}
+
+.dark-mode .sidebar .nav-link i {
+    margin-right: 12px;
+    width: 20px;
+    text-align: center;
+}
+
+/* === HEADER === */
+.dark-mode .main-header {
+    background: linear-gradient(135deg, var(--bg-dark) 0%, #0f1419 100%);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+
+.dark-mode .brand {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.dark-mode .user-info-header {
+    color: var(--text-primary);
+}
+
+.dark-mode .user-avatar-header {
+    border: 2px solid var(--primary-color);
+    box-shadow: 0 0 12px rgba(88, 166, 255, 0.3);
+}
+
+/* === BOTÕES === */
+.dark-mode .btn-primary {
+    background: linear-gradient(135deg, var(--primary-color), #4169e1);
+    border: none;
+    color: white;
+    box-shadow: 0 4px 12px rgba(88, 166, 255, 0.3);
+}
+
+.dark-mode .btn-primary:hover {
+    background: linear-gradient(135deg, #79c0ff, var(--primary-color));
+    box-shadow: 0 6px 20px rgba(88, 166, 255, 0.4);
+    transform: translateY(-2px);
+}
+
+.dark-mode .btn-outline-primary {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    background: transparent;
+}
+
+.dark-mode .btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+    box-shadow: 0 4px 12px rgba(88, 166, 255, 0.3);
+}
+
+.dark-mode .btn-success {
+    background: linear-gradient(135deg, var(--success-color), #2ea043);
+    border: none;
+}
+
+.dark-mode .btn-danger {
+    background: linear-gradient(135deg, var(--danger-color), #da3633);
+    border: none;
+}
+
+/* === PRODUTOS === */
+.dark-mode .product-btn {
+    background: linear-gradient(135deg, var(--bg-white), var(--bg-light));
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+    backdrop-filter: blur(8px);
+}
+
+.dark-mode .product-btn:hover {
+    border-color: var(--primary-color);
+    background: linear-gradient(135deg, var(--bg-light), var(--bg-white));
+    box-shadow: 0 8px 25px rgba(88, 166, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.dark-mode .product-btn.low-stock {
+    background: linear-gradient(135deg, rgba(210, 153, 34, 0.2), rgba(210, 153, 34, 0.1));
+    border-color: var(--warning-color);
+    box-shadow: 0 0 20px rgba(210, 153, 34, 0.3);
+    animation: pulse-warning-dark 2s infinite;
+}
+
+@keyframes pulse-warning-dark {
+    0% { 
+        box-shadow: 0 0 20px rgba(210, 153, 34, 0.3);
+        border-color: var(--warning-color);
+    }
+    50% { 
+        box-shadow: 0 0 30px rgba(210, 153, 34, 0.5);
+        border-color: #f2cc60;
+    }
+    100% { 
+        box-shadow: 0 0 20px rgba(210, 153, 34, 0.3);
+        border-color: var(--warning-color);
+    }
+}
+
+/* === MODAIS === */
+.dark-mode .modal-content {
+    background-color: var(--bg-white);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.dark-mode .modal-header {
+    border-bottom-color: var(--border-color);
+}
+
+.dark-mode .modal-footer {
+    border-top-color: var(--border-color);
+}
+
+/* === SCROLLBAR === */
+.dark-mode ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.dark-mode ::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+.dark-mode ::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+.dark-mode ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+/* === PROGRESS BARS === */
+.dark-mode .progress {
+    background-color: var(--bg-light);
+}
+
+.dark-mode .progress-bar {
+    background: linear-gradient(90deg, var(--primary-color), #4169e1);
+}
+
+/* === BADGES === */
+.dark-mode .badge {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.dark-mode .badge.bg-warning {
+    background-color: var(--warning-color) !important;
+    color: var(--bg-dark);
+}
+
+.dark-mode .badge.bg-success {
+    background-color: var(--success-color) !important;
+}
+
+.dark-mode .badge.bg-danger {
+    background-color: var(--danger-color) !important;
+}
+
+/* === CONTAINERS E WRAPPERS === */
+/* Garantir que todos os containers tenham fundo escuro */
+.dark-mode .container,
+.dark-mode .container-fluid,
+.dark-mode .row,
+.dark-mode .col,
+.dark-mode [class*="col-"] {
+    background-color: transparent;
+}
+
+.dark-mode .main-content {
+    background-color: var(--bg-primary);
+}
+
+.dark-mode .tab-pane {
+    background-color: transparent;
+}
+
+/* === ELEMENTOS ESPECÍFICOS === */
+.dark-mode .card-body {
+    background-color: transparent;
+    color: var(--text-primary);
+}
+
+.dark-mode .card-footer {
+    background-color: var(--bg-light);
+    border-top-color: var(--border-color);
+    color: var(--text-secondary);
+}
+
+/* Inputs e selects */
+.dark-mode .form-select {
+    background-color: var(--bg-primary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23f0f6fc' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m1 6 7 7 7-7'/%3e%3c/svg%3e");
+}
+
+.dark-mode .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(88, 166, 255, 0.25);
+}
+
+/* Dropdown menus */
+.dark-mode .dropdown-menu {
+    background-color: var(--bg-white);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-lg);
+}
+
+.dark-mode .dropdown-item {
+    color: var(--text-primary);
+}
+
+.dark-mode .dropdown-item:hover {
+    background-color: var(--bg-light);
+    color: var(--primary-color);
+}
+
+/* Lista de grupos */
+.dark-mode .list-group {
+    background-color: transparent;
+}
+
+.dark-mode .list-group-item {
+    background-color: var(--bg-white);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.dark-mode .list-group-item:hover {
+    background-color: var(--bg-light);
+}
+
+/* Breadcrumb */
+.dark-mode .breadcrumb {
+    background-color: var(--bg-light);
+}
+
+.dark-mode .breadcrumb-item {
+    color: var(--text-secondary);
+}
+
+.dark-mode .breadcrumb-item.active {
+    color: var(--text-primary);
+}
+
+/* Pagination */
+.dark-mode .page-link {
+    background-color: var(--bg-white);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.dark-mode .page-link:hover {
+    background-color: var(--bg-light);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.dark-mode .page-item.active .page-link {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Toasts */
+.dark-mode .toast {
+    background-color: var(--bg-white);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.dark-mode .toast-header {
+    background-color: var(--bg-light);
+    border-bottom-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+/* Accordion */
+.dark-mode .accordion {
+    background-color: transparent;
+}
+
+.dark-mode .accordion-item {
+    background-color: var(--bg-white);
+    border-color: var(--border-color);
+}
+
+.dark-mode .accordion-header {
+    background-color: transparent;
+}
+
+.dark-mode .accordion-button {
+    background-color: var(--bg-light);
+    color: var(--text-primary);
+    border: none;
+}
+
+.dark-mode .accordion-button:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(88, 166, 255, 0.25);
+}
+
+.dark-mode .accordion-body {
+    background-color: var(--bg-white);
+    color: var(--text-primary);
+}
+
+/* Offcanvas */
+.dark-mode .offcanvas {
+    background-color: var(--bg-white);
+    color: var(--text-primary);
+}
+
+.dark-mode .offcanvas-header {
+    border-bottom-color: var(--border-color);
+}
+
+/* Close buttons */
+.dark-mode .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* Wells/Jumbotron alternatives */
+.dark-mode .bg-light {
+    background-color: var(--bg-light) !important;
+}
+
+.dark-mode .bg-white {
+    background-color: var(--bg-white) !important;
+}
+
+.dark-mode .bg-secondary {
+    background-color: var(--bg-light) !important;
+}
+
+/* Text utilities */
+.dark-mode .text-dark {
+    color: var(--text-primary) !important;
+}
+
+.dark-mode .text-secondary {
+    color: var(--text-secondary) !important;
+}
+
+/* Border utilities */
+.dark-mode .border {
+    border-color: var(--border-color) !important;
+}
+
+.dark-mode .border-top {
+    border-top-color: var(--border-color) !important;
+}
+
+.dark-mode .border-bottom {
+    border-bottom-color: var(--border-color) !important;
+}
+
+.dark-mode .border-left,
+.dark-mode .border-start {
+    border-left-color: var(--border-color) !important;
+}
+
+.dark-mode .border-right,
+.dark-mode .border-end {
+    border-right-color: var(--border-color) !important;
+}
+
+/* Para garantir que elementos html/CSS não sobreponham */
+.dark-mode * {
+    border-color: var(--border-color);
+}
+
+/* Garantir que todos os backgrounds brancos sejam substituídos */
+.dark-mode [style*="background-color: white"],
+.dark-mode [style*="background-color: #ffffff"],
+.dark-mode [style*="background-color: #fff"],
+.dark-mode [style*="background: white"],
+.dark-mode [style*="background: #ffffff"],
+.dark-mode [style*="background: #fff"] {
+    background-color: var(--bg-white) !important;
+}
+
+/* === CORREÇÃO FORÇADA PARA ELEMENTOS PROBLEMÁTICOS === */
+/* Forçar fundo escuro em TODOS os elementos problemáticos */
+.dark-mode * {
+    /* Remove any white backgrounds */
+    background-color: transparent !important;
+}
+
+/* Depois reaplica os backgrounds corretos para elementos que precisam */
+.dark-mode body,
+.dark-mode html {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+.dark-mode .card,
+.dark-mode .modal-content,
+.dark-mode .dropdown-menu,
+.dark-mode .list-group-item,
+.dark-mode .accordion-item,
+.dark-mode .toast,
+.dark-mode .offcanvas,
+.dark-mode .page-link {
+    background-color: var(--bg-white) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+.dark-mode .card-header,
+.dark-mode .modal-header,
+.dark-mode .toast-header,
+.dark-mode .accordion-button {
+    background: linear-gradient(135deg, var(--primary-color), #4169e1) !important;
+    color: white !important;
+    border-color: var(--border-color) !important;
+}
+
+.dark-mode .card-footer,
+.dark-mode .modal-footer,
+.dark-mode .accordion-body {
+    background-color: var(--bg-light) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+.dark-mode .form-control,
+.dark-mode .form-select,
+.dark-mode input,
+.dark-mode textarea,
+.dark-mode select {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+.dark-mode .btn-primary {
+    background: linear-gradient(135deg, var(--primary-color), #4169e1) !important;
+    border-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+.dark-mode .btn-outline-primary {
+    background-color: transparent !important;
+    border-color: var(--primary-color) !important;
+    color: var(--primary-color) !important;
+}
+
+.dark-mode .btn-outline-primary:hover {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+/* Sidebar e Header forçados */
+.dark-mode .sidebar {
+    background: linear-gradient(180deg, var(--bg-dark) 0%, #151b23 100%) !important;
+    color: var(--text-primary) !important;
+}
+
+.dark-mode .main-header {
+    background: linear-gradient(135deg, var(--bg-dark) 0%, #0f1419 100%) !important;
+    color: var(--text-primary) !important;
+}
+
+.dark-mode .main-content {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+.dark-mode .tab-content {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+.dark-mode .tab-pane {
+    background-color: transparent !important;
+    color: var(--text-primary) !important;
+}
+
+/* Para elementos específicos do Bootstrap que são teimosos */
+.dark-mode .bg-white {
+    background-color: var(--bg-white) !important;
+}
+
+.dark-mode .bg-light {
+    background-color: var(--bg-light) !important;
+}
+
+.dark-mode .text-dark {
+    color: var(--text-primary) !important;
+}
+
+/* Container geral */
+.dark-mode .container,
+.dark-mode .container-fluid {
+    background-color: transparent !important;
+}
+
+/* Rows and columns */
+.dark-mode .row,
+.dark-mode [class*="col-"] {
+    background-color: transparent !important;
+}
+
+/* Alertas */
+.dark-mode .alert {
+    border: 1px solid !important;
+}
+
+.dark-mode .alert-info {
+    background: linear-gradient(135deg, rgba(88, 166, 255, 0.15), rgba(88, 166, 255, 0.05)) !important;
+    border-color: rgba(88, 166, 255, 0.3) !important;
+    color: #79c0ff !important;
+}
+
+.dark-mode .alert-success {
+    background: linear-gradient(135deg, rgba(63, 185, 80, 0.15), rgba(63, 185, 80, 0.05)) !important;
+    border-color: rgba(63, 185, 80, 0.3) !important;
+    color: #56d364 !important;
+}
+
+.dark-mode .alert-warning {
+    background: linear-gradient(135deg, rgba(210, 153, 34, 0.15), rgba(210, 153, 34, 0.05)) !important;
+    border-color: rgba(210, 153, 34, 0.3) !important;
+    color: #f2cc60 !important;
+}
+
+.dark-mode .alert-danger {
+    background: linear-gradient(135deg, rgba(248, 81, 73, 0.15), rgba(248, 81, 73, 0.05)) !important;
+    border-color: rgba(248, 81, 73, 0.3) !important;
+    color: #ff7b72 !important;
+}
+
+/* Footer */
+.dark-mode .footer {
+    background-color: var(--bg-dark) !important;
+    border-top-color: var(--border-color) !important;
+    color: var(--text-secondary) !important;
+}
+
+/* === CORRECAÇÃO FINAL - NUCLEAR === */
+/* Forçar TUDO a ser escuro - abordagem nuclear para elementos teimosos */
+.dark-mode,
+.dark-mode *:not(img):not(svg):not(canvas):not(video):not(iframe) {
+    /* Remove qualquer background branco de qualquer elemento */
+    background: transparent !important;
+}
+
+/* Reaplicar backgrounds essenciais */
+.dark-mode {
+    background: var(--bg-primary) !important;
+}
+
+.dark-mode body {
+    background: var(--bg-primary) !important;
+}
+
+.dark-mode .card,
+.dark-mode .modal-content,
+.dark-mode .dropdown-menu,
+.dark-mode .toast,
+.dark-mode .offcanvas {
+    background: var(--bg-white) !important;
+}
+
+.dark-mode .card-header,
+.dark-mode .modal-header,
+.dark-mode .navbar,
+.dark-mode .main-header {
+    background: linear-gradient(135deg, var(--primary-color), #4169e1) !important;
+}
+
+.dark-mode .sidebar {
+    background: linear-gradient(180deg, var(--bg-dark), #151b23) !important;
+}
+
+.dark-mode .card-footer,
+.dark-mode .modal-footer {
+    background: var(--bg-light) !important;
+}
+
+.dark-mode .form-control,
+.dark-mode input,
+.dark-mode textarea,
+.dark-mode select {
+    background: var(--bg-primary) !important;
+}
+
+.dark-mode .btn-primary {
+    background: linear-gradient(135deg, var(--primary-color), #4169e1) !important;
+}
+
+/* Garantir que elementos de UI importantes mantenham cor */
+.dark-mode .alert-info {
+    background: linear-gradient(135deg, rgba(88, 166, 255, 0.15), rgba(88, 166, 255, 0.05)) !important;
+}
+
+.dark-mode .alert-success {
+    background: linear-gradient(135deg, rgba(63, 185, 80, 0.15), rgba(63, 185, 80, 0.05)) !important;
+}
+
+.dark-mode .alert-warning {
+    background: linear-gradient(135deg, rgba(210, 153, 34, 0.15), rgba(210, 153, 34, 0.05)) !important;
+}
+
+.dark-mode .alert-danger {
+    background: linear-gradient(135deg, rgba(248, 81, 73, 0.15), rgba(248, 81, 73, 0.05)) !important;
+}
+
+/* Override final para Bootstrap e outras libs que insistem em branco */
+.dark-mode .bg-white,
+.dark-mode [class*="bg-white"] {
+    background-color: var(--bg-white) !important;
+}
+
+.dark-mode .bg-light,
+.dark-mode [class*="bg-light"] {
+    background-color: var(--bg-light) !important;
+}
+
+/* Especificamente para o problema de background que você está vendo */
+.dark-mode .container-fluid,
+.dark-mode .row,
+.dark-mode .col,
+.dark-mode [class*="col-"],
+.dark-mode .tab-content,
+.dark-mode .tab-pane {
+    background: transparent !important;
+}
+
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f8f9fa;
+    font-family: var(--font-family);
+    background-color: var(--bg-primary);
     padding-bottom: 70px;
+    line-height: 1.6;
+    transition: background-color var(--transition-base), color var(--transition-base);
+}
+
+/* Garantir que o body no modo escuro nunca tenha fundo branco */
+.dark-mode body {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary);
 }
 
 .navbar {
-    background: linear-gradient(135deg, #0066cc, #0099ff);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+    transition: background var(--transition-base);
 }
 
 .navbar-brand, .nav-link {
     color: white !important;
     font-weight: 500;
+    transition: opacity var(--transition-base);
+}
+
+.navbar-brand:hover, .nav-link:hover {
+    opacity: 0.85;
 }
 
 .card {
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    margin-bottom: 20px;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+    margin-bottom: var(--spacing-lg);
     border: none;
-    transition: transform 0.2s;
+    background-color: var(--bg-white);
+    transition: transform var(--transition-base), box-shadow var(--transition-base);
 }
 
 .card:hover {
     transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Melhorar acessibilidade */
+.card:focus-within {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
 }
 
 .card-header {
-    background: linear-gradient(135deg, #0066cc, #0099ff);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
     color: white;
-    border-radius: 12px 12px 0 0 !important;
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0 !important;
     font-weight: 600;
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #0066cc, #0099ff);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
     border: none;
-    border-radius: 8px;
+    border-radius: var(--border-radius-md);
+    transition: all var(--transition-base);
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
 }
 
 .btn-success {
-    background: linear-gradient(135deg, #28a745, #20c997);
+    background: linear-gradient(135deg, var(--success-color), var(--success-light));
     border: none;
-    border-radius: 8px;
+    border-radius: var(--border-radius-md);
+    transition: all var(--transition-base);
+}
+
+.btn-success:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
 }
 
 .btn-danger {
-    background: linear-gradient(135deg, #dc3545, #c92066);
+    background: linear-gradient(135deg, var(--danger-color), var(--danger-light));
     border: none;
-    border-radius: 8px;
+    border-radius: var(--border-radius-md);
+    transition: all var(--transition-base);
+}
+
+.btn-danger:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
 }
 
 .low-stock {
     background-color: #fff3cd;
-    border-left: 4px solid #ffc107;
+    border-left: 4px solid var(--warning-color);
+    animation: pulse-warning 2s infinite;
+}
+
+@keyframes pulse-warning {
+    0% { border-left-color: var(--warning-color); }
+    50% { border-left-color: transparent; }
+    100% { border-left-color: var(--warning-color); }
 }
 
 .footer {
@@ -118,9 +1062,16 @@ body {
 
 .tab-content {
     padding: 20px;
-    background-color: white;
+    background-color: var(--bg-white);
     border-radius: 12px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow-md);
+    transition: background-color var(--transition-base);
+}
+
+/* Tab content no modo escuro */
+.dark-mode .tab-content {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
 }
 
 .alert-banner {
@@ -208,10 +1159,62 @@ body {
     transition: transform 0.2s;
 }
 
+/* Dark mode para componentes */
+[data-theme="dark"] .card {
+    background-color: var(--bg-white);
+    color: #e0e0e0;
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .card-header {
+    background: linear-gradient(135deg, #333333, #404040);
+    border-color: #555555;
+}
+
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select {
+    background-color: #404040;
+    border-color: var(--border-color);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] .form-select:focus {
+    background-color: #4a4a4a;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(0, 102, 204, 0.25);
+}
+
+[data-theme="dark"] .text-muted {
+    color: #aaaaaa !important;
+}
+
+[data-theme="dark"] .table {
+    color: #ffffff;
+}
+
+[data-theme="dark"] .table-striped tbody tr:nth-of-type(odd) {
+    background-color: #333333;
+}
+
+[data-theme="dark"] .alert {
+    border-color: var(--border-color);
+}
+
+/* Focus indicators melhorados */
+.btn:focus,
+.form-control:focus,
+.form-select:focus {
+    box-shadow: 0 0 0 0.25rem rgba(0, 102, 204, 0.25) !important;
+    border-color: var(--primary-color) !important;
+}
+
 /* Ajuste do footer para sidebar */
 .footer {
     margin-left: 280px;
-    transition: margin-left 0.3s ease;
+    transition: margin-left var(--transition-slow);
+    background-color: var(--bg-primary);
+    border-color: var(--border-color);
 }
 
 @media (max-width: 768px) {
