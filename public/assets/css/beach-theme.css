@@ -1,0 +1,511 @@
+/**
+ * Beach Theme - Tema Praiano Moderno
+ * Sistema Carrinho de Praia v3.0
+ */
+
+/* ========================================
+   PALETA DE CORES PRAIANA
+======================================== */
+:root {
+    /* Cores Principais */
+    --praia-azul-claro: #4FC3F7;
+    --praia-azul: #29B6F6;
+    --praia-azul-escuro: #0288D1;
+    --praia-areia: #FFE082;
+    --praia-sol: #FFB300;
+    --praia-laranja: #FF6F00;
+    --praia-verde: #66BB6A;
+    --praia-vermelho: #EF5350;
+    
+    /* Gradientes */
+    --gradient-ceu: linear-gradient(135deg, #E3F2FD 0%, #81D4FA 100%);
+    --gradient-mar: linear-gradient(135deg, #0288D1 0%, #4FC3F7 100%);
+    --gradient-areia: linear-gradient(135deg, #FFE082 0%, #FFB300 100%);
+    --gradient-por-do-sol: linear-gradient(135deg, #FF6F00 0%, #FFB300 50%, #FFE082 100%);
+    
+    /* Sombras */
+    --shadow-card: 0 4px 15px rgba(2, 136, 209, 0.15);
+    --shadow-card-hover: 0 8px 30px rgba(2, 136, 209, 0.25);
+    --shadow-button: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* ========================================
+   CARDS MODERNOS COM TEMA PRAIANO
+======================================== */
+.beach-card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: var(--shadow-card);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.beach-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: var(--gradient-mar);
+}
+
+.beach-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-card-hover);
+}
+
+/* Cards com ícones de praia */
+.beach-card-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    margin-bottom: 16px;
+    background: var(--gradient-ceu);
+    color: var(--praia-azul-escuro);
+    box-shadow: var(--shadow-button);
+}
+
+.beach-card-icon.vendas {
+    background: var(--gradient-mar);
+    color: white;
+}
+
+.beach-card-icon.produtos {
+    background: var(--gradient-areia);
+    color: var(--praia-laranja);
+}
+
+.beach-card-icon.estoque {
+    background: linear-gradient(135deg, #66BB6A 0%, #43A047 100%);
+    color: white;
+}
+
+.beach-card-icon.alerta {
+    background: linear-gradient(135deg, #EF5350 0%, #E53935 100%);
+    color: white;
+}
+
+/* ========================================
+   BOTÕES ESTILO PRAIA
+======================================== */
+.btn-beach {
+    background: var(--gradient-mar);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-weight: 600;
+    box-shadow: var(--shadow-button);
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-beach:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(2, 136, 209, 0.3);
+    color: white;
+}
+
+.btn-beach:active {
+    transform: translateY(0);
+}
+
+.btn-beach-sun {
+    background: var(--gradient-por-do-sol);
+    color: white;
+}
+
+.btn-beach-sand {
+    background: var(--gradient-areia);
+    color: var(--praia-laranja);
+}
+
+.btn-beach-success {
+    background: linear-gradient(135deg, #66BB6A 0%, #43A047 100%);
+    color: white;
+}
+
+.btn-beach-danger {
+    background: linear-gradient(135deg, #EF5350 0%, #E53935 100%);
+    color: white;
+}
+
+/* ========================================
+   BADGES COLORIDOS
+======================================== */
+.badge-beach {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.badge-beach-vendas {
+    background: var(--gradient-mar);
+    color: white;
+}
+
+.badge-beach-estoque {
+    background: linear-gradient(135deg, #66BB6A 0%, #43A047 100%);
+    color: white;
+}
+
+.badge-beach-baixo {
+    background: linear-gradient(135deg, #FFB300 0%, #FF6F00 100%);
+    color: white;
+}
+
+.badge-beach-esgotado {
+    background: linear-gradient(135deg, #EF5350 0%, #E53935 100%);
+    color: white;
+}
+
+/* ========================================
+   TABELAS RESPONSIVAS MODERNAS
+======================================== */
+.beach-table {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+}
+
+.beach-table table {
+    margin: 0;
+}
+
+.beach-table thead {
+    background: var(--gradient-mar);
+    color: white;
+}
+
+.beach-table thead th {
+    padding: 16px;
+    font-weight: 600;
+    border: none;
+}
+
+.beach-table tbody tr {
+    transition: all 0.2s ease;
+    border-bottom: 1px solid #E3F2FD;
+}
+
+.beach-table tbody tr:hover {
+    background: #E3F2FD;
+}
+
+.beach-table tbody td {
+    padding: 14px 16px;
+    vertical-align: middle;
+}
+
+/* ========================================
+   INPUTS MODERNOS
+======================================== */
+.beach-input {
+    border: 2px solid #E3F2FD;
+    border-radius: 12px;
+    padding: 12px 16px;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+}
+
+.beach-input:focus {
+    border-color: var(--praia-azul);
+    box-shadow: 0 0 0 4px rgba(41, 182, 246, 0.1);
+    outline: none;
+}
+
+.beach-input-icon {
+    position: relative;
+}
+
+.beach-input-icon i {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--praia-azul);
+    font-size: 1.1rem;
+}
+
+.beach-input-icon input {
+    padding-left: 45px;
+}
+
+/* ========================================
+   ESTATÍSTICAS / DASHBOARD CARDS
+======================================== */
+.stat-card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: var(--shadow-card);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 120px;
+    height: 120px;
+    background: var(--gradient-ceu);
+    border-radius: 50%;
+    transform: translate(40%, -40%);
+    opacity: 0.3;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-card-hover);
+}
+
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: var(--gradient-mar);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 10px 0;
+}
+
+.stat-label {
+    color: #666;
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-icon {
+    font-size: 2.5rem;
+    opacity: 0.2;
+    position: absolute;
+    right: 20px;
+    top: 20px;
+}
+
+/* ========================================
+   ALERTAS PERSONALIZADOS
+======================================== */
+.beach-alert {
+    border-radius: 12px;
+    border: none;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: var(--shadow-button);
+}
+
+.beach-alert i {
+    font-size: 1.5rem;
+}
+
+.beach-alert-info {
+    background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+    color: #0277BD;
+}
+
+.beach-alert-success {
+    background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+    color: #2E7D32;
+}
+
+.beach-alert-warning {
+    background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
+    color: #E65100;
+}
+
+.beach-alert-danger {
+    background: linear-gradient(135deg, #FFEBEE 0%, #FFCDD2 100%);
+    color: #C62828;
+}
+
+/* ========================================
+   PROGRESS BARS PRAIANO
+======================================== */
+.beach-progress {
+    height: 10px;
+    border-radius: 20px;
+    background: #E3F2FD;
+    overflow: hidden;
+}
+
+.beach-progress-bar {
+    height: 100%;
+    background: var(--gradient-mar);
+    border-radius: 20px;
+    transition: width 0.6s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.beach-progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(255,255,255,0.3), 
+        transparent
+    );
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* ========================================
+   MODAL MODERNO
+======================================== */
+.beach-modal .modal-content {
+    border-radius: 20px;
+    border: none;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+
+.beach-modal .modal-header {
+    background: var(--gradient-mar);
+    color: white;
+    border-radius: 20px 20px 0 0;
+    padding: 20px 24px;
+    border: none;
+}
+
+.beach-modal .modal-header .btn-close {
+    filter: invert(1);
+}
+
+.beach-modal .modal-body {
+    padding: 24px;
+}
+
+.beach-modal .modal-footer {
+    border: none;
+    padding: 20px 24px;
+}
+
+/* ========================================
+   LOADING SPINNER PRAIANO
+======================================== */
+.beach-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #E3F2FD;
+    border-top-color: var(--praia-azul);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ========================================
+   TOOLTIP PERSONALIZADO
+======================================== */
+.beach-tooltip {
+    background: var(--gradient-mar);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    box-shadow: var(--shadow-button);
+}
+
+/* ========================================
+   ANIMAÇÕES
+======================================== */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in-up {
+    animation: fadeInUp 0.5s ease;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.pulse-animation {
+    animation: pulse 2s infinite;
+}
+
+/* ========================================
+   RESPONSIVIDADE
+======================================== */
+@media (max-width: 768px) {
+    .beach-card {
+        padding: 16px;
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+    }
+    
+    .beach-card-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 24px;
+    }
+}
+
+/* ========================================
+   UTILIDADES
+======================================== */
+.text-beach {
+    background: var(--gradient-mar);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.bg-beach {
+    background: var(--gradient-mar);
+    color: white;
+}
+
+.bg-beach-sand {
+    background: var(--gradient-areia);
+}
+
+.bg-beach-sky {
+    background: var(--gradient-ceu);
+}

@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Carrinho de Praia</title>
+    
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- Tema Praiano -->
+    <link href="assets/css/beach-theme.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 50%, #81D4FA 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="row mb-4 fade-in-up">
+            <div class="col-12">
+                <div class="beach-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="text-beach mb-2">
+                                <i class="bi bi-water"></i>
+                                Dashboard - Carrinho de Praia
+                            </h2>
+                            <p class="text-muted mb-0">
+                                <i class="bi bi-calendar-event"></i>
+                                Hoje, 13 de Novembro de 2025
+                            </p>
+                        </div>
+                        <button class="btn-beach">
+                            <i class="bi bi-plus-circle"></i>
+                            Nova Venda
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cards de Estatísticas -->
+        <div class="row g-4 mb-4">
+            <!-- Vendas Hoje -->
+            <div class="col-md-3 fade-in-up" style="animation-delay: 0.1s">
+                <div class="stat-card">
+                    <i class="bi bi-cart-check stat-icon"></i>
+                    <div class="stat-label">Vendas Hoje</div>
+                    <div class="stat-value">24</div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge-beach badge-beach-vendas">
+                            <i class="bi bi-arrow-up"></i>
+                            +12%
+                        </span>
+                        <small class="text-muted">vs ontem</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Faturamento -->
+            <div class="col-md-3 fade-in-up" style="animation-delay: 0.2s">
+                <div class="stat-card">
+                    <i class="bi bi-cash-coin stat-icon"></i>
+                    <div class="stat-label">Faturamento</div>
+                    <div class="stat-value">R$ 1.850</div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge-beach badge-beach-estoque">
+                            <i class="bi bi-arrow-up"></i>
+                            +18%
+                        </span>
+                        <small class="text-muted">vs ontem</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Produtos -->
+            <div class="col-md-3 fade-in-up" style="animation-delay: 0.3s">
+                <div class="stat-card">
+                    <i class="bi bi-box-seam stat-icon"></i>
+                    <div class="stat-label">Produtos</div>
+                    <div class="stat-value">156</div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge-beach badge-beach-estoque">
+                            <i class="bi bi-check-circle"></i>
+                            Em Estoque
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alerta Estoque -->
+            <div class="col-md-3 fade-in-up" style="animation-delay: 0.4s">
+                <div class="stat-card">
+                    <i class="bi bi-exclamation-triangle stat-icon"></i>
+                    <div class="stat-label">Estoque Baixo</div>
+                    <div class="stat-value">8</div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge-beach badge-beach-baixo pulse-animation">
+                            <i class="bi bi-bell"></i>
+                            Atenção!
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alertas -->
+        <div class="row mb-4">
+            <div class="col-12 fade-in-up">
+                <div class="beach-alert beach-alert-warning">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    <div class="flex-grow-1">
+                        <strong>Atenção!</strong> 8 produtos com estoque baixo.
+                    </div>
+                    <button class="btn btn-sm btn-beach-sun">
+                        Ver Produtos
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cards de Ação Rápida -->
+        <div class="row g-4 mb-4">
+            <!-- Adicionar Produto -->
+            <div class="col-md-4 fade-in-up" style="animation-delay: 0.1s">
+                <div class="beach-card">
+                    <div class="beach-card-icon produtos">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                    <h5 class="mb-2">Adicionar Produto</h5>
+                    <p class="text-muted mb-3">Cadastre novos produtos no estoque</p>
+                    <button class="btn-beach-sand">
+                        <i class="bi bi-plus-circle"></i>
+                        Novo Produto
+                    </button>
+                </div>
+            </div>
+
+            <!-- Registrar Venda -->
+            <div class="col-md-4 fade-in-up" style="animation-delay: 0.2s">
+                <div class="beach-card">
+                    <div class="beach-card-icon vendas">
+                        <i class="bi bi-cart-check"></i>
+                    </div>
+                    <h5 class="mb-2">Registrar Venda</h5>
+                    <p class="text-muted mb-3">Faça uma nova venda rápida</p>
+                    <button class="btn-beach">
+                        <i class="bi bi-cash-coin"></i>
+                        Nova Venda
+                    </button>
+                </div>
+            </div>
+
+            <!-- Relatórios -->
+            <div class="col-md-4 fade-in-up" style="animation-delay: 0.3s">
+                <div class="beach-card">
+                    <div class="beach-card-icon estoque">
+                        <i class="bi bi-graph-up"></i>
+                    </div>
+                    <h5 class="mb-2">Relatórios</h5>
+                    <p class="text-muted mb-3">Visualize suas análises</p>
+                    <button class="btn-beach-success">
+                        <i class="bi bi-file-earmark-text"></i>
+                        Ver Relatórios
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabela de Produtos Mais Vendidos -->
+        <div class="row mb-4">
+            <div class="col-12 fade-in-up">
+                <div class="beach-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="text-beach mb-0">
+                            <i class="bi bi-trophy"></i>
+                            Produtos Mais Vendidos
+                        </h4>
+                        <button class="btn btn-sm btn-beach">
+                            <i class="bi bi-arrow-clockwise"></i>
+                            Atualizar
+                        </button>
+                    </div>
+
+                    <div class="beach-table">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Produto</th>
+                                    <th>Categoria</th>
+                                    <th>Vendas</th>
+                                    <th>Estoque</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1</td>
+                                    <td>
+                                        <i class="bi bi-cup-straw text-beach"></i>
+                                        <strong>Água de Coco</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">Bebidas</span>
+                                    </td>
+                                    <td>
+                                        <strong>142</strong> unidades
+                                    </td>
+                                    <td>
+                                        <div class="beach-progress">
+                                            <div class="beach-progress-bar" style="width: 75%"></div>
+                                        </div>
+                                        <small class="text-muted">75 unidades</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge-beach badge-beach-estoque">
+                                            <i class="bi bi-check-circle"></i>
+                                            Disponível
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-beach">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>2</td>
+                                    <td>
+                                        <i class="bi bi-egg-fried text-beach"></i>
+                                        <strong>Pastel</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-warning">Comida</span>
+                                    </td>
+                                    <td>
+                                        <strong>98</strong> unidades
+                                    </td>
+                                    <td>
+                                        <div class="beach-progress">
+                                            <div class="beach-progress-bar" style="width: 45%"></div>
+                                        </div>
+                                        <small class="text-muted">45 unidades</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge-beach badge-beach-estoque">
+                                            <i class="bi bi-check-circle"></i>
+                                            Disponível
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-beach">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>3</td>
+                                    <td>
+                                        <i class="bi bi-snow text-beach"></i>
+                                        <strong>Picolé</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">Sobremesa</span>
+                                    </td>
+                                    <td>
+                                        <strong>76</strong> unidades
+                                    </td>
+                                    <td>
+                                        <div class="beach-progress">
+                                            <div class="beach-progress-bar" style="width: 15%"></div>
+                                        </div>
+                                        <small class="text-danger">12 unidades</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge-beach badge-beach-baixo pulse-animation">
+                                            <i class="bi bi-exclamation-triangle"></i>
+                                            Baixo
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-beach-sun">
+                                            <i class="bi bi-plus-circle"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Exemplo -->
+        <div class="modal fade beach-modal" id="exemploModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="bi bi-plus-circle"></i>
+                            Adicionar Novo Produto
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Nome do Produto</label>
+                                <div class="beach-input-icon">
+                                    <i class="bi bi-box-seam"></i>
+                                    <input type="text" class="form-control beach-input" placeholder="Ex: Água de Coco">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Categoria</label>
+                                <div class="beach-input-icon">
+                                    <i class="bi bi-tag"></i>
+                                    <select class="form-select beach-input">
+                                        <option>Bebidas</option>
+                                        <option>Comidas</option>
+                                        <option>Sobremesas</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Preço</label>
+                                <div class="beach-input-icon">
+                                    <i class="bi bi-cash"></i>
+                                    <input type="number" class="form-control beach-input" placeholder="0.00">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Quantidade</label>
+                                <div class="beach-input-icon">
+                                    <i class="bi bi-boxes"></i>
+                                    <input type="number" class="form-control beach-input" placeholder="0">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Estoque Mínimo</label>
+                                <div class="beach-input-icon">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    <input type="number" class="form-control beach-input" placeholder="10">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn-beach-success">
+                            <i class="bi bi-check-circle"></i>
+                            Salvar Produto
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Animação de contador nos cards de estatísticas
+        document.addEventListener('DOMContentLoaded', function() {
+            const statValues = document.querySelectorAll('.stat-value');
+            
+            statValues.forEach(stat => {
+                const value = stat.textContent.replace(/[^0-9]/g, '');
+                if (value) {
+                    animateValue(stat, 0, parseInt(value), 1500);
+                }
+            });
+        });
+
+        function animateValue(element, start, end, duration) {
+            const prefix = element.textContent.includes('R$') ? 'R$ ' : '';
+            let startTime = null;
+            
+            function animation(currentTime) {
+                if (!startTime) startTime = currentTime;
+                const progress = Math.min((currentTime - startTime) / duration, 1);
+                const value = Math.floor(progress * (end - start) + start);
+                element.textContent = prefix + value.toLocaleString('pt-BR');
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animation);
+                }
+            }
+            
+            requestAnimationFrame(animation);
+        }
+    </script>
+</body>
+</html>

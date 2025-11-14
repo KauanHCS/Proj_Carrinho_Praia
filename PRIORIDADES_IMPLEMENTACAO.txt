@@ -1,0 +1,456 @@
+================================================================================
+    🏖️ SISTEMA CARRINHO DE PRAIA - PRIORIDADES DE IMPLEMENTAÇÃO
+================================================================================
+
+📅 Data: 13/11/2025
+📍 Local: Praia Grande/SP
+🎯 Modelo: Consumo Livre (sem cobrança de aluguel)
+
+================================================================================
+    FASE 1 - URGENTE (PRÓXIMA SEMANA - 7 DIAS)
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 1. ⚡ VENDA RÁPIDA (MODO EXPRESSO)                                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Prioridade: CRÍTICA 🔴                                                      │
+│ Tempo Estimado: 8-12 horas                                                  │
+│ Impacto: MUITO ALTO                                                         │
+│                                                                             │
+│ O QUE FAZ:                                                                  │
+│ • Botões GRANDES por produto (clique = +1 unidade)                         │
+│ • Tempo por venda: ~10 segundos (ao invés de 30-40s)                       │
+│ • Ideal para filas grandes                                                 │
+│ • Botões de pagamento rápido (Dinheiro/PIX/Cartão/Fiado)                   │
+│                                                                             │
+│ BENEFÍCIOS:                                                                 │
+│ ✅ Agilidade 3x maior nas vendas                                           │
+│ ✅ Atende mais clientes no pico (10h-14h)                                  │
+│ ✅ Menos erro (cliente vê o que está comprando)                            │
+│ ✅ Aumento estimado: +30% vendas no horário de pico                        │
+│                                                                             │
+│ ARQUIVOS A CRIAR/MODIFICAR:                                                 │
+│ • src/Views/venda_rapida.php (NOVO)                                        │
+│ • public/assets/js/venda-rapida.js (NOVO)                                  │
+│ • public/assets/css/venda-rapida.css (NOVO)                                │
+│ • public/index.php (adicionar link na sidebar)                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 2. 💳 PAGAMENTO MISTO E FLEXÍVEL                                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Prioridade: CRÍTICA 🔴                                                      │
+│ Tempo Estimado: 6-8 horas                                                   │
+│ Impacto: MUITO ALTO                                                         │
+│                                                                             │
+│ O QUE FAZ:                                                                  │
+│ • Cliente paga R$ 30 PIX + R$ 25 dinheiro (múltiplas formas)               │
+│ • Checkboxes para cada forma de pagamento                                  │
+│ • Cálculo automático do valor faltante                                     │
+│ • Registro separado no caixa (controle financeiro correto)                 │
+│                                                                             │
+│ BENEFÍCIOS:                                                                 │
+│ ✅ Cliente paga como prefere (não perde venda)                             │
+│ ✅ Controle de caixa mais preciso                                          │
+│ ✅ Relatório por forma de pagamento correto                                │
+│ ✅ Evita "arredondamento" ou perda                                         │
+│                                                                             │
+│ ARQUIVOS A CRIAR/MODIFICAR:                                                 │
+│ • public/Controllers/actions.php (modificar finalizar venda)               │
+│ • public/assets/js/main.js (adicionar lógica de pagamento misto)           │
+│ • database: ALTER TABLE vendas (adicionar colunas)                         │
+│   - forma_pagamento_secundaria VARCHAR(50)                                 │
+│   - valor_pago_secundario DECIMAL(10,2)                                    │
+│   - forma_pagamento_terciaria VARCHAR(50)                                  │
+│   - valor_pago_terciario DECIMAL(10,2)                                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 3. 📊 DASHBOARD MELHORADO COM MÉTRICAS REAIS                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Prioridade: ALTA 🟡                                                         │
+│ Tempo Estimado: 10-14 horas                                                 │
+│ Impacto: ALTO                                                               │
+│                                                                             │
+│ O QUE FAZ:                                                                  │
+│ • KPIs em tempo real:                                                       │
+│   - Faturamento do dia / Ticket médio / Nº de atendimentos                 │
+│   - Condições climáticas (☀️ 32°C Ensolarado)                              │
+│   - Produto mais vendido / Vendas por hora                                 │
+│   - Meta do dia com barra de progresso                                     │
+│   - Comparação com ontem/semana passada                                    │
+│                                                                             │
+│ BENEFÍCIOS:                                                                 │
+│ ✅ Visão completa do negócio em 1 tela                                     │
+│ ✅ Identifica horário de pico                                              │
+│ ✅ Ajuda a bater metas (gamificação)                                       │
+│ ✅ Previsão de estoque baseada em vendas                                   │
+│                                                                             │
+│ ARQUIVOS A CRIAR/MODIFICAR:                                                 │
+│ • src/Views/dashboard.php (NOVO - página inicial)                          │
+│ • public/Controllers/dashboard_controller.php (NOVO)                       │
+│ • public/assets/js/dashboard.js (NOVO)                                     │
+│ • Integração com API de clima (OpenWeatherMap - gratuita)                  │
+│ • public/index.php (modificar página inicial)                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+    FASE 2 - IMPORTANTE (PRÓXIMAS 2 SEMANAS - 15 DIAS)
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 4. 📝 SISTEMA DE FIADO/CADERNETA                                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Prioridade: ALTA 🟡                                                         │
+│ Tempo Estimado: 12-16 horas                                                 │
+│ Impacto: ALTO                                                               │
+│                                                                             │
+│ O QUE FAZ:                                                                  │
+│ • Cadastro rápido de cliente (Nome + Telefone)                             │
+│ • Registra venda como "Fiado"                                              │
+│ • Lista de clientes com saldo devedor                                      │
+│ • Histórico de compras e pagamentos                                        │
+│ • Alerta de clientes com muita dívida                                      │
+│ • Registra pagamento parcial ou total                                      │
+│                                                                             │
+│ BENEFÍCIOS:                                                                 │
+│ ✅ Não perde venda (cliente sem dinheiro agora)                            │
+│ ✅ Fideliza cliente (confiança)                                            │
+│ ✅ Controle do que está devendo                                            │
+│ ✅ Aumento estimado: +15-20% vendas (fiado)                                │
+│                                                                             │
+│ ARQUIVOS A CRIAR/MODIFICAR:                                                 │
+│ • src/Views/fiado.php (NOVO)                                               │
+│ • public/Controllers/fiado_controller.php (NOVO)                           │
+│ • public/assets/js/fiado.js (NOVO)                                         │
+│ • database: CREATE TABLE vendas_fiado                                      │
+│ • database: CREATE TABLE clientes_fiado                                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 5. 📞 PEDIDOS POR TELEFONE/WHATSAPP                                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Prioridade: MÉDIA 🟢                                                        │
+│ Tempo Estimado: 8-10 horas                                                  │
+│ Impacto: MÉDIO                                                              │
+│                                                                             │
+│ O QUE FAZ:                                                                  │
+│ • Registra pedido por telefone                                             │
+│ • Cliente/Localização + Lista de produtos                                  │
+│ • Status: Pendente / Em Preparo / Entregue                                 │
+│ • Lista de pedidos pendentes (não esquece)                                 │
+│ • Marca como entregue e cobra                                              │
+│                                                                             │
+│ BENEFÍCIOS:                                                                 │
+│ ✅ Organização (não esquece pedidos)                                       │
+│ ✅ Cliente liga de longe, você já prepara                                  │
+│ ✅ Menos erro (pedido anotado corretamente)                                │
+│ ✅ Melhora experiência do cliente                                          │
+│                                                                             │
+│ ARQUIVOS A CRIAR/MODIFICAR:                                                 │
+│ • src/Views/pedidos_telefone.php (NOVO)                                    │
+│ • public/Controllers/pedidos_controller.php (NOVO)                         │
+│ • public/assets/js/pedidos.js (NOVO)                                       │
+│ • database: CREATE TABLE pedidos_delivery                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 6. 📈 RELATÓRIOS DETALHADOS E ÚTEIS                                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Prioridade: MÉDIA 🟢                                                        │
+│ Tempo Estimado: 10-12 horas                                                 │
+│ Impacto: MÉDIO/ALTO                                                         │
+│                                                                             │
+│ O QUE FAZ:                                                                  │
+│ • Vendas por horário (identifica pico: 10h-14h)                            │
+│ • Produtos mais vendidos por horário/temperatura                           │
+│ • Faturamento por dia da semana (Sábado é o melhor?)                       │
+│ • Formas de pagamento (quanto em dinheiro/PIX/cartão)                      │
+│ • Comparação mensal/anual                                                  │
+│ • Gráficos visuais (Chart.js)                                              │
+│                                                                             │
+│ BENEFÍCIOS:                                                                 │
+│ ✅ Decisões baseadas em dados reais                                        │
+│ ✅ Identifica padrões de venda                                             │
+│ ✅ Otimiza estoque (compra na quantidade certa)                            │
+│ ✅ Prevê faturamento futuro                                                │
+│                                                                             │
+│ ARQUIVOS A CRIAR/MODIFICAR:                                                 │
+│ • src/Views/relatorios.php (modificar - adicionar novos)                   │
+│ • public/Controllers/relatorios_controller.php (modificar)                 │
+│ • public/assets/js/relatorios-avancados.js (NOVO)                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+    FASE 3 - MÉDIO PRAZO (PRÓXIMO MÊS - 30 DIAS)
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 7. 🌡️ INTEGRAÇÃO COM CLIMA (API GRATUITA)                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Prioridade: BAIXA 🔵                                                        │
+│ Tempo Estimado: 6-8 horas                                                   │
+│ Impacto: MÉDIO                                                              │
+│                                                                             │
+│ O QUE FAZ:                                                                  │
+│ • Mostra temperatura atual + previsão                                      │
+│ • Sugestões automáticas de estoque:                                        │
+│   - Dia quente (>30°C): Aumentar água/picolé/água de coco                  │
+│   - Dia frio (<25°C): Aumentar chocolate/café                              │
+│ • Histórico: "Em dias >35°C, venda aumenta 40%"                             │
+│                                                                             │
+│ BENEFÍCIOS:                                                                 │
+│ ✅ Previsão de demanda mais precisa                                        │
+│ ✅ Otimiza estoque (menos desperdício)                                     │
+│ ✅ Identifica correlação clima x vendas                                    │
+│                                                                             │
+│ ARQUIVOS A CRIAR/MODIFICAR:                                                 │
+│ • public/Controllers/clima_controller.php (NOVO)                           │
+│ • public/assets/js/clima.js (NOVO)                                         │
+│ • Integração: OpenWeatherMap API (gratuita)                                │
+│ • Adicionar ao dashboard                                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 8. 👥 CADASTRO DE CLIENTES FREQUENTES + FIDELIDADE                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Prioridade: BAIXA 🔵                                                        │
+│ Tempo Estimado: 10-14 horas                                                 │
+│ Impacto: MÉDIO                                                              │
+│                                                                             │
+│ O QUE FAZ:                                                                  │
+│ • Cadastro: Nome + Telefone + Aniversário                                  │
+│ • Histórico: Nº visitas, Total gasto, Ticket médio                         │
+│ • Reconhecimento rápido (busca por nome/telefone)                          │
+│ • Pedido favorito (Sr. Carlos sempre pede 2 cervejas)                      │
+│ • Programa de fidelidade:                                                  │
+│   - A cada 10 visitas: 1 produto grátis (até R$ 5)                         │
+│   - Aniversário: 10% desconto                                              │
+│   - Cliente VIP: Avisar promoções                                          │
+│                                                                             │
+│ BENEFÍCIOS:                                                                 │
+│ ✅ Fideliza clientes                                                       │
+│ ✅ Atendimento mais rápido (pedido favorito)                               │
+│ ✅ Aumento de ticket médio (+10-15%)                                       │
+│ ✅ Base de dados para marketing                                            │
+│                                                                             │
+│ ARQUIVOS A CRIAR/MODIFICAR:                                                 │
+│ • src/Views/clientes.php (NOVO)                                            │
+│ • public/Controllers/clientes_controller.php (NOVO)                        │
+│ • public/assets/js/clientes.js (NOVO)                                      │
+│ • database: CREATE TABLE clientes_frequentes                               │
+│ • database: CREATE TABLE fidelidade_pontos                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 9. 🎯 METAS E GAMIFICAÇÃO                                                   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Prioridade: BAIXA 🔵                                                        │
+│ Tempo Estimado: 8-10 horas                                                  │
+│ Impacto: MÉDIO                                                              │
+│                                                                             │
+│ O QUE FAZ:                                                                  │
+│ • Define meta do dia (R$ 500)                                              │
+│ • Barra de progresso em tempo real                                         │
+│ • Comparação com ontem/semana passada                                      │
+│ • Ranking da semana (qual dia vendeu mais)                                 │
+│ • Alertas de conquista: "Meta atingida! 🏆"                                │
+│ • Notificação: "Você está 20% acima de ontem!"                             │
+│                                                                             │
+│ BENEFÍCIOS:                                                                 │
+│ ✅ Motivação para você e funcionários                                      │
+│ ✅ Visualização clara do progresso                                         │
+│ ✅ Gamificação = +10-15% performance                                       │
+│ ✅ Cultura de resultados                                                   │
+│                                                                             │
+│ ARQUIVOS A CRIAR/MODIFICAR:                                                 │
+│ • Adicionar ao dashboard.php                                               │
+│ • public/Controllers/metas_controller.php (NOVO)                           │
+│ • public/assets/js/metas.js (NOVO)                                         │
+│ • database: CREATE TABLE metas_diarias                                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+    FASE 4 - FUTURO (A DEFINIR)
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 10. 📱 MODO OFFLINE (PWA - PROGRESSIVE WEB APP)                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Prioridade: BAIXA 🔵                                                        │
+│ Tempo Estimado: 16-20 horas                                                 │
+│ Impacto: ALTO (se sinal da praia é ruim)                                   │
+│                                                                             │
+│ O QUE FAZ:                                                                  │
+│ • Funciona completamente offline                                           │
+│ • Registra vendas localmente (IndexedDB)                                   │
+│ • Sincroniza quando internet volta                                         │
+│ • Notifica usuário do status da conexão                                    │
+│ • Cache de produtos/dados essenciais                                       │
+│                                                                             │
+│ BENEFÍCIOS:                                                                 │
+│ ✅ ESSENCIAL se sinal da praia é fraco                                     │
+│ ✅ Nunca para de vender                                                    │
+│ ✅ Sincronização automática                                                │
+│ ✅ Backup local dos dados                                                  │
+│                                                                             │
+│ ARQUIVOS A CRIAR/MODIFICAR:                                                 │
+│ • public/sw.js (já existe - melhorar)                                      │
+│ • public/manifest.json (já existe - melhorar)                              │
+│ • public/assets/js/offline-sync.js (NOVO)                                  │
+│ • Implementar Service Worker completo                                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 11. 💬 INTEGRAÇÃO WHATSAPP BOT                                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Prioridade: MUITO BAIXA ⚪                                                 │
+│ Tempo Estimado: 20-30 horas                                                 │
+│ Impacto: MÉDIO/ALTO                                                         │
+│                                                                             │
+│ O QUE FAZ:                                                                  │
+│ • Cliente manda "Oi" no WhatsApp                                           │
+│ • Bot responde com menu automaticamente                                    │
+│ • Cliente faz pedido pelo WhatsApp                                         │
+│ • Pedido aparece no sistema automaticamente                                │
+│ • Você confirma e entrega                                                  │
+│                                                                             │
+│ BENEFÍCIOS:                                                                 │
+│ ✅ Atendimento 24/7 automático                                             │
+│ ✅ Cliente faz pedido sem ligar                                            │
+│ ✅ Marketing automático (promoções)                                        │
+│ ✅ Base de contatos para WhatsApp                                          │
+│                                                                             │
+│ ARQUIVOS A CRIAR/MODIFICAR:                                                 │
+│ • Integração com API WhatsApp Business                                     │
+│ • src/Bot/whatsapp_bot.php (NOVO)                                          │
+│ • Webhook para receber mensagens                                           │
+│ • CUSTO: API WhatsApp Business (paga)                                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 12. 🎁 PROGRAMA DE FIDELIDADE DIGITAL (QR CODE)                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Prioridade: MUITO BAIXA ⚪                                                 │
+│ Tempo Estimado: 14-18 horas                                                 │
+│ Impacto: MÉDIO                                                              │
+│                                                                             │
+│ O QUE FAZ:                                                                  │
+│ • Cliente escaneia QR Code após compra                                     │
+│ • Acumula pontos automaticamente                                           │
+│ • 10 pontos = 1 produto grátis                                             │
+│ • Cliente vê saldo no celular                                              │
+│ • Notificação de recompensa disponível                                     │
+│                                                                             │
+│ BENEFÍCIOS:                                                                 │
+│ ✅ Fidelização digital                                                     │
+│ ✅ Sem necessidade de cartão físico                                        │
+│ ✅ Cliente sempre volta (gamificação)                                      │
+│ ✅ Marketing direto no WhatsApp                                            │
+│                                                                             │
+│ ARQUIVOS A CRIAR/MODIFICAR:                                                 │
+│ • Mini site para cliente (fidelidade.php)                                  │
+│ • QR Code único por cliente                                                │
+│ • Sistema de pontos                                                        │
+│ • Integração com WhatsApp                                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+    RESUMO DE TEMPO TOTAL POR FASE
+================================================================================
+
+FASE 1 (URGENTE):        24-34 horas  →  3-4 dias de trabalho
+FASE 2 (IMPORTANTE):     30-38 horas  →  4-5 dias de trabalho
+FASE 3 (MÉDIO PRAZO):    24-32 horas  →  3-4 dias de trabalho
+FASE 4 (FUTURO):         50-68 horas  →  6-8 dias de trabalho
+────────────────────────────────────────────────────────────────
+TOTAL:                   128-172 horas → 16-22 dias de trabalho
+
+================================================================================
+    ORDEM RECOMENDADA DE IMPLEMENTAÇÃO
+================================================================================
+
+SEMANA 1:
+  [1] Venda Rápida (Modo Expresso)      ← IMPACTO IMEDIATO
+  [2] Pagamento Misto                    ← NECESSIDADE DIÁRIA
+  [3] Dashboard Melhorado                ← VISÃO DO NEGÓCIO
+
+SEMANA 2-3:
+  [4] Sistema de Fiado                   ← NÃO PERDE VENDAS
+  [5] Pedidos por Telefone               ← ORGANIZAÇÃO
+  [6] Relatórios Detalhados              ← DECISÕES MELHORES
+
+SEMANA 4:
+  [7] Integração com Clima               ← PREVISÃO
+  [8] Clientes Frequentes                ← FIDELIZAÇÃO
+  [9] Metas e Gamificação                ← MOTIVAÇÃO
+
+FUTURO (quando necessário):
+  [10] Modo Offline (PWA)                ← SE SINAL É RUIM
+  [11] WhatsApp Bot                      ← AUTOMAÇÃO
+  [12] Fidelidade Digital                ← MARKETING
+
+================================================================================
+    NOTAS IMPORTANTES
+================================================================================
+
+💡 DICA 1: Comece SEMPRE pela FASE 1 (Venda Rápida + Pagamento Misto)
+         → Impacto imediato no dia a dia
+
+💡 DICA 2: Dashboard Melhorado te dá visão completa do negócio
+         → Você descobre padrões que não sabia
+
+💡 DICA 3: Sistema de Fiado aumenta vendas em 15-20%
+         → Cliente compra mesmo sem dinheiro agora
+
+💡 DICA 4: Não pule as FASES 1 e 2 para ir direto na 3 ou 4
+         → Base sólida é essencial
+
+💡 DICA 5: Modo Offline (PWA) só implementar se o sinal da praia for RUIM
+         → Caso contrário, deixe para depois
+
+💡 DICA 6: WhatsApp Bot é legal mas CARO (API paga)
+         → Deixe para quando o negócio estiver consolidado
+
+💡 DICA 7: Teste cada funcionalidade por 2-3 dias antes de implementar a próxima
+         → Garante estabilidade
+
+💡 DICA 8: Backup do banco de dados ANTES de cada implementação
+         → Segurança em primeiro lugar
+
+================================================================================
+    CHECKLIST DE IMPLEMENTAÇÃO
+================================================================================
+
+ANTES DE COMEÇAR QUALQUER FASE:
+  [ ] Fazer backup completo do banco de dados
+  [ ] Fazer backup dos arquivos (código)
+  [ ] Testar sistema atual (garantir que está funcionando)
+  [ ] Ler documentação da funcionalidade
+
+DURANTE A IMPLEMENTAÇÃO:
+  [ ] Criar branch separada no Git (se usar)
+  [ ] Testar em ambiente local primeiro
+  [ ] Documentar mudanças no código
+  [ ] Criar arquivo de instruções de uso
+
+DEPOIS DA IMPLEMENTAÇÃO:
+  [ ] Testar exaustivamente (todos os cenários)
+  [ ] Verificar se não quebrou funcionalidades existentes
+  [ ] Treinar usuários (você/funcionários)
+  [ ] Monitorar por 2-3 dias
+  [ ] Ajustar se necessário
+
+================================================================================
+    CONTATO E SUPORTE
+================================================================================
+
+📧 Para dúvidas ou problemas durante implementação, consulte:
+   • NOVO_DESIGN_SYSTEM.md
+   • MELHORIAS_RESPONSIVIDADE.md
+   • MELHORIAS_MODELO_CONSUMO_LIVRE.md
+   • SUGESTOES_CARRINHO_PRAIA.md
+
+🚀 Bom desenvolvimento!
+
+================================================================================

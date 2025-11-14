@@ -382,6 +382,12 @@ try {
                 $criarPedido = $_POST['criar_pedido'] ?? '0';
                 $valorPago = $_POST['valor_pago'] ?? 0;
                 
+                // Pagamento misto (opcional)
+                $formaPagamentoSecundaria = $_POST['forma_pagamento_secundaria'] ?? null;
+                $valorPagoSecundario = $_POST['valor_pago_secundario'] ?? null;
+                $formaPagamentoTerciaria = $_POST['forma_pagamento_terciaria'] ?? null;
+                $valorPagoTerciario = $_POST['valor_pago_terciario'] ?? null;
+                
                 if (!$usuarioId) {
                     cleanJsonResponse(false, null, 'Usuário não está logado');
                 }
@@ -413,12 +419,29 @@ try {
                     // Status inicial da venda baseado na existência de funcionários do financeiro
                     $statusPagamento = $temFinanceiro ? 'pendente' : 'pago';
                     
-                    // 1. Registrar venda
+                    // 1. Registrar venda (com suporte a pagamento misto)
                     $stmt = $pdo->prepare("
-                        INSERT INTO vendas (usuario_id, nome_cliente, total, forma_pagamento, valor_pago, status_pagamento, data_venda) 
-                        VALUES (?, ?, ?, ?, ?, ?, NOW())
+                        INSERT INTO vendas (
+                            usuario_id, nome_cliente, total, 
+                            forma_pagamento, valor_pago, 
+                            forma_pagamento_secundaria, valor_pago_secundario,
+                            forma_pagamento_terciaria, valor_pago_terciario,
+                            status_pagamento, data
+                        ) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
                     ");
-                    $stmt->execute([$usuarioId, $nomeCliente, $total, $formaPagamento, $valorPago, $statusPagamento]);
+                    $stmt->execute([
+                        $usuarioId, 
+                        $nomeCliente, 
+                        $total, 
+                        $formaPagamento, 
+                        $valorPago,
+                        $formaPagamentoSecundaria,
+                        $valorPagoSecundario,
+                        $formaPagamentoTerciaria,
+                        $valorPagoTerciario,
+                        $statusPagamento
+                    ]);
                     $vendaId = $pdo->lastInsertId();
                     
                     // 2. Atualizar estoque dos produtos
@@ -545,6 +568,290 @@ try {
                 }
                 break;
                 
+            case 'salvar_produto':
+                session_start();
+                $usuarioId = $_SESSION['usuario_id'] ?? null;
+                
+                if (!$usuarioId) {
+                    cleanJsonResponse(false, null, 'Usuário não está logado');
+                }
+                
+                $nome = $_POST['nome'] ?? '';
+                $categoria = $_POST['categoria'] ?? '';
+                $precoCompra = $_POST['preco_compra'] ?? 0;
+                $precoVenda = $_POST['preco_venda'] ?? 0;
+                $quantidade = $_POST['quantidade'] ?? 0;
+                $limiteMinimo = $_POST['limite_minimo'] ?? 0;
+                $validade = $_POST['validade'] ?? null;
+                $observacoes = $_POST['observacoes'] ?? '';
+                
+                if (empty($nome) || empty($categoria)) {
+                    cleanJsonResponse(false, null, 'Nome e categoria são obrigatórios');
+                }
+                
+                try {
+                    $stmt = $pdo->prepare("
+                        INSERT INTO produtos 
+                        (nome, categoria, preco_compra, preco_venda, quantidade, limite_minimo, validade, observacoes, usuario_id, data_cadastro) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                    ");
+                    $stmt->execute([
+                        $nome,
+                        $categoria,
+                        $precoCompra,
+                        $precoVenda,
+                        $quantidade,
+                        $limiteMinimo,
+                        $validade,
+                        $observacoes,
+                        $usuarioId
+                    ]);
+                    
+                    cleanJsonResponse(true, ['produto_id' => $pdo->lastInsertId(), 'nome' => $nome], 'Produto cadastrado com sucesso');
+                } catch (Exception $e) {
+                    cleanJsonResponse(false, null, 'Erro ao cadastrar produto: ' . $e->getMessage());
+                }
+                break;
+                
+            case 'atualizar_produto':
+                session_start();
+                $usuarioId = $_SESSION['usuario_id'] ?? null;
+                
+                if (!$usuarioId) {
+                    cleanJsonResponse(false, null, 'Usuário não está logado');
+                }
+                
+                $id = $_POST['id'] ?? '';
+                $nome = $_POST['nome'] ?? '';
+                $categoria = $_POST['categoria'] ?? '';
+                $precoCompra = $_POST['preco_compra'] ?? 0;
+                $precoVenda = $_POST['preco_venda'] ?? 0;
+                $quantidade = $_POST['quantidade'] ?? 0;
+                $limiteMinimo = $_POST['limite_minimo'] ?? 0;
+                $validade = $_POST['validade'] ?? null;
+                $observacoes = $_POST['observacoes'] ?? '';
+                
+                if (empty($id) || empty($nome) || empty($categoria)) {
+                    cleanJsonResponse(false, null, 'ID, nome e categoria são obrigatórios');
+                }
+                
+                try {
+                    $stmt = $pdo->prepare("
+                        UPDATE produtos 
+                        SET nome = ?, categoria = ?, preco_compra = ?, preco_venda = ?, 
+                            quantidade = ?, limite_minimo = ?, validade = ?, observacoes = ?
+                        WHERE id = ? AND usuario_id = ?
+                    ");
+                    $stmt->execute([
+                        $nome,
+                        $categoria,
+                        $precoCompra,
+                        $precoVenda,
+                        $quantidade,
+                        $limiteMinimo,
+                        $validade,
+                        $observacoes,
+                        $id,
+                        $usuarioId
+                    ]);
+                    
+                    if ($stmt->rowCount() > 0) {
+                        cleanJsonResponse(true, ['produto_id' => $id, 'nome' => $nome], 'Produto atualizado com sucesso');
+                    } else {
+                        cleanJsonResponse(false, null, 'Produto não encontrado ou sem alterações');
+                    }
+                } catch (Exception $e) {
+                    cleanJsonResponse(false, null, 'Erro ao atualizar produto: ' . $e->getMessage());
+                }
+                break;
+                
+            case 'excluir_produto':
+                session_start();
+                $usuarioId = $_SESSION['usuario_id'] ?? null;
+                
+                if (!$usuarioId) {
+                    cleanJsonResponse(false, null, 'Usuário não está logado');
+                }
+                
+                $id = $_POST['id'] ?? '';
+                
+                if (empty($id)) {
+                    cleanJsonResponse(false, null, 'ID do produto é obrigatório');
+                }
+                
+                try {
+                    // Buscar nome antes de excluir
+                    $stmt = $pdo->prepare("SELECT nome FROM produtos WHERE id = ? AND usuario_id = ?");
+                    $stmt->execute([$id, $usuarioId]);
+                    $produto = $stmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    if (!$produto) {
+                        cleanJsonResponse(false, null, 'Produto não encontrado');
+                    }
+                    
+                    $stmt = $pdo->prepare("DELETE FROM produtos WHERE id = ? AND usuario_id = ?");
+                    $stmt->execute([$id, $usuarioId]);
+                    
+                    cleanJsonResponse(true, ['nome' => $produto['nome']], 'Produto excluído com sucesso');
+                } catch (Exception $e) {
+                    cleanJsonResponse(false, null, 'Erro ao excluir produto: ' . $e->getMessage());
+                }
+                break;
+                
+            case 'reabastecer':
+                session_start();
+                $usuarioId = $_SESSION['usuario_id'] ?? null;
+                
+                if (!$usuarioId) {
+                    cleanJsonResponse(false, null, 'Usuário não está logado');
+                }
+                
+                $produtoId = $_POST['produto_id'] ?? '';
+                $quantidade = $_POST['quantidade'] ?? 0;
+                
+                if (empty($produtoId) || $quantidade <= 0) {
+                    cleanJsonResponse(false, null, 'Dados inválidos');
+                }
+                
+                try {
+                    $stmt = $pdo->prepare("
+                        UPDATE produtos 
+                        SET quantidade = quantidade + ? 
+                        WHERE id = ? AND usuario_id = ?
+                    ");
+                    $stmt->execute([$quantidade, $produtoId, $usuarioId]);
+                    
+                    // Buscar nome do produto
+                    $stmt = $pdo->prepare("SELECT nome FROM produtos WHERE id = ?");
+                    $stmt->execute([$produtoId]);
+                    $produto = $stmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    cleanJsonResponse(true, ['nome' => $produto['nome'] ?? 'Produto'], 'Estoque reabastecido com sucesso');
+                } catch (Exception $e) {
+                    cleanJsonResponse(false, null, 'Erro ao reabastecer: ' . $e->getMessage());
+                }
+                break;
+                
+            // ========================================
+            // SISTEMA DE FIADO - ENDPOINTS POST
+            // ========================================
+            
+            case 'cadastrarClienteFiado':
+                session_start();
+                $usuarioId = $_SESSION['usuario_id'] ?? null;
+                
+                if (!$usuarioId) {
+                    cleanJsonResponse(false, null, 'Usuário não autenticado');
+                }
+                
+                $nome = $_POST['nome'] ?? '';
+                $telefone = $_POST['telefone'] ?? '';
+                $cpf = $_POST['cpf'] ?? '';
+                $endereco = $_POST['endereco'] ?? '';
+                $limiteCredito = $_POST['limite_credito'] ?? 500.00;
+                $observacoes = $_POST['observacoes'] ?? '';
+                
+                if (empty($nome)) {
+                    cleanJsonResponse(false, null, 'Nome do cliente é obrigatório');
+                }
+                
+                try {
+                    $stmt = $pdo->prepare("
+                        INSERT INTO clientes_fiado 
+                        (usuario_id, nome, telefone, cpf, endereco, limite_credito, observacoes, data_cadastro) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+                    ");
+                    $stmt->execute([
+                        $usuarioId,
+                        $nome,
+                        $telefone,
+                        $cpf,
+                        $endereco,
+                        $limiteCredito,
+                        $observacoes
+                    ]);
+                    
+                    $clienteId = $pdo->lastInsertId();
+                    
+                    cleanJsonResponse(true, [
+                        'cliente_id' => $clienteId,
+                        'nome' => $nome
+                    ], 'Cliente cadastrado com sucesso');
+                } catch (Exception $e) {
+                    cleanJsonResponse(false, null, 'Erro ao cadastrar cliente: ' . $e->getMessage());
+                }
+                break;
+                
+            case 'registrarPagamentoFiado':
+                session_start();
+                $usuarioId = $_SESSION['usuario_id'] ?? null;
+                
+                if (!$usuarioId) {
+                    cleanJsonResponse(false, null, 'Usuário não autenticado');
+                }
+                
+                $clienteId = $_POST['cliente_id'] ?? '';
+                $valor = $_POST['valor'] ?? 0;
+                $formaPagamento = $_POST['forma_pagamento'] ?? 'Dinheiro';
+                $observacoes = $_POST['observacoes'] ?? '';
+                
+                if (empty($clienteId) || $valor <= 0) {
+                    cleanJsonResponse(false, null, 'Dados inválidos');
+                }
+                
+                try {
+                    $pdo->beginTransaction();
+                    
+                    // Verificar se o cliente existe e pertence ao usuário
+                    $stmt = $pdo->prepare("SELECT * FROM clientes_fiado WHERE id = ? AND usuario_id = ?");
+                    $stmt->execute([$clienteId, $usuarioId]);
+                    $cliente = $stmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    if (!$cliente) {
+                        throw new Exception('Cliente não encontrado');
+                    }
+                    
+                    $saldoAtual = floatval($cliente['saldo_devedor']);
+                    $valorPagamento = floatval($valor);
+                    
+                    if ($valorPagamento > $saldoAtual) {
+                        throw new Exception('Valor do pagamento maior que o saldo devedor');
+                    }
+                    
+                    // Registrar pagamento
+                    $stmt = $pdo->prepare("
+                        INSERT INTO pagamentos_fiado 
+                        (cliente_id, valor, tipo, forma_pagamento, observacoes, data_pagamento, registrado_por) 
+                        VALUES (?, ?, 'pagamento', ?, ?, NOW(), ?)
+                    ");
+                    $stmt->execute([
+                        $clienteId,
+                        $valorPagamento,
+                        $formaPagamento,
+                        $observacoes,
+                        $usuarioId
+                    ]);
+                    
+                    // Atualizar saldo devedor do cliente
+                    $novoSaldo = $saldoAtual - $valorPagamento;
+                    $stmt = $pdo->prepare("UPDATE clientes_fiado SET saldo_devedor = ? WHERE id = ?");
+                    $stmt->execute([$novoSaldo, $clienteId]);
+                    
+                    $pdo->commit();
+                    
+                    cleanJsonResponse(true, [
+                        'pagamento_id' => $pdo->lastInsertId(),
+                        'saldo_anterior' => $saldoAtual,
+                        'valor_pago' => $valorPagamento,
+                        'novo_saldo' => $novoSaldo
+                    ], 'Pagamento registrado com sucesso');
+                    
+                } catch (Exception $e) {
+                    $pdo->rollback();
+                    cleanJsonResponse(false, null, 'Erro ao registrar pagamento: ' . $e->getMessage());
+                }
+                break;
+                
             default:
                 cleanJsonResponse(false, null, 'Ação inválida: ' . $action);
         }
@@ -593,6 +900,35 @@ try {
                 }
                 
                 cleanJsonResponse(true, $resultado, 'Códigos listados com sucesso');
+                break;
+                
+            case 'get_produto':
+                session_start();
+                $usuarioId = $_SESSION['usuario_id'] ?? null;
+                
+                if (!$usuarioId) {
+                    cleanJsonResponse(false, null, 'Usuário não está logado');
+                }
+                
+                $id = $_GET['id'] ?? '';
+                
+                if (empty($id)) {
+                    cleanJsonResponse(false, null, 'ID do produto é obrigatório');
+                }
+                
+                try {
+                    $stmt = $pdo->prepare("SELECT * FROM produtos WHERE id = ? AND usuario_id = ?");
+                    $stmt->execute([$id, $usuarioId]);
+                    $produto = $stmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    if (!$produto) {
+                        cleanJsonResponse(false, null, 'Produto não encontrado');
+                    }
+                    
+                    cleanJsonResponse(true, ['produto' => $produto], 'Produto carregado com sucesso');
+                } catch (Exception $e) {
+                    cleanJsonResponse(false, null, 'Erro ao buscar produto: ' . $e->getMessage());
+                }
                 break;
                 
             case 'listarPedidos':
@@ -741,6 +1077,365 @@ try {
                 }
                 
                 cleanJsonResponse(true, $venda, 'Detalhes da venda obtidos com sucesso');
+                break;
+                
+            case 'getDashboardMetrics':
+                session_start();
+                $usuarioId = $_SESSION['usuario_id'] ?? null;
+                
+                if (!$usuarioId) {
+                    cleanJsonResponse(false, null, 'Usuário não está logado');
+                }
+                
+                try {
+                    $hoje = date('Y-m-d');
+                    $ontem = date('Y-m-d', strtotime('-1 day'));
+                    $semanaPassada = date('Y-m-d', strtotime('-7 days'));
+                    
+                    // ===== KPIs DO DIA =====
+                    $stmt = $pdo->prepare("
+                        SELECT 
+                            COALESCE(SUM(total), 0) as faturamento_hoje,
+                            COUNT(*) as num_atendimentos,
+                            COALESCE(AVG(total), 0) as ticket_medio
+                        FROM vendas 
+                        WHERE DATE(data) = ? AND usuario_id = ?
+                    ");
+                    $stmt->execute([$hoje, $usuarioId]);
+                    $kpisHoje = $stmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    // ===== COMPARAÇÃO COM ONTEM =====
+                    $stmt = $pdo->prepare("
+                        SELECT 
+                            COALESCE(SUM(total), 0) as faturamento,
+                            COUNT(*) as atendimentos,
+                            COALESCE(AVG(total), 0) as ticket_medio
+                        FROM vendas 
+                        WHERE DATE(data) = ? AND usuario_id = ?
+                    ");
+                    $stmt->execute([$ontem, $usuarioId]);
+                    $dadosOntem = $stmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    // Calcular diferenças percentuais
+                    $diffFaturamento = $dadosOntem['faturamento'] > 0 
+                        ? (($kpisHoje['faturamento_hoje'] - $dadosOntem['faturamento']) / $dadosOntem['faturamento']) * 100 
+                        : 0;
+                    $diffTicket = $dadosOntem['ticket_medio'] > 0 
+                        ? (($kpisHoje['ticket_medio'] - $dadosOntem['ticket_medio']) / $dadosOntem['ticket_medio']) * 100 
+                        : 0;
+                    $diffAtendimentos = $kpisHoje['num_atendimentos'] - $dadosOntem['atendimentos'];
+                    
+                    // ===== COMPARAÇÃO COM SEMANA PASSADA =====
+                    $stmt = $pdo->prepare("
+                        SELECT 
+                            COALESCE(SUM(total), 0) as faturamento,
+                            COUNT(*) as atendimentos,
+                            COALESCE(AVG(total), 0) as ticket_medio
+                        FROM vendas 
+                        WHERE DATE(data) = ? AND usuario_id = ?
+                    ");
+                    $stmt->execute([$semanaPassada, $usuarioId]);
+                    $dadosSemanaPassada = $stmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    $diffFaturamentoSemana = $dadosSemanaPassada['faturamento'] > 0 
+                        ? (($kpisHoje['faturamento_hoje'] - $dadosSemanaPassada['faturamento']) / $dadosSemanaPassada['faturamento']) * 100 
+                        : 0;
+                    $diffTicketSemana = $dadosSemanaPassada['ticket_medio'] > 0 
+                        ? (($kpisHoje['ticket_medio'] - $dadosSemanaPassada['ticket_medio']) / $dadosSemanaPassada['ticket_medio']) * 100 
+                        : 0;
+                    $diffAtendimentosSemana = $kpisHoje['num_atendimentos'] - $dadosSemanaPassada['atendimentos'];
+                    
+                    // ===== VENDAS POR HORA =====
+                    $stmt = $pdo->prepare("
+                        SELECT 
+                            HOUR(data) as hora,
+                            COALESCE(SUM(total), 0) as total,
+                            COUNT(*) as quantidade
+                        FROM vendas 
+                        WHERE DATE(data) = ? AND usuario_id = ?
+                        GROUP BY HOUR(data)
+                        ORDER BY hora
+                    ");
+                    $stmt->execute([$hoje, $usuarioId]);
+                    $vendasPorHora = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    
+                    // Preencher todas as horas (0-23) com zeros se não houver vendas
+                    $vendasPorHoraCompleto = [];
+                    for ($h = 0; $h < 24; $h++) {
+                        $encontrado = false;
+                        foreach ($vendasPorHora as $venda) {
+                            if ((int)$venda['hora'] === $h) {
+                                $vendasPorHoraCompleto[] = $venda;
+                                $encontrado = true;
+                                break;
+                            }
+                        }
+                        if (!$encontrado) {
+                            $vendasPorHoraCompleto[] = [
+                                'hora' => str_pad($h, 2, '0', STR_PAD_LEFT),
+                                'total' => '0.00',
+                                'quantidade' => 0
+                            ];
+                        }
+                    }
+                    
+                    // ===== HORÁRIO DE PICO =====
+                    $horarioPico = null;
+                    if (!empty($vendasPorHora)) {
+                        $maxVendas = 0;
+                        foreach ($vendasPorHora as $venda) {
+                            if ((int)$venda['quantidade'] > $maxVendas) {
+                                $maxVendas = (int)$venda['quantidade'];
+                                $horarioPico = [
+                                    'hora' => str_pad($venda['hora'], 2, '0', STR_PAD_LEFT),
+                                    'quantidade' => $venda['quantidade']
+                                ];
+                            }
+                        }
+                    }
+                    
+                    // ===== TOP 5 PRODUTOS =====
+                    // Tentar usar vendas_itens, mas se não existir, retornar array vazio
+                    $topProdutos = [];
+                    try {
+                        $stmt = $pdo->prepare("
+                            SELECT 
+                                p.nome,
+                                SUM(vi.quantidade) as quantidade,
+                                SUM(vi.subtotal) as total
+                            FROM vendas_itens vi
+                            INNER JOIN produtos p ON vi.produto_id = p.id
+                            INNER JOIN vendas v ON vi.venda_id = v.id
+                            WHERE DATE(v.data) = ? AND v.usuario_id = ?
+                            GROUP BY p.id, p.nome
+                            ORDER BY quantidade DESC
+                            LIMIT 5
+                        ");
+                        $stmt->execute([$hoje, $usuarioId]);
+                        $topProdutos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    } catch (PDOException $e) {
+                        // Tabela vendas_itens não existe ainda, retornar array vazio
+                        $topProdutos = [];
+                    }
+                    
+                    // ===== FORMAS DE PAGAMENTO =====
+                    // Considerar todas as formas (principal, secundária, terciária)
+                    $stmt = $pdo->prepare("
+                        SELECT 
+                            forma_pagamento,
+                            SUM(valor_pago) as total
+                        FROM (
+                            SELECT forma_pagamento, valor_pago 
+                            FROM vendas 
+                            WHERE DATE(data) = ? AND usuario_id = ? AND forma_pagamento IS NOT NULL
+                            UNION ALL
+                            SELECT forma_pagamento_secundaria as forma_pagamento, valor_pago_secundario as valor_pago
+                            FROM vendas 
+                            WHERE DATE(data) = ? AND usuario_id = ? AND forma_pagamento_secundaria IS NOT NULL
+                            UNION ALL
+                            SELECT forma_pagamento_terciaria as forma_pagamento, valor_pago_terciario as valor_pago
+                            FROM vendas 
+                            WHERE DATE(data) = ? AND usuario_id = ? AND forma_pagamento_terciaria IS NOT NULL
+                        ) as todas_formas
+                        GROUP BY forma_pagamento
+                        ORDER BY total DESC
+                    ");
+                    $stmt->execute([$hoje, $usuarioId, $hoje, $usuarioId, $hoje, $usuarioId]);
+                    $formasPagamento = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    
+                    // Estruturar resposta
+                    $response = [
+                        'faturamento_hoje' => $kpisHoje['faturamento_hoje'],
+                        'num_atendimentos' => $kpisHoje['num_atendimentos'],
+                        'ticket_medio' => $kpisHoje['ticket_medio'],
+                        'comparacao_ontem_faturamento' => round($diffFaturamento, 1),
+                        'comparacao_ontem_ticket' => round($diffTicket, 1),
+                        'comparacao_ontem_atendimentos' => $diffAtendimentos,
+                        'vendas_por_hora' => $vendasPorHoraCompleto,
+                        'horario_pico' => $horarioPico,
+                        'top_produtos' => $topProdutos,
+                        'formas_pagamento' => $formasPagamento,
+                        'comparacoes' => [
+                            'ontem' => [
+                                'faturamento' => $dadosOntem['faturamento'],
+                                'atendimentos' => $dadosOntem['atendimentos'],
+                                'ticket_medio' => $dadosOntem['ticket_medio'],
+                                'diff_faturamento' => round($diffFaturamento, 1),
+                                'diff_atendimentos' => $diffAtendimentos,
+                                'diff_ticket' => round($diffTicket, 1)
+                            ],
+                            'semana_passada' => [
+                                'faturamento' => $dadosSemanaPassada['faturamento'],
+                                'atendimentos' => $dadosSemanaPassada['atendimentos'],
+                                'ticket_medio' => $dadosSemanaPassada['ticket_medio'],
+                                'diff_faturamento' => round($diffFaturamentoSemana, 1),
+                                'diff_atendimentos' => $diffAtendimentosSemana,
+                                'diff_ticket' => round($diffTicketSemana, 1)
+                            ]
+                        ]
+                    ];
+                    
+                    cleanJsonResponse(true, $response, 'Métricas carregadas com sucesso');
+                } catch (Exception $e) {
+                    cleanJsonResponse(false, null, 'Erro ao buscar métricas: ' . $e->getMessage());
+                }
+                break;
+                
+            // ========================================
+            // SISTEMA DE FIADO
+            // ========================================
+            
+            case 'getDashboardFiado':
+                try {
+                    session_start();
+                    $usuarioId = $_SESSION['usuario_id'] ?? null;
+                    
+                    if (!$usuarioId) {
+                        cleanJsonResponse(false, null, 'Usuário não autenticado');
+                    }
+                    
+                    $hoje = date('Y-m-d');
+                    $mesAtual = date('Y-m');
+                    
+                    // Total a receber
+                    $stmt = $pdo->prepare("SELECT SUM(saldo_devedor) as total FROM clientes_fiado WHERE usuario_id = ? AND ativo = 1");
+                    $stmt->execute([$usuarioId]);
+                    $totalReceber = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+                    
+                    // Quantidade de clientes com dívida
+                    $stmt = $pdo->prepare("SELECT COUNT(*) as qtd FROM clientes_fiado WHERE usuario_id = ? AND ativo = 1 AND saldo_devedor > 0");
+                    $stmt->execute([$usuarioId]);
+                    $qtdClientes = $stmt->fetch(PDO::FETCH_ASSOC)['qtd'] ?? 0;
+                    
+                    // Clientes inadimplentes (>30 dias sem comprar e com dívida)
+                    $stmt = $pdo->prepare("
+                        SELECT 
+                            COUNT(*) as qtd,
+                            COALESCE(SUM(saldo_devedor), 0) as valor
+                        FROM clientes_fiado 
+                        WHERE usuario_id = ? 
+                        AND ativo = 1 
+                        AND saldo_devedor > 0 
+                        AND DATEDIFF(NOW(), ultima_compra) > 30
+                    ");
+                    $stmt->execute([$usuarioId]);
+                    $inadimplentes = $stmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    // Recebido hoje
+                    $stmt = $pdo->prepare("
+                        SELECT 
+                            COUNT(*) as qtd,
+                            COALESCE(SUM(valor), 0) as total
+                        FROM pagamentos_fiado pf
+                        INNER JOIN clientes_fiado cf ON pf.cliente_id = cf.id
+                        WHERE cf.usuario_id = ? 
+                        AND DATE(pf.data_pagamento) = ?
+                        AND pf.tipo = 'pagamento'
+                    ");
+                    $stmt->execute([$usuarioId, $hoje]);
+                    $recebidoHoje = $stmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    // Vendas fiadas no mês
+                    $stmt = $pdo->prepare("
+                        SELECT 
+                            COUNT(*) as qtd,
+                            COALESCE(SUM(valor), 0) as total
+                        FROM pagamentos_fiado pf
+                        INNER JOIN clientes_fiado cf ON pf.cliente_id = cf.id
+                        WHERE cf.usuario_id = ? 
+                        AND DATE_FORMAT(pf.data_pagamento, '%Y-%m') = ?
+                        AND pf.tipo = 'compra'
+                    ");
+                    $stmt->execute([$usuarioId, $mesAtual]);
+                    $vendasMes = $stmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    $response = [
+                        'total_receber' => floatval($totalReceber),
+                        'qtd_clientes' => intval($qtdClientes),
+                        'clientes_inadimplentes' => intval($inadimplentes['qtd']),
+                        'valor_inadimplente' => floatval($inadimplentes['valor']),
+                        'recebido_hoje' => floatval($recebidoHoje['total']),
+                        'qtd_pagamentos_hoje' => intval($recebidoHoje['qtd']),
+                        'vendas_mes' => floatval($vendasMes['total']),
+                        'qtd_vendas_mes' => intval($vendasMes['qtd'])
+                    ];
+                    
+                    cleanJsonResponse(true, $response, 'Dashboard carregado');
+                } catch (Exception $e) {
+                    cleanJsonResponse(false, null, 'Erro ao carregar dashboard: ' . $e->getMessage());
+                }
+                break;
+                
+            case 'listarClientesFiado':
+                try {
+                    session_start();
+                    $usuarioId = $_SESSION['usuario_id'] ?? null;
+                    
+                    if (!$usuarioId) {
+                        cleanJsonResponse(false, null, 'Usuário não autenticado');
+                    }
+                    
+                    $stmt = $pdo->prepare("
+                        SELECT 
+                            cf.*,
+                            DATEDIFF(NOW(), cf.ultima_compra) as dias_sem_comprar,
+                            COALESCE(SUM(CASE WHEN pf.tipo = 'compra' THEN pf.valor ELSE 0 END), 0) as total_compras,
+                            COALESCE(SUM(CASE WHEN pf.tipo = 'pagamento' THEN pf.valor ELSE 0 END), 0) as total_pago
+                        FROM clientes_fiado cf
+                        LEFT JOIN pagamentos_fiado pf ON cf.id = pf.cliente_id
+                        WHERE cf.usuario_id = ? AND cf.ativo = 1
+                        GROUP BY cf.id
+                        ORDER BY cf.saldo_devedor DESC, cf.nome ASC
+                    ");
+                    $stmt->execute([$usuarioId]);
+                    $clientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    
+                    cleanJsonResponse(true, $clientes, 'Clientes carregados');
+                } catch (Exception $e) {
+                    cleanJsonResponse(false, null, 'Erro ao listar clientes: ' . $e->getMessage());
+                }
+                break;
+                
+            case 'obterHistoricoCliente':
+                try {
+                    session_start();
+                    $usuarioId = $_SESSION['usuario_id'] ?? null;
+                    $clienteId = $_GET['cliente_id'] ?? null;
+                    
+                    if (!$usuarioId) {
+                        cleanJsonResponse(false, null, 'Usuário não autenticado');
+                    }
+                    
+                    if (!$clienteId) {
+                        cleanJsonResponse(false, null, 'ID do cliente não informado');
+                    }
+                    
+                    // Verificar se o cliente pertence ao usuário
+                    $stmt = $pdo->prepare("SELECT * FROM clientes_fiado WHERE id = ? AND usuario_id = ?");
+                    $stmt->execute([$clienteId, $usuarioId]);
+                    $cliente = $stmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    if (!$cliente) {
+                        cleanJsonResponse(false, null, 'Cliente não encontrado');
+                    }
+                    
+                    // Buscar histórico de movimentações
+                    $stmt = $pdo->prepare("
+                        SELECT * FROM pagamentos_fiado 
+                        WHERE cliente_id = ? 
+                        ORDER BY data_pagamento DESC
+                        LIMIT 100
+                    ");
+                    $stmt->execute([$clienteId]);
+                    $historico = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    
+                    cleanJsonResponse(true, [
+                        'cliente' => $cliente,
+                        'historico' => $historico
+                    ], 'Histórico carregado');
+                } catch (Exception $e) {
+                    cleanJsonResponse(false, null, 'Erro ao carregar histórico: ' . $e->getMessage());
+                }
                 break;
                 
             default:

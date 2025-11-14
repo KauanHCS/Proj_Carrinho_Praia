@@ -40,7 +40,10 @@ session_start();
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/beach-design-system.css">
+    <link rel="stylesheet" href="assets/css/venda-rapida.css">
+    <link rel="stylesheet" href="assets/css/dashboard.css">
+    <link rel="stylesheet" href="assets/css/fiado.css">
     <style>
         /* Layout com Header Azul e Sidebar */
         body {
@@ -673,9 +676,27 @@ session_start();
         <!-- Menu de Navegação -->
         <ul class="sidebar-nav">
             <li>
+                <a href="#" onclick="showTab('dashboard')" data-tab="dashboard">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li>
                 <a href="#" onclick="showTab('vendas')" data-tab="vendas">
                     <i class="bi bi-cash"></i>
                     <span>Vendas</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showTab('venda_rapida')" data-tab="venda_rapida">
+                    <i class="bi bi-lightning-charge-fill"></i>
+                    <span>Venda Rápida</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showTab('fiado')" data-tab="fiado">
+                    <i class="bi bi-journal-text"></i>
+                    <span>Fiado/Caderneta</span>
                 </a>
             </li>
             <li>
@@ -732,11 +753,35 @@ session_start();
     <!-- Conteúdo Principal -->
     <div class="main-content collapsed" id="mainContent">
             <div class="tab-content">
+                <!-- Tab Dashboard -->
+                <div class="tab-pane fade" id="dashboard">
+                    <?php 
+                    require_once '../config/database.php';
+                    include '../src/Views/dashboard.php';
+                    ?>
+                </div>
+
                 <!-- Tab Vendas -->
                 <div class="tab-pane fade" id="vendas">
                     <?php 
                     require_once '../config/database.php';
                     include '../src/Views/vendas.php';
+                    ?>
+                </div>
+
+                <!-- Tab Venda Rápida -->
+                <div class="tab-pane fade" id="venda_rapida">
+                    <?php 
+                    require_once '../config/database.php';
+                    include '../src/Views/venda_rapida.php';
+                    ?>
+                </div>
+
+                <!-- Tab Fiado/Caderneta -->
+                <div class="tab-pane fade" id="fiado">
+                    <?php 
+                    require_once '../config/database.php';
+                    include '../src/Views/fiado.php';
                     ?>
                 </div>
 
@@ -819,6 +864,8 @@ session_start();
     <script src="assets/js/main.js"></script>
     <script src="assets/js/produtos-actions.js"></script>
     <script src="assets/js/filtro-simple.js"></script>
+    <script src="assets/js/venda-rapida.js"></script>
+    <script src="assets/js/fiado.js"></script>
     
     <!-- Scripts principais -->
     <script>
@@ -851,7 +898,10 @@ session_start();
             // Atualizar título da página
             const pageTitle = document.getElementById('pageTitle');
             const titles = {
+                'dashboard': 'Dashboard',
                 'vendas': 'Vendas',
+                'venda_rapida': 'Venda Rápida',
+                'fiado': 'Fiado/Caderneta',
                 'produtos': 'Produtos',
                 'estoque': 'Estoque',
                 'relatorios': 'Relatórios',
@@ -954,7 +1004,9 @@ session_start();
         // Função para controlar visibilidade das abas baseado na função do usuário
         function controlarVisibilidadeAbas(userData) {
             const abas = {
+                dashboard: document.querySelector('[data-tab="dashboard"]'),
                 vendas: document.querySelector('[data-tab="vendas"]'),
+                venda_rapida: document.querySelector('[data-tab="venda_rapida"]'),
                 produtos: document.querySelector('[data-tab="produtos"]'),
                 estoque: document.querySelector('[data-tab="estoque"]'),
                 relatorios: document.querySelector('[data-tab="relatorios"]'),
@@ -1278,7 +1330,7 @@ session_start();
                 const funcao = userData.funcao || userData.funcao_funcionario;
                 
                 if (tipoUsuario === 'administrador') {
-                    showTab('vendas');
+                    showTab('dashboard');
                 } else if (tipoUsuario === 'funcionario') {
                     if (!funcao || funcao === '') {
                         showTab('perfil');
@@ -1293,7 +1345,7 @@ session_start();
                     }
                 }
             } else {
-                showTab('vendas');
+                showTab('dashboard');
             }
         });
     </script>

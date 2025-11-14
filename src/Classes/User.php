@@ -3,6 +3,8 @@
 namespace CarrinhoDePreia;
 
 use CarrinhoDePreia\Database;
+use CarrinhoDePreia\Security;
+use CarrinhoDePreia\Logger;
 
 /**
  * Classe User - Gerencia autenticação e usuários
@@ -21,12 +23,23 @@ class User
 
     /**
      * Fazer login do usuário - mantém mesma lógica original
+     * MELHORADO: Rate limiting e logging
      */
     public function login($email, $password)
     {
         try {
             if (empty($email) || empty($password)) {
                 throw new \Exception('Email e senha são obrigatórios');
+            }
+
+            // ✨ NOVO: Rate limiting para prevenir brute force
+            if (!Security::checkRateLimit($email)) {
+                $waitTime = Security::getRateLimitWaitTime($email);
+                Logger::warning('Login bloqueado por rate limit', [
+                    'email' => $email,
+                    'wait_time' => $waitTime
+                ]);
+                throw new \Exception("Muitas tentativas de login. Aguarde {$waitTime} segundos.");
             }
 
             // Verificar se o usuário existe
@@ -37,13 +50,18 @@ class User
             );
 
             if (!$user) {
+                Logger::warning('Tentativa de login com email inexistente', ['email' => $email]);
                 throw new \Exception('Email ou senha incorretos');
             }
 
             // Verificar senha usando hash seguro
-            if (!password_verify($password, $user['senha'])) {
+            if (!Security::verifyPassword($password, $user['senha'])) {
+                Logger::warning('Tentativa de login com senha incorreta', ['email' => $email]);
                 throw new \Exception('Email ou senha incorretos');
             }
+
+            // ✨ NOVO: Reset rate limit após login bem-sucedido
+            Security::resetRateLimit($email);
 
             // Iniciar sessão - mantém compatibilidade
             if (session_status() == PHP_SESSION_NONE) {
@@ -56,6 +74,13 @@ class User
 
             $this->userData = $user;
 
+            // ✨ NOVO: Log de login bem-sucedido
+            Logger::info('Login bem-sucedido', [
+                'user_id' => $user['id'],
+                'email' => $email,
+                'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
+            ]);
+
             return [
                 'success' => true,
                 'data' => [
@@ -66,6 +91,11 @@ class User
             ];
 
         } catch (\Exception $e) {
+            Logger::error('Falha no login', [
+                'email' => $email ?? 'unknown',
+                'error' => $e->getMessage()
+            ]);
+            
             return [
                 'success' => false,
                 'data' => null,
@@ -76,6 +106,7 @@ class User
 
     /**
      * Registrar novo usuário - mantém mesma lógica original
+     * MELHORADO: Validação de senha forte e logging
      */
     public function register($nome, $sobrenome, $email, $telefone, $password, $confirmPassword)
     {
@@ -87,6 +118,17 @@ class User
 
             if ($password !== $confirmPassword) {
                 throw new \Exception('As senhas não coincidem');
+            }
+
+            // ✨ NOVO: Validação de força de senha
+            $passwordValidation = Security::validatePasswordStrength($password);
+            if (!$passwordValidation['valid']) {
+                throw new \Exception(implode('. ', $passwordValidation['errors']));
+            }
+
+            // ✨ NOVO: Validação de email
+            if (!Security::validateEmail($email)) {
+                throw new \Exception('Email inválido');
             }
 
             // Verificar se o email já existe
@@ -102,7 +144,7 @@ class User
 
             // Criar usuário com senha hasheada
             $nomeCompleto = $nome . ' ' . $sobrenome;
-            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            $hashedPassword = Security::hashPassword($password);
             
             $userId = $this->db->insert(
                 "INSERT INTO usuarios (nome, email, telefone, senha) VALUES (?, ?, ?, ?)",
@@ -119,6 +161,13 @@ class User
             $_SESSION['usuario_nome'] = $nomeCompleto;
             $_SESSION['usuario_email'] = $email;
 
+            // ✨ NOVO: Log de cadastro bem-sucedido
+            Logger::info('Novo usuário cadastrado', [
+                'user_id' => $userId,
+                'email' => $email,
+                'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
+            ]);
+
             return [
                 'success' => true,
                 'data' => [
@@ -129,6 +178,11 @@ class User
             ];
 
         } catch (\Exception $e) {
+            Logger::error('Falha no cadastro', [
+                'email' => $email ?? 'unknown',
+                'error' => $e->getMessage()
+            ]);
+            
             return [
                 'success' => false,
                 'data' => null,
@@ -652,77 +706,6 @@ class User
                 'success' => true,
                 'data' => $codigos,
                 'message' => 'Códigos listados com sucesso'
-            ];
-
-        } catch (\Exception $e) {
-            return [
-                'success' => false,
-                'data' => null,
-                'message' => $e->getMessage()
-            ];
-        }
-    }
-
-    /**
-     * Atualizar login para incluir código único do administrador
-     */
-    public function login($email, $password)
-    {
-        try {
-            if (empty($email) || empty($password)) {
-                throw new \Exception('Email e senha são obrigatórios');
-            }
-
-            // Verificar se o usuário existe
-            $user = $this->db->selectOne(
-                "SELECT * FROM usuarios WHERE email = ?",
-                "s",
-                [$email]
-            );
-
-            if (!$user) {
-                throw new \Exception('Email ou senha incorretos');
-            }
-
-            // Verificar senha usando hash seguro
-            if (!password_verify($password, $user['senha'])) {
-                throw new \Exception('Email ou senha incorretos');
-            }
-
-            // Gerar código único para administradores se não tiverem
-            if ($user['tipo_usuario'] === 'administrador' && empty($user['codigo_unico'])) {
-                $codigoUnico = str_pad(rand(100000, 999999), 6, '0', STR_PAD_LEFT);
-                $this->db->execute(
-                    "UPDATE usuarios SET codigo_unico = ? WHERE id = ?",
-                    "si",
-                    [$codigoUnico, $user['id']]
-                );
-                $user['codigo_unico'] = $codigoUnico;
-            }
-
-            // Iniciar sessão - mantém compatibilidade
-            if (session_status() == PHP_SESSION_NONE) {
-                session_start();
-            }
-            
-            $_SESSION['usuario_id'] = $user['id'];
-            $_SESSION['usuario_nome'] = $user['nome'];
-            $_SESSION['usuario_email'] = $user['email'];
-            $_SESSION['usuario_tipo'] = $user['tipo_usuario'] ?? 'administrador';
-
-            $this->userData = $user;
-
-            return [
-                'success' => true,
-                'data' => [
-                    'usuario_id' => $user['id'],
-                    'nome' => $user['nome'],
-                    'tipo_usuario' => $user['tipo_usuario'] ?? 'administrador',
-                    'funcao_funcionario' => $user['funcao_funcionario'] ?? null,
-                    'codigo_unico' => $user['codigo_unico'] ?? null,
-                    'admin_id' => $user['codigo_admin'] ?? null
-                ],
-                'message' => 'Login realizado com sucesso'
             ];
 
         } catch (\Exception $e) {

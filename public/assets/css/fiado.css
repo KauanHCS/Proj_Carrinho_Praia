@@ -1,0 +1,494 @@
+/* ============================================
+   SISTEMA DE FIADO/CADERNETA - CSS
+   ============================================ */
+
+/* ============================================
+   DASHBOARD KPIs
+   ============================================ */
+
+.fiado-dashboard {
+    margin-bottom: 30px;
+}
+
+.kpi-card {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    height: 100%;
+}
+
+.kpi-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.kpi-card .card-body {
+    padding: 1.5rem;
+}
+
+.kpi-icon {
+    font-size: 2.5rem;
+    opacity: 0.9;
+}
+
+.kpi-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 10px 0 5px 0;
+}
+
+.kpi-label {
+    font-size: 0.95rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.kpi-subtitle {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+/* Cores específicas dos KPIs */
+.kpi-card.kpi-receber {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.kpi-card.kpi-inadimplente {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+.kpi-card.kpi-recebido {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+}
+
+.kpi-card.kpi-vendas {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    color: white;
+}
+
+.kpi-card.kpi-receber .kpi-label,
+.kpi-card.kpi-inadimplente .kpi-label,
+.kpi-card.kpi-recebido .kpi-label,
+.kpi-card.kpi-vendas .kpi-label,
+.kpi-card.kpi-receber .kpi-subtitle,
+.kpi-card.kpi-inadimplente .kpi-subtitle,
+.kpi-card.kpi-recebido .kpi-subtitle,
+.kpi-card.kpi-vendas .kpi-subtitle {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* ============================================
+   FILTROS E BUSCA
+   ============================================ */
+
+.filtros-fiado {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    margin-bottom: 25px;
+}
+
+.btn-filtro {
+    border-radius: 25px;
+    padding: 8px 20px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-filtro:not(.active) {
+    background: #f8f9fa;
+    color: #495057;
+    border: 1px solid #dee2e6;
+}
+
+.btn-filtro.active {
+    box-shadow: 0 2px 8px rgba(13, 110, 253, 0.3);
+}
+
+.input-busca-fiado {
+    border-radius: 25px;
+    padding: 10px 20px 10px 45px;
+    border: 1px solid #dee2e6;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-busca-fiado:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+}
+
+.busca-icon {
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+    pointer-events: none;
+}
+
+/* ============================================
+   CARDS DOS CLIENTES
+   ============================================ */
+
+.cliente-card {
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    height: 100%;
+}
+
+.cliente-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.cliente-card.border-danger {
+    border-color: #dc3545 !important;
+    background: #fff5f5;
+}
+
+.cliente-card.border-warning {
+    border-color: #ffc107 !important;
+    background: #fffbf0;
+}
+
+.cliente-card .card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.cliente-card .card-title i {
+    font-size: 1.3rem;
+    margin-right: 8px;
+}
+
+.cliente-info {
+    padding: 10px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.cliente-saldo {
+    padding: 10px 0;
+}
+
+.cliente-saldo .text-danger {
+    color: #dc3545 !important;
+}
+
+.cliente-acoes {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.cliente-acoes .btn {
+    transition: all 0.2s ease;
+}
+
+.cliente-acoes .btn-success:hover {
+    background-color: #157347;
+    transform: scale(1.05);
+}
+
+.cliente-acoes .btn-info:hover {
+    background-color: #0dcaf0;
+    transform: scale(1.05);
+}
+
+/* ============================================
+   BADGES DE STATUS
+   ============================================ */
+
+.badge {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 20px;
+}
+
+.badge.bg-success {
+    background-color: #198754 !important;
+}
+
+.badge.bg-info {
+    background-color: #0dcaf0 !important;
+    color: #000;
+}
+
+.badge.bg-warning {
+    background-color: #ffc107 !important;
+    color: #000;
+}
+
+.badge.bg-danger {
+    background-color: #dc3545 !important;
+}
+
+/* ============================================
+   PROGRESS BAR
+   ============================================ */
+
+.progress {
+    border-radius: 10px;
+    background-color: #e9ecef;
+}
+
+.progress-bar {
+    border-radius: 10px;
+    transition: width 0.4s ease;
+}
+
+/* ============================================
+   MODAIS
+   ============================================ */
+
+.modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px 10px 0 0;
+}
+
+.modal-header .btn-close {
+    filter: invert(1);
+}
+
+.modal-content {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    padding: 1rem 1.5rem;
+    background: #f8f9fa;
+    border-radius: 0 0 10px 10px;
+}
+
+/* ============================================
+   FORMULÁRIOS
+   ============================================ */
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 8px;
+}
+
+.form-control,
+.form-select {
+    border-radius: 8px;
+    border: 1px solid #ced4da;
+    padding: 10px 15px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+}
+
+/* ============================================
+   HISTÓRICO / TIMELINE
+   ============================================ */
+
+.timeline {
+    position: relative;
+    padding-left: 0;
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 0;
+}
+
+.timeline-item h6 {
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.timeline-item p {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.historico-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.historico-header h5 {
+    margin: 0 0 10px 0;
+    font-size: 1.3rem;
+}
+
+.historico-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.historico-info-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.historico-info-item label {
+    font-size: 0.85rem;
+    opacity: 0.9;
+    margin-bottom: 3px;
+}
+
+.historico-info-item span {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+/* ============================================
+   BOTÕES CUSTOMIZADOS
+   ============================================ */
+
+.btn-novo-cliente {
+    border-radius: 25px;
+    padding: 10px 25px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+    transition: all 0.2s ease;
+}
+
+.btn-novo-cliente:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(13, 110, 253, 0.4);
+}
+
+/* ============================================
+   ESTADOS VAZIOS
+   ============================================ */
+
+.empty-state {
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    opacity: 0.3;
+    margin-bottom: 20px;
+}
+
+.empty-state p {
+    font-size: 1.1rem;
+    color: #6c757d;
+}
+
+/* ============================================
+   RESPONSIVIDADE
+   ============================================ */
+
+@media (max-width: 768px) {
+    .kpi-card {
+        margin-bottom: 15px;
+    }
+    
+    .kpi-value {
+        font-size: 1.5rem;
+    }
+    
+    .kpi-icon {
+        font-size: 2rem;
+    }
+    
+    .filtros-fiado {
+        padding: 15px;
+    }
+    
+    .btn-filtro {
+        padding: 6px 15px;
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+    }
+    
+    .cliente-card .card-title {
+        font-size: 1rem;
+    }
+    
+    .cliente-acoes {
+        flex-wrap: wrap;
+    }
+    
+    .cliente-acoes .flex-fill {
+        flex: 1 1 calc(50% - 4px);
+    }
+    
+    .historico-info {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 576px) {
+    .kpi-value {
+        font-size: 1.3rem;
+    }
+    
+    .modal-body {
+        padding: 1rem;
+    }
+    
+    .btn-novo-cliente {
+        width: 100%;
+        margin-top: 10px;
+    }
+}
+
+/* ============================================
+   ANIMAÇÕES
+   ============================================ */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.cliente-card {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* ============================================
+   UTILITIES
+   ============================================ */
+
+.text-money {
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+}
+
+.shadow-sm-custom {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
