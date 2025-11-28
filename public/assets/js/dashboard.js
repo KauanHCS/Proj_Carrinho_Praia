@@ -64,7 +64,10 @@ async function carregarDadosDashboard() {
             atualizarGraficoVendasHora(data.data.vendas_por_hora);
             atualizarTopProdutos(data.data.top_produtos);
             atualizarFormasPagamento(data.data.formas_pagamento);
-            atualizarComparacoes(data.data.comparacoes);
+            atualizarComparacoes({
+                ontem: data.data.dados_ontem,
+                semana_passada: data.data.dados_semana_passada
+            });
             atualizarHorarioPico(data.data.horario_pico);
         } else {
             console.error('Erro ao carregar métricas:', data.message);
@@ -320,7 +323,7 @@ function atualizarFormasPagamento(dados) {
                                     const style = meta.controller.getStyle(i);
                                     const value = data.datasets[0].data[i];
                                     const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
-                                    const percent = ((value / total) * 100).toFixed(1);
+                                    const percent = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
                                     
                                     return {
                                         text: `${label} (${percent}%)`,
@@ -351,7 +354,7 @@ function atualizarFormasPagamento(dados) {
                             const label = context.label || '';
                             const valor = context.parsed || 0;
                             const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentual = ((valor / total) * 100).toFixed(1);
+                            const percentual = total > 0 ? ((valor / total) * 100).toFixed(1) : 0;
                             return `${label}: R$ ${valor.toFixed(2)} (${percentual}%)`;
                         }
                     }
@@ -390,6 +393,13 @@ function atualizarComparacoes(comparacoes) {
 function atualizarBadgeComparacao(elementId, percentual) {
     const element = document.getElementById(elementId);
     const valor = parseFloat(percentual);
+    
+    // Proteger contra NaN
+    if (isNaN(valor)) {
+        element.className = 'badge bg-secondary';
+        element.textContent = '0.0%';
+        return;
+    }
     
     const classe = valor >= 0 ? 'bg-success' : 'bg-danger';
     const sinal = valor > 0 ? '+' : '';
@@ -432,7 +442,7 @@ function carregarMetaDiaria() {
 }
 
 function atualizarProgressoMeta(faturamentoAtual) {
-    const percentual = (faturamentoAtual / metaDiaria) * 100;
+    const percentual = metaDiaria > 0 ? (faturamentoAtual / metaDiaria) * 100 : 0;
     const percentualLimitado = Math.min(percentual, 100);
     const restante = Math.max(metaDiaria - faturamentoAtual, 0);
     

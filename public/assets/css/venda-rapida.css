@@ -770,3 +770,264 @@
     background: var(--bg-white);
     border-color: var(--border-color);
 }
+
+/* ==============================================
+   MODAL DE SELEÇÃO DE CLIENTE FIADO
+   ============================================== */
+
+.clientes-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.cliente-fiado-item {
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.cliente-fiado-item:hover {
+    border-color: #0066cc;
+    background: #f8f9fa;
+    transform: translateX(5px);
+}
+
+.cliente-fiado-item.indisponivel {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: #fff3cd;
+    border-color: #ffc107;
+}
+
+.cliente-fiado-item.indisponivel:hover {
+    transform: none;
+}
+
+.cliente-fiado-info {
+    flex: 1;
+}
+
+.cliente-fiado-nome {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 5px;
+}
+
+.cliente-fiado-detalhes {
+    display: flex;
+    gap: 15px;
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.cliente-fiado-limite {
+    text-align: right;
+}
+
+.cliente-fiado-disponivel {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-bottom: 3px;
+}
+
+.cliente-fiado-valor {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #198754;
+}
+
+.cliente-fiado-item.indisponivel .cliente-fiado-valor {
+    color: #dc3545;
+}
+
+.badge-status-fiado {
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 10px;
+}
+
+@media (max-width: 576px) {
+    .cliente-fiado-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .cliente-fiado-limite {
+        text-align: left;
+        margin-top: 10px;
+        width: 100%;
+    }
+}
+
+/* ==============================================
+   SISTEMA DE GUARDA-SÓIS
+   ============================================== */
+
+.guardasois-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 15px;
+    padding: 10px 0;
+}
+
+.guardasol-card {
+    border: 3px solid #e9ecef;
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: #fff;
+    position: relative;
+    overflow: hidden;
+}
+
+.guardasol-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: #6c757d;
+    transition: all 0.3s ease;
+}
+
+.guardasol-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+/* Status: Vazio */
+.guardasol-card.status-vazio {
+    border-color: #198754;
+}
+
+.guardasol-card.status-vazio::before {
+    background: linear-gradient(135deg, #198754 0%, #20c997 100%);
+}
+
+.guardasol-card.status-vazio:hover {
+    border-color: #198754;
+    background: #f0fff4;
+}
+
+/* Status: Ocupado */
+.guardasol-card.status-ocupado {
+    border-color: #ffc107;
+}
+
+.guardasol-card.status-ocupado::before {
+    background: linear-gradient(135deg, #ffc107 0%, #ffca2c 100%);
+}
+
+.guardasol-card.status-ocupado:hover {
+    border-color: #ffc107;
+    background: #fffbf0;
+}
+
+/* Status: Aguardando Pagamento */
+.guardasol-card.status-aguardando_pagamento {
+    border-color: #dc3545;
+}
+
+.guardasol-card.status-aguardando_pagamento::before {
+    background: linear-gradient(135deg, #dc3545 0%, #e4606d 100%);
+}
+
+.guardasol-card.status-aguardando_pagamento:hover {
+    border-color: #dc3545;
+    background: #fff5f5;
+}
+
+.guardasol-numero {
+    font-size: 3rem;
+    font-weight: 800;
+    color: #2c3e50;
+    margin-bottom: 10px;
+    line-height: 1;
+}
+
+.guardasol-status-badge {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+.guardasol-status-badge.badge-vazio {
+    background: #198754;
+    color: white;
+}
+
+.guardasol-status-badge.badge-ocupado {
+    background: #ffc107;
+    color: #000;
+}
+
+.guardasol-status-badge.badge-aguardando {
+    background: #dc3545;
+    color: white;
+}
+
+.guardasol-cliente {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-top: 8px;
+    font-weight: 500;
+}
+
+.guardasol-valor {
+    font-size: 1.1rem;
+    color: #0066cc;
+    font-weight: 700;
+    margin-top: 8px;
+}
+
+.guardasol-icon {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    opacity: 0.8;
+}
+
+@media (max-width: 992px) {
+    .guardasois-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 12px;
+    }
+    
+    .guardasol-numero {
+        font-size: 2.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .guardasois-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 10px;
+    }
+    
+    .guardasol-card {
+        padding: 15px;
+    }
+    
+    .guardasol-numero {
+        font-size: 2rem;
+    }
+    
+    .guardasol-icon {
+        font-size: 2rem;
+    }
+}

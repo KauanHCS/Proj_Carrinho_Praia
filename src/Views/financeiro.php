@@ -15,12 +15,12 @@
                     <!-- Filtros -->
                     <div class="row mb-3">
                         <div class="col-md-4">
-                            <label for="filtroStatus" class="form-label">Status do Pagamento</label>
+                            <label for="filtroStatus" class="form-label">Status da Venda</label>
                             <select id="filtroStatus" class="form-select" onchange="carregarVendasFinanceiro()">
                                 <option value="">Todos os status</option>
-                                <option value="pendente" selected>Pendente</option>
-                                <option value="pago">Pago</option>
-                                <option value="cancelado">Cancelado</option>
+                                <option value="concluida" selected>Concluída</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="cancelada">Cancelada</option>
                             </select>
                         </div>
                         <div class="col-md-4">
@@ -41,7 +41,7 @@
                             <div class="card border-warning">
                                 <div class="card-body text-center">
                                     <h5 class="text-warning" id="totalPendente">R$ 0,00</h5>
-                                    <small class="text-muted">Pagamentos Pendentes</small>
+                                    <small class="text-muted">Vendas Pendentes</small>
                                 </div>
                             </div>
                         </div>
@@ -49,7 +49,7 @@
                             <div class="card border-success">
                                 <div class="card-body text-center">
                                     <h5 class="text-success" id="totalPago">R$ 0,00</h5>
-                                    <small class="text-muted">Pagamentos Processados</small>
+                                    <small class="text-muted">Vendas Concluídas</small>
                                 </div>
                             </div>
                         </div>
@@ -78,29 +78,12 @@
                         </div>
                     </div>
 
-                    <!-- Tabela de Vendas -->
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Cliente</th>
-                                    <th>Vendedor</th>
-                                    <th>Produtos</th>
-                                    <th>Total</th>
-                                    <th>Status</th>
-                                    <th>Data</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabelaVendasFinanceiro">
-                                <tr>
-                                    <td colspan="8" class="text-center text-muted">
-                                        <i class="bi bi-inbox"></i> Nenhuma venda encontrada
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <!-- Cards de Vendas -->
+                    <div id="vendasContainer" class="row g-3">
+                        <div class="col-12 text-center text-muted py-5">
+                            <i class="bi bi-inbox fs-1"></i>
+                            <p>Nenhuma venda encontrada</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -234,7 +217,7 @@ function carregarVendedores() {
 // Carregar vendas para financeiro
 function carregarVendasFinanceiro() {
     const loading = document.getElementById('loadingFinanceiro');
-    const tabela = document.getElementById('tabelaVendasFinanceiro');
+    const container = document.getElementById('vendasContainer');
     
     loading.style.display = 'block';
     
@@ -258,74 +241,120 @@ function carregarVendasFinanceiro() {
             atualizarEstatisticas(data.data);
             
             if (data.data.length === 0) {
-                tabela.innerHTML = `
-                    <tr>
-                        <td colspan="8" class="text-center text-muted">
-                            <i class="bi bi-inbox"></i> Nenhuma venda encontrada
-                        </td>
-                    </tr>
+                container.innerHTML = `
+                    <div class="col-12 text-center text-muted py-5">
+                        <i class="bi bi-inbox fs-1"></i>
+                        <p>Nenhuma venda encontrada</p>
+                    </div>
                 `;
             } else {
-                tabela.innerHTML = '';
+                container.innerHTML = '';
                 
                 data.data.forEach(venda => {
-                    const row = document.createElement('tr');
-                    
-                    const statusBadge = getStatusBadge(venda.status_pagamento);
-                    const dataFormatada = new Date(venda.data_venda).toLocaleString('pt-BR');
-                    
-                    row.innerHTML = `
-                        <td>#${venda.id}</td>
-                        <td>${venda.nome_cliente}</td>
-                        <td>${venda.vendedor_nome}</td>
-                        <td>
-                            <small>${venda.produtos_info}</small>
-                        </td>
-                        <td><strong>R$ ${parseFloat(venda.total).toFixed(2)}</strong></td>
-                        <td>${statusBadge}</td>
-                        <td>${dataFormatada}</td>
-                        <td>
-                            ${venda.status_pagamento === 'pendente' ? 
-                                `<button class="btn btn-sm btn-success" onclick="abrirModalPagamento(${venda.id})">
-                                    <i class="bi bi-credit-card"></i> Processar
-                                </button>` : 
-                                `<button class="btn btn-sm btn-outline-info" onclick="visualizarDetalhes(${venda.id})">
-                                    <i class="bi bi-eye"></i> Detalhes
-                                </button>`
-                            }
-                        </td>
-                    `;
-                    
-                    tabela.appendChild(row);
+                    const card = criarCardVenda(venda);
+                    container.appendChild(card);
                 });
             }
         } else {
-            tabela.innerHTML = `
-                <tr>
-                    <td colspan="8" class="text-center text-danger">
-                        <i class="bi bi-exclamation-circle"></i> Erro: ${data.message}
-                    </td>
-                </tr>
+            container.innerHTML = `
+                <div class="col-12 text-center text-danger py-5">
+                    <i class="bi bi-exclamation-circle fs-1"></i>
+                    <p>Erro: ${data.message}</p>
+                </div>
             `;
         }
     })
     .catch(error => {
         loading.style.display = 'none';
         console.error('Erro:', error);
-        tabela.innerHTML = `
-            <tr>
-                <td colspan="8" class="text-center text-danger">
-                    <i class="bi bi-exclamation-circle"></i> Erro de conexão
-                </td>
-            </tr>
+        container.innerHTML = `
+            <div class="col-12 text-center text-danger py-5">
+                <i class="bi bi-exclamation-circle fs-1"></i>
+                <p>Erro de conexão</p>
+            </div>
         `;
     });
+}
+
+// Criar card de venda
+function criarCardVenda(venda) {
+    const col = document.createElement('div');
+    col.className = 'col-12 col-md-6 col-lg-4';
+    
+    const statusBadge = getStatusBadge(venda.status);
+    const dataFormatada = new Date(venda.data).toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    
+    const formaPagamento = {
+        'dinheiro': '<i class="bi bi-cash"></i> Dinheiro',
+        'pix': '<i class="bi bi-qr-code"></i> PIX',
+        'cartao': '<i class="bi bi-credit-card"></i> Cartão',
+        'multiplo': '<i class="bi bi-wallet2"></i> Múltiplo'
+    }[venda.forma_pagamento] || venda.forma_pagamento;
+    
+    col.innerHTML = `
+        <div class="card h-100 shadow-sm" style="border-left: 4px solid ${venda.status === 'concluida' ? '#28a745' : venda.status === 'pendente' ? '#ffc107' : '#dc3545'};">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h6 class="mb-1">
+                            <i class="bi bi-receipt"></i> Venda #${venda.id}
+                            ${venda.numero_guardasol ? `<span class="badge bg-info">GS ${venda.numero_guardasol}</span>` : ''}
+                        </h6>
+                        <small class="text-muted">${dataFormatada}</small>
+                    </div>
+                    ${statusBadge}
+                </div>
+                
+                <div class="mb-2">
+                    <strong><i class="bi bi-person"></i> Cliente:</strong> 
+                    <span>${venda.cliente_nome || 'Não informado'}</span>
+                </div>
+                
+                ${venda.cliente_telefone ? `
+                    <div class="mb-2">
+                        <strong><i class="bi bi-telephone"></i> Telefone:</strong> 
+                        <span>${venda.cliente_telefone}</span>
+                    </div>
+                ` : ''}
+                
+                <div class="mb-2">
+                    <strong><i class="bi bi-box"></i> Produtos:</strong>
+                    <div class="small text-muted mt-1">${venda.produtos_info || 'Sem produtos'}</div>
+                </div>
+                
+                <div class="mb-2">
+                    <strong><i class="bi bi-wallet"></i> Pagamento:</strong> 
+                    <span>${formaPagamento}</span>
+                </div>
+                
+                <hr>
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0 text-success">R$ ${parseFloat(venda.total).toFixed(2)}</h5>
+                        ${venda.desconto > 0 ? `<small class="text-muted">Desconto: R$ ${parseFloat(venda.desconto).toFixed(2)}</small>` : ''}
+                    </div>
+                    <button class="btn btn-sm btn-outline-info" onclick="visualizarDetalhes(${venda.id})">
+                        <i class="bi bi-eye"></i> Detalhes
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    return col;
 }
 
 // Atualizar estatísticas
 function atualizarEstatisticas(vendas) {
     let totalPendente = 0;
-    let totalPago = 0;
+    let totalConcluido = 0;
     let totalVendas = vendas.length;
     let somaTotal = 0;
     
@@ -333,15 +362,15 @@ function atualizarEstatisticas(vendas) {
         const valor = parseFloat(venda.total);
         somaTotal += valor;
         
-        if (venda.status_pagamento === 'pendente') {
+        if (venda.status === 'pendente') {
             totalPendente += valor;
-        } else if (venda.status_pagamento === 'pago') {
-            totalPago += valor;
+        } else if (venda.status === 'concluida') {
+            totalConcluido += valor;
         }
     });
     
     document.getElementById('totalPendente').textContent = `R$ ${totalPendente.toFixed(2)}`;
-    document.getElementById('totalPago').textContent = `R$ ${totalPago.toFixed(2)}`;
+    document.getElementById('totalPago').textContent = `R$ ${totalConcluido.toFixed(2)}`;
     document.getElementById('totalVendas').textContent = totalVendas;
     document.getElementById('mediaVenda').textContent = totalVendas > 0 ? `R$ ${(somaTotal / totalVendas).toFixed(2)}` : 'R$ 0,00';
 }
@@ -349,9 +378,9 @@ function atualizarEstatisticas(vendas) {
 // Gerar badge de status
 function getStatusBadge(status) {
     const badges = {
-        'pendente': '<span class="badge bg-warning">Pendente</span>',
-        'pago': '<span class="badge bg-success">Pago</span>',
-        'cancelado': '<span class="badge bg-danger">Cancelado</span>'
+        'pendente': '<span class="badge bg-warning text-dark">Pendente</span>',
+        'concluida': '<span class="badge bg-success">Concluída</span>',
+        'cancelada': '<span class="badge bg-danger">Cancelada</span>'
     };
     return badges[status] || '<span class="badge bg-secondary">Desconhecido</span>';
 }

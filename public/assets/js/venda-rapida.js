@@ -431,14 +431,30 @@ function finalizarVendaMista() {
         return;
     }
     
+    // Validar cliente se houver pagamento fiado
+    const temFiado = formasPagamento.some(f => f.forma === 'fiado');
+    if (temFiado && !clienteFiadoSelecionado) {
+        mostrarAlerta('Por favor, selecione um cliente para venda fiada!', 'warning');
+        return;
+    }
+    
+    // Capturar nome do cliente (opcional)
+    const nomeClienteInput = document.getElementById('nomeClienteVenda');
+    const nomeCliente = nomeClienteInput ? nomeClienteInput.value.trim() : '';
+    
     // Preparar dados da venda
     const formData = new URLSearchParams();
     formData.append('action', 'finalizar_venda');
     formData.append('carrinho', JSON.stringify(carrinhoRapido));
-    formData.append('nome_cliente', '');
+    formData.append('nome_cliente', clienteFiadoSelecionado ? clienteFiadoSelecionado.nome : nomeCliente);
     formData.append('telefone_cliente', '');
     formData.append('criar_pedido', '0');
     formData.append('valor_pago', totalPago);
+    
+    // Adicionar cliente fiado se selecionado
+    if (clienteFiadoSelecionado) {
+        formData.append('cliente_fiado_id', clienteFiadoSelecionado.id);
+    }
     
     // Adicionar formas de pagamento (até 3)
     if (formasPagamento[0]) {
@@ -477,6 +493,7 @@ function finalizarVendaMista() {
             
             // Limpar carrinho e formas de pagamento
             carrinhoRapido = [];
+            clienteFiadoSelecionado = null;
             limparFormasPagamento();
             atualizarCarrinhoUI();
             
@@ -528,12 +545,16 @@ function finalizarVendaRapida(formaPagamento) {
     
     const total = carrinhoRapido.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
     
+    // Capturar nome do cliente (opcional)
+    const nomeClienteInput = document.getElementById('nomeClienteVenda');
+    const nomeCliente = nomeClienteInput ? nomeClienteInput.value.trim() : '';
+    
     // Preparar dados da venda no formato esperado pelo backend
     const formData = new URLSearchParams();
     formData.append('action', 'finalizar_venda');
     formData.append('carrinho', JSON.stringify(carrinhoRapido));
     formData.append('forma_pagamento', formaPagamento);
-    formData.append('nome_cliente', '');
+    formData.append('nome_cliente', nomeCliente);
     formData.append('telefone_cliente', '');
     formData.append('criar_pedido', '0');
     formData.append('valor_pago', total);
@@ -633,6 +654,12 @@ function novaVendaRapida() {
     carrinhoRapido = [];
     atualizarCarrinhoUI();
     
+    // Limpar campo nome do cliente
+    const nomeClienteInput = document.getElementById('nomeClienteVenda');
+    if (nomeClienteInput) {
+        nomeClienteInput.value = '';
+    }
+    
     // Focar na busca
     const buscaInput = document.getElementById('buscaRapida');
     if (buscaInput) {
@@ -650,6 +677,13 @@ function limparCarrinhoRapido() {
         carrinhoRapido = [];
         limparFormasPagamento();
         atualizarCarrinhoUI();
+        
+        // Limpar campo nome do cliente
+        const nomeClienteInput = document.getElementById('nomeClienteVenda');
+        if (nomeClienteInput) {
+            nomeClienteInput.value = '';
+        }
+        
         mostrarAlerta('Carrinho limpo!', 'info');
     }
 }
@@ -766,6 +800,689 @@ function mostrarAlerta(mensagem, tipo = 'info') {
     }, 3000);
 }
 
+// ============================================
+// INTEGRAÇÃO COM CLIENTE FIADO
+// ============================================
+
+let clientesFiadoCache = [];
+let clienteFiadoSelecionado = null;
+
+/**
+ * Intercepta clique na forma de pagamento Fiado
+ */
+document.addEventListener('DOMContentLoaded', function() {
+    const checkFiado = document.getElementById('checkFiado');
+    if (checkFiado) {
+        checkFiado.addEventListener('change', function(e) {
+            if (this.checked) {
+                // Abrir modal de seleção de cliente
+                abrirModalSelecionarClienteFiado();
+            } else {
+                // Limpar seleção
+                clienteFiadoSelecionado = null;
+            }
+        });
+    }
+});
+
+/**
+ * Abre modal para selecionar cliente fiado
+ */
+function abrirModalSelecionarClienteFiado() {
+    const modal = new bootstrap.Modal(document.getElementById('modalSelecionarClienteFiado'));
+    modal.show();
+    carregarClientesFiadoVenda();
+}
+
+/**
+ * Carrega lista de clientes fiado
+ */
+async function carregarClientesFiadoVenda() {
+    const container = document.getElementById('listaClientesFiadoVenda');
+    container.innerHTML = '<div class="text-center py-4"><i class="bi bi-hourglass-split" style="font-size: 2rem;"></i><p class="text-muted">Carregando...</p></div>';
+    
+    try {
+        const response = await fetch('../src/Controllers/actions.php?action=listarClientesFiado');
+        const data = await response.json();
+        
+        if (data.success && data.data.length > 0) {
+            clientesFiadoCache = data.data;
+            renderizarClientesFiadoVenda(clientesFiadoCache);
+        } else {
+            container.innerHTML = '<div class="text-center py-4"><i class="bi bi-inbox" style="font-size: 2rem; opacity: 0.3;"></i><p class="text-muted">Nenhum cliente cadastrado</p></div>';
+        }
+    } catch (error) {
+        console.error('Erro ao carregar clientes:', error);
+        container.innerHTML = '<div class="text-center py-4 text-danger"><i class="bi bi-x-circle" style="font-size: 2rem;"></i><p>Erro ao carregar clientes</p></div>';
+    }
+}
+
+/**
+ * Renderiza lista de clientes
+ */
+function renderizarClientesFiadoVenda(clientes) {
+    const container = document.getElementById('listaClientesFiadoVenda');
+    const totalVenda = carrinhoRapido.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
+    
+    let html = '';
+    clientes.forEach(cliente => {
+        const saldo = parseFloat(cliente.saldo_devedor);
+        const limite = parseFloat(cliente.limite_credito);
+        const disponivel = limite - saldo;
+        const podeComprar = disponivel >= totalVenda;
+        
+        const classeItem = podeComprar ? '' : 'indisponivel';
+        const badge = podeComprar ? '<span class="badge bg-success badge-status-fiado">Disponível</span>' : '<span class="badge bg-danger badge-status-fiado">Limite insuficiente</span>';
+        
+        html += `
+            <div class="cliente-fiado-item ${classeItem}" onclick="${podeComprar ? `selecionarClienteFiado(${cliente.id}, '${cliente.nome}', ${disponivel})` : ''}">
+                <div class="cliente-fiado-info">
+                    <div class="cliente-fiado-nome">
+                        <i class="bi bi-person-circle text-primary"></i>
+                        ${cliente.nome}
+                        ${badge}
+                    </div>
+                    <div class="cliente-fiado-detalhes">
+                        ${cliente.telefone ? `<span><i class="bi bi-telephone"></i> ${cliente.telefone}</span>` : ''}
+                        <span><i class="bi bi-wallet2"></i> Limite: R$ ${limite.toFixed(2).replace('.', ',')}</span>
+                    </div>
+                </div>
+                <div class="cliente-fiado-limite">
+                    <div class="cliente-fiado-disponivel">Disponível:</div>
+                    <div class="cliente-fiado-valor">R$ ${disponivel.toFixed(2).replace('.', ',')}</div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+/**
+ * Filtra clientes na busca
+ */
+function filtrarClientesFiadoVenda() {
+    const busca = document.getElementById('buscaClienteFiadoVenda').value.toLowerCase();
+    const clientesFiltrados = clientesFiadoCache.filter(cliente => {
+        return cliente.nome.toLowerCase().includes(busca) || 
+               (cliente.telefone && cliente.telefone.includes(busca));
+    });
+    renderizarClientesFiadoVenda(clientesFiltrados);
+}
+
+/**
+ * Seleciona cliente para venda fiada
+ */
+function selecionarClienteFiado(clienteId, clienteNome, limiteDisponivel) {
+    clienteFiadoSelecionado = {
+        id: clienteId,
+        nome: clienteNome,
+        limite_disponivel: limiteDisponivel
+    };
+    
+    // Fechar modal de seleção
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalSelecionarClienteFiado'));
+    modal.hide();
+    
+    // Preencher valor do fiado automaticamente
+    const total = carrinhoRapido.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
+    document.getElementById('valorFiado').value = total.toFixed(2);
+    
+    mostrarAlerta(`Cliente selecionado: ${clienteNome}`, 'success');
+    
+    calcularPagamentoMisto();
+}
+
+/**
+ * Abre modal de cadastro rápido
+ */
+function abrirCadastroRapidoCliente() {
+    // Fechar modal de seleção
+    const modalSelecao = bootstrap.Modal.getInstance(document.getElementById('modalSelecionarClienteFiado'));
+    if (modalSelecao) modalSelecao.hide();
+    
+    // Abrir modal de cadastro
+    setTimeout(() => {
+        const modal = new bootstrap.Modal(document.getElementById('modalCadastroRapidoCliente'));
+        modal.show();
+        document.getElementById('formCadastroRapidoCliente').reset();
+    }, 300);
+}
+
+/**
+ * Salva cliente rápido
+ */
+async function salvarClienteRapido() {
+    const nome = document.getElementById('rapidoNomeCliente').value.trim();
+    
+    if (!nome) {
+        alert('Por favor, preencha o nome do cliente');
+        return;
+    }
+    
+    const dados = {
+        action: 'cadastrarClienteFiado',
+        nome: nome,
+        telefone: document.getElementById('rapidoTelefoneCliente').value.trim(),
+        cpf: '',
+        endereco: '',
+        limite_credito: document.getElementById('rapidoLimiteCredito').value,
+        observacoes: 'Cadastro rápido via Venda Rápida'
+    };
+    
+    try {
+        const response = await fetch('../src/Controllers/actions.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams(dados)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Fechar modal de cadastro
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalCadastroRapidoCliente'));
+            modal.hide();
+            
+            // Selecionar automaticamente o novo cliente
+            const limiteCredito = parseFloat(document.getElementById('rapidoLimiteCredito').value);
+            selecionarClienteFiado(data.data.cliente_id, nome, limiteCredito);
+            
+            mostrarAlerta('Cliente cadastrado e selecionado!', 'success');
+        } else {
+            alert('Erro: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao cadastrar cliente');
+    }
+}
+
+// ==============================================
+//  SISTEMA DE GUARDA-SÓIS
+// ==============================================
+
+let guardasolSelecionado = null;
+let todosGuardasois = [];
+
+/**
+ * Abre modal de seleção de guarda-sol
+ */
+async function abrirModalGuardasol() {
+    const modal = new bootstrap.Modal(document.getElementById('modalSelecionarGuardasol'));
+    modal.show();
+    
+    // Carregar lista de guarda-sóis
+    await carregarGuardasois();
+}
+
+/**
+ * Carrega lista de guarda-sóis do servidor
+ */
+async function carregarGuardasois() {
+    const gridGuardasois = document.getElementById('gridGuardasois');
+    
+    // Loading
+    gridGuardasois.innerHTML = `
+        <div class="text-center py-4">
+            <i class="bi bi-hourglass-split" style="font-size: 2rem;"></i>
+            <p class="text-muted">Carregando guarda-sóis...</p>
+        </div>
+    `;
+    
+    try {
+        const response = await fetch('../src/Controllers/actions.php?action=listarGuardasois');
+        const data = await response.json();
+        
+        if (data.success && data.data.length > 0) {
+            todosGuardasois = data.data;
+            renderizarGuardasois(todosGuardasois);
+        } else {
+            gridGuardasois.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <i class="bi bi-umbrella" style="font-size: 3rem; opacity: 0.3;"></i>
+                    <p class="text-muted mt-3">Nenhum guarda-sol cadastrado ainda.</p>
+                    <p class="text-muted"><small>Entre em contato com o administrador para cadastrar guarda-sóis.</small></p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Erro ao carregar guarda-sóis:', error);
+        gridGuardasois.innerHTML = `
+            <div class="col-12 text-center py-4">
+                <i class="bi bi-exclamation-triangle text-danger" style="font-size: 2rem;"></i>
+                <p class="text-danger">Erro ao carregar guarda-sóis</p>
+            </div>
+        `;
+    }
+}
+
+/**
+ * Renderiza grid de guarda-sóis
+ */
+function renderizarGuardasois(guardasois) {
+    const gridGuardasois = document.getElementById('gridGuardasois');
+    
+    if (guardasois.length === 0) {
+        gridGuardasois.innerHTML = `
+            <div class="col-12 text-center py-4">
+                <i class="bi bi-inbox" style="font-size: 2rem; opacity: 0.3;"></i>
+                <p class="text-muted">Nenhum guarda-sol encontrado com esse filtro</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    
+    guardasois.forEach(gs => {
+        const statusClass = `status-${gs.status}`;
+        const statusBadgeClass = gs.status === 'vazio' ? 'badge-vazio' : 
+                                  gs.status === 'ocupado' ? 'badge-ocupado' : 'badge-aguardando';
+        const statusText = gs.status === 'vazio' ? 'Vazio' : 
+                          gs.status === 'ocupado' ? 'Ocupado' : 'Aguardando Pag.';
+        
+        const icone = gs.status === 'vazio' ? '☀️' : gs.status === 'ocupado' ? '⌛' : '💵';
+        
+        html += `
+            <div class="guardasol-card ${statusClass}" onclick="selecionarGuardasol(${gs.id}, ${gs.numero}, '${gs.status}', '${gs.cliente_nome || ''}', ${gs.total_consumido || 0})">
+                <div class="guardasol-icon">${icone}</div>
+                <div class="guardasol-numero">#${gs.numero}</div>
+                <div class="guardasol-status-badge ${statusBadgeClass}">${statusText}</div>
+                ${gs.cliente_nome ? `<div class="guardasol-cliente"><i class="bi bi-person"></i> ${gs.cliente_nome}</div>` : ''}
+                ${gs.total_consumido > 0 ? `<div class="guardasol-valor">R$ ${parseFloat(gs.total_consumido).toFixed(2).replace('.', ',')}</div>` : ''}
+            </div>
+        `;
+    });
+    
+    gridGuardasois.innerHTML = html;
+}
+
+/**
+ * Seleciona um guarda-sol
+ */
+function selecionarGuardasol(id, numero, status, clienteNome, totalConsumido) {
+    guardasolSelecionado = {
+        id: id,
+        numero: numero,
+        status: status,
+        cliente_nome: clienteNome,
+        total_consumido: totalConsumido
+    };
+    
+    // Atualizar display no header
+    const displayInfo = document.getElementById('guardasolInfoDisplay');
+    let infoText = `Guarda-sol #${numero} - ${status === 'vazio' ? 'Vazio' : status === 'ocupado' ? 'Ocupado' : 'Aguardando Pagamento'}`;
+    
+    if (clienteNome) {
+        infoText += ` - ${clienteNome}`;
+    }
+    
+    if (totalConsumido > 0) {
+        infoText += ` (R$ ${parseFloat(totalConsumido).toFixed(2).replace('.', ',')})`;
+    }
+    
+    displayInfo.textContent = infoText;
+    displayInfo.classList.remove('text-muted');
+    displayInfo.classList.add('text-primary');
+    
+    // Fechar modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalSelecionarGuardasol'));
+    modal.hide();
+    
+    mostrarAlerta(`Guarda-sol #${numero} selecionado!`, 'success');
+}
+
+/**
+ * Filtra guarda-sóis por status
+ */
+function filtrarGuardasolStatus(status) {
+    // Atualizar botões ativos
+    document.querySelectorAll('#modalSelecionarGuardasol .btn-group button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Filtrar
+    if (status === 'todos') {
+        renderizarGuardasois(todosGuardasois);
+    } else {
+        const filtrados = todosGuardasois.filter(gs => gs.status === status);
+        renderizarGuardasois(filtrados);
+    }
+}
+
+// ==============================================
+//  SISTEMA DE COMANDAS E GUARDA-SÓIS
+// ==============================================
+
+let modoVendaAtual = 'na_hora'; // 'na_hora' ou 'comanda'
+
+/**
+ * Altera modo de venda (Na Hora / Comanda)
+ */
+function alterarModoVenda(modo) {
+    modoVendaAtual = modo;
+    
+    const sectionGuardasol = document.getElementById('sectionGuardasol');
+    const formasPagamentoGrid = document.getElementById('formasPagamentoGrid');
+    const resumoPagamento = document.getElementById('resumoPagamento');
+    const botoesNaHora = document.getElementById('botoesNaHora');
+    const botoesComanda = document.getElementById('botoesComanda');
+    
+    if (modo === 'comanda') {
+        // Modo Comanda: mostrar guarda-sol, ocultar pagamento
+        sectionGuardasol.style.display = 'block';
+        formasPagamentoGrid.style.display = 'none';
+        resumoPagamento.style.display = 'none';
+        botoesNaHora.style.display = 'none';
+        botoesComanda.style.display = 'block';
+    } else {
+        // Modo Na Hora: ocultar guarda-sol, mostrar pagamento
+        sectionGuardasol.style.display = 'none';
+        formasPagamentoGrid.style.display = 'grid';
+        resumoPagamento.style.display = 'block';
+        botoesNaHora.style.display = 'block';
+        botoesComanda.style.display = 'none';
+    }
+}
+
+/**
+ * Adiciona itens do carrinho à comanda do guarda-sol
+ */
+async function adicionarItemsComanda() {
+    if (carrinhoRapido.length === 0) {
+        mostrarAlerta('Adicione produtos ao carrinho', 'warning');
+        return;
+    }
+    
+    if (!guardasolSelecionado) {
+        mostrarAlerta('Selecione um guarda-sol antes de adicionar à comanda', 'warning');
+        return;
+    }
+    
+    // Preparar produtos para JSON
+    const produtos = carrinhoRapido.map(item => ({
+        produto_id: item.id,
+        nome: item.nome,
+        quantidade: item.quantidade,
+        preco_unitario: item.preco,
+        subtotal: item.preco * item.quantidade
+    }));
+    
+    const subtotal = carrinhoRapido.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
+    
+    const formData = new FormData();
+    formData.append('action', 'adicionarComanda');
+    formData.append('guardasol_id', guardasolSelecionado.id);
+    formData.append('produtos', JSON.stringify(produtos));
+    formData.append('subtotal', subtotal);
+    
+    try {
+        const response = await fetch('../src/Controllers/actions.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Mostrar mensagem com número do pedido
+            const mensagem = data.data.pedido_numero 
+                ? `✅ Items adicionados à comanda do Guarda-sol #${guardasolSelecionado.numero}!\n\n📝 Pedido criado: ${data.data.pedido_numero}\n\nO pedido foi enviado automaticamente para preparo na aba "Pedidos".`
+                : `Items adicionados à comanda do Guarda-sol #${guardasolSelecionado.numero}!`;
+            
+            alert(mensagem);
+            
+            // Limpar carrinho
+            carrinhoRapido = [];
+            atualizarCarrinhoUI();
+            
+            // Atualizar informações do guarda-sol
+            await atualizarInfoGuardasolSelecionado();
+        } else {
+            mostrarAlerta('Erro: ' + data.message, 'danger');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        mostrarAlerta('Erro de conexão', 'danger');
+    }
+}
+
+/**
+ * Fecha a comanda (muda status para aguardando pagamento)
+ */
+async function fecharComandaGuardasol() {
+    if (!guardasolSelecionado) {
+        mostrarAlerta('Selecione um guarda-sol', 'warning');
+        return;
+    }
+    
+    if (!confirm(`Deseja fechar a comanda do Guarda-sol #${guardasolSelecionado.numero}?\n\nO guarda-sol ficará aguardando pagamento.`)) {
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('action', 'fecharComanda');
+    formData.append('guardasol_id', guardasolSelecionado.id);
+    
+    try {
+        const response = await fetch('../src/Controllers/actions.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            mostrarAlerta(`Comanda do Guarda-sol #${guardasolSelecionado.numero} fechada! Aguardando pagamento.`, 'success');
+            
+            // Limpar seleção
+            guardasolSelecionado = null;
+            document.getElementById('guardasolInfoDisplay').textContent = 'Clique para selecionar um guarda-sol';
+            document.getElementById('guardasolInfoDisplay').classList.remove('text-primary');
+            document.getElementById('guardasolInfoDisplay').classList.add('text-muted');
+        } else {
+            mostrarAlerta('Erro: ' + data.message, 'danger');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        mostrarAlerta('Erro de conexão', 'danger');
+    }
+}
+
+/**
+ * Pagar comanda imediatamente (abre modal de pagamento)
+ */
+async function pagarComandaAgora() {
+    if (!guardasolSelecionado) {
+        mostrarAlerta('Selecione um guarda-sol', 'warning');
+        return;
+    }
+    
+    // Verificar se o guarda-sol tem comanda
+    if (guardasolSelecionado.status === 'vazio') {
+        mostrarAlerta('Este guarda-sol não possui comandas para pagar', 'warning');
+        return;
+    }
+    
+    // Buscar total da comanda
+    try {
+        const response = await fetch(`../src/Controllers/actions.php?action=obterComandasGuardasol&guardasol_id=${guardasolSelecionado.id}`);
+        const data = await response.json();
+        
+        console.log('Resposta completa:', data);
+        console.log('Comandas:', data.data);
+        
+        if (data.success && data.data && data.data.length > 0) {
+            const comandas = data.data;
+            const totalComanda = comandas.reduce((sum, cmd) => sum + parseFloat(cmd.subtotal), 0);
+            
+            console.log('Total calculado:', totalComanda);
+            
+            // Abrir modal de pagamento com o total
+            abrirModalPagamentoComanda(guardasolSelecionado, totalComanda, comandas);
+        } else {
+            const qtdComandas = data.data?.length || 0;
+            mostrarAlerta(`Nenhuma comanda aberta para este guarda-sol (${qtdComandas} comandas encontradas). Status: ${guardasolSelecionado.status}`, 'warning');
+        }
+    } catch (error) {
+        console.error('Erro ao buscar comandas:', error);
+        mostrarAlerta('Erro ao buscar comandas', 'danger');
+    }
+}
+
+/**
+ * Abre modal para pagar comanda
+ */
+function abrirModalPagamentoComanda(guardasol, totalComanda, comandas) {
+    // Criar modal dinâmico
+    const modalHtml = `
+        <div class="modal fade" id="modalPagarComanda" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-gradient-ocean text-white">
+                        <h5 class="modal-title">
+                            <i class="bi bi-cash-coin"></i>
+                            Pagar Comanda - Guarda-sol #${guardasol.numero}
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <strong>Total da Comanda:</strong> R$ ${totalComanda.toFixed(2).replace('.', ',')}
+                        </div>
+                        
+                        <h6>Formas de Pagamento</h6>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <button class="btn btn-success w-100" onclick="finalizarPagamentoComanda('dinheiro')">
+                                    <i class="bi bi-cash-coin"></i> Dinheiro
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button class="btn btn-info w-100" onclick="finalizarPagamentoComanda('pix')">
+                                    <i class="bi bi-qr-code"></i> PIX
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button class="btn btn-primary w-100" onclick="finalizarPagamentoComanda('cartao')">
+                                    <i class="bi bi-credit-card"></i> Cartão
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button class="btn btn-warning w-100" onclick="finalizarPagamentoComanda('fiado')">
+                                    <i class="bi bi-journal-text"></i> Fiado
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remover modal anterior se existir
+    const modalAnterior = document.getElementById('modalPagarComanda');
+    if (modalAnterior) {
+        modalAnterior.remove();
+    }
+    
+    // Adicionar ao body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Armazenar dados temporariamente
+    window.dadosPagamentoComanda = { guardasol, totalComanda, comandas };
+    
+    // Abrir modal
+    const modal = new bootstrap.Modal(document.getElementById('modalPagarComanda'));
+    modal.show();
+}
+
+/**
+ * Finaliza pagamento da comanda
+ */
+async function finalizarPagamentoComanda(formaPagamento) {
+    const dados = window.dadosPagamentoComanda;
+    
+    if (!dados) {
+        mostrarAlerta('Erro ao processar pagamento', 'danger');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('action', 'finalizarPagamentoComanda');
+    formData.append('guardasol_id', dados.guardasol.id);
+    formData.append('forma_pagamento', formaPagamento);
+    formData.append('total', dados.totalComanda);
+    
+    try {
+        const response = await fetch('../src/Controllers/actions.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Fechar modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalPagarComanda'));
+            modal.hide();
+            
+            // Mostrar sucesso
+            mostrarAlerta(`Pagamento realizado! Guarda-sol #${dados.guardasol.numero} liberado.`, 'success');
+            
+            // Limpar seleção
+            guardasolSelecionado = null;
+            document.getElementById('guardasolInfoDisplay').textContent = 'Clique para selecionar um guarda-sol';
+            document.getElementById('guardasolInfoDisplay').classList.remove('text-primary');
+            document.getElementById('guardasolInfoDisplay').classList.add('text-muted');
+            
+            // Limpar dados temporários
+            delete window.dadosPagamentoComanda;
+        } else {
+            mostrarAlerta('Erro: ' + data.message, 'danger');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        mostrarAlerta('Erro de conexão', 'danger');
+    }
+}
+
+/**
+ * Atualiza informações do guarda-sol selecionado
+ */
+async function atualizarInfoGuardasolSelecionado() {
+    if (!guardasolSelecionado) return;
+    
+    try {
+        const response = await fetch('../src/Controllers/actions.php?action=listarGuardasois');
+        const data = await response.json();
+        
+        if (data.success) {
+            const guardasolAtualizado = data.data.find(gs => gs.id === guardasolSelecionado.id);
+            if (guardasolAtualizado) {
+                guardasolSelecionado = guardasolAtualizado;
+                
+                // Atualizar display
+                let infoText = `Guarda-sol #${guardasolAtualizado.numero} - ${guardasolAtualizado.status === 'vazio' ? 'Vazio' : guardasolAtualizado.status === 'ocupado' ? 'Ocupado' : 'Aguardando Pagamento'}`;
+                
+                if (guardasolAtualizado.cliente_nome) {
+                    infoText += ` - ${guardasolAtualizado.cliente_nome}`;
+                }
+                
+                if (guardasolAtualizado.total_consumido > 0) {
+                    infoText += ` (R$ ${parseFloat(guardasolAtualizado.total_consumido).toFixed(2).replace('.', ',')})`;
+                }
+                
+                document.getElementById('guardasolInfoDisplay').textContent = infoText;
+            }
+        }
+    } catch (error) {
+        console.error('Erro ao atualizar guarda-sol:', error);
+    }
+}
+
 // Exportar funções globais
 window.adicionarProdutoRapido = adicionarProdutoRapido;
 window.decrementarProdutoRapido = decrementarProdutoRapido;
@@ -775,5 +1492,17 @@ window.finalizarVendaRapida = finalizarVendaRapida;
 window.novaVendaRapida = novaVendaRapida;
 window.limparCarrinhoRapido = limparCarrinhoRapido;
 window.filtrarCategoria = filtrarCategoria;
+window.selecionarClienteFiado = selecionarClienteFiado;
+window.filtrarClientesFiadoVenda = filtrarClientesFiadoVenda;
+window.abrirCadastroRapidoCliente = abrirCadastroRapidoCliente;
+window.salvarClienteRapido = salvarClienteRapido;
+window.abrirModalGuardasol = abrirModalGuardasol;
+window.selecionarGuardasol = selecionarGuardasol;
+window.filtrarGuardasolStatus = filtrarGuardasolStatus;
+window.alterarModoVenda = alterarModoVenda;
+window.adicionarItemsComanda = adicionarItemsComanda;
+window.fecharComandaGuardasol = fecharComandaGuardasol;
+window.pagarComandaAgora = pagarComandaAgora;
+window.finalizarPagamentoComanda = finalizarPagamentoComanda;
 
 console.log('📦 Venda Rápida JS carregado');

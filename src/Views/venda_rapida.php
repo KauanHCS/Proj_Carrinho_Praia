@@ -24,6 +24,58 @@
         </div>
     </div>
 
+    <!-- Modo de Venda -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card border-info">
+                <div class="card-body p-3">
+                    <h6 class="mb-2 text-center">
+                        <i class="bi bi-toggles"></i>
+                        <strong>Modo de Venda</strong>
+                    </h6>
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="modoVenda" id="modoNaHora" value="na_hora" checked autocomplete="off" onchange="alterarModoVenda('na_hora')">
+                        <label class="btn btn-outline-success" for="modoNaHora">
+                            <i class="bi bi-cash-coin"></i>
+                            Pagar na Hora
+                        </label>
+                        
+                        <input type="radio" class="btn-check" name="modoVenda" id="modoComanda" value="comanda" autocomplete="off" onchange="alterarModoVenda('comanda')">
+                        <label class="btn btn-outline-primary" for="modoComanda">
+                            <i class="bi bi-receipt"></i>
+                            Adicionar à Comanda
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seleção de Guarda-sol (aparece apenas no modo Comanda) -->
+    <div class="row mb-3" id="sectionGuardasol" style="display: none;">
+        <div class="col-12">
+            <div class="card border-primary">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">
+                                <i class="bi bi-umbrella-fill text-primary"></i>
+                                <strong>Guarda-sol</strong>
+                            </h6>
+                            <small id="guardasolInfoDisplay" class="text-muted">
+                                Clique para selecionar um guarda-sol
+                            </small>
+                        </div>
+                        <button class="btn btn-outline-primary" onclick="abrirModalGuardasol()">
+                            <i class="bi bi-search"></i>
+                            Selecionar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         <!-- Coluna de Produtos (Esquerda) -->
         <div class="col-lg-8 col-md-7">
@@ -165,17 +217,31 @@
                                 </small>
                             </div>
                         </div>
+                        
+                        <!-- Nome do Cliente (Opcional) -->
+                        <div class="p-3 border-top">
+                            <label for="nomeClienteVenda" class="form-label mb-2">
+                                <i class="bi bi-person"></i>
+                                Nome do Cliente <small class="text-muted">(opcional)</small>
+                            </label>
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                id="nomeClienteVenda" 
+                                placeholder="Digite o nome do cliente..."
+                                autocomplete="off">
+                        </div>
                     </div>
 
                     <!-- Pagamento Misto -->
-                    <div class="card-footer p-3 bg-light">
+                    <div class="card-footer p-3 bg-light" id="sectionPagamento">
                         <h6 class="mb-3 text-center">
                             <i class="bi bi-wallet2"></i>
                             Formas de Pagamento
                         </h6>
                         
                         <!-- Opções de Pagamento -->
-                        <div class="formas-pagamento-grid mb-3">
+                        <div class="formas-pagamento-grid mb-3" id="formasPagamentoGrid">
                             <!-- Dinheiro -->
                             <div class="forma-pagamento-item" onclick="toggleFormaPagamentoBox(this, 'dinheiro')">
                                 <div class="forma-header">
@@ -225,8 +291,8 @@
                             </div>
                         </div>
                         
-                        <!-- Resumo de Pagamento -->
-                        <div class="pagamento-resumo mb-3 p-2 bg-white rounded">
+                        <!-- Resumo de Pagamento (apenas no modo "Na Hora") -->
+                        <div class="pagamento-resumo mb-3 p-2 bg-white rounded" id="resumoPagamento">
                             <div class="d-flex justify-content-between mb-1">
                                 <small class="text-muted">Total da Venda:</small>
                                 <strong class="text-ocean" id="totalVendaPagamento">R$ 0,00</strong>
@@ -241,17 +307,37 @@
                             </div>
                         </div>
                         
-                        <!-- Botão Finalizar -->
-                        <button class="btn btn-success btn-lg w-100 mb-2" onclick="finalizarVendaMista()" id="btnFinalizarVenda">
-                            <i class="bi bi-check-circle"></i>
-                            Finalizar Venda
-                        </button>
+                        <!-- Botões para Modo "Na Hora" -->
+                        <div id="botoesNaHora">
+                            <button class="btn btn-success btn-lg w-100 mb-2" onclick="finalizarVendaMista()" id="btnFinalizarVenda">
+                                <i class="bi bi-check-circle"></i>
+                                Finalizar Venda
+                            </button>
+                            <button class="btn btn-outline-danger w-100" onclick="limparCarrinhoRapido()">
+                                <i class="bi bi-trash"></i>
+                                Limpar Carrinho
+                            </button>
+                        </div>
                         
-                        <!-- Botão Limpar -->
-                        <button class="btn btn-outline-danger w-100" onclick="limparCarrinhoRapido()">
-                            <i class="bi bi-trash"></i>
-                            Limpar Carrinho
-                        </button>
+                        <!-- Botões para Modo "Comanda" -->
+                        <div id="botoesComanda" style="display: none;">
+                            <button class="btn btn-primary btn-lg w-100 mb-2" onclick="adicionarItemsComanda()">
+                                <i class="bi bi-receipt-cutoff"></i>
+                                Adicionar à Comanda
+                            </button>
+                            <button class="btn btn-warning btn-lg w-100 mb-2" onclick="fecharComandaGuardasol()">
+                                <i class="bi bi-check2-square"></i>
+                                Fechar Comanda
+                            </button>
+                            <button class="btn btn-danger btn-lg w-100 mb-2" onclick="pagarComandaAgora()">
+                                <i class="bi bi-cash-coin"></i>
+                                Pagar Comanda Agora
+                            </button>
+                            <button class="btn btn-outline-danger w-100" onclick="limparCarrinhoRapido()">
+                                <i class="bi bi-trash"></i>
+                                Limpar Carrinho
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -381,6 +467,55 @@
                     <i class="bi bi-check-circle"></i>
                     Cadastrar e Continuar
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Selecionar Guarda-sol -->
+<div class="modal fade" id="modalSelecionarGuardasol" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-ocean text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-umbrella-fill"></i>
+                    Selecionar Guarda-sol
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Filtros de Status -->
+                <div class="mb-3">
+                    <div class="btn-group w-100" role="group">
+                        <button type="button" class="btn btn-outline-secondary active" onclick="filtrarGuardasolStatus('todos')">
+                            <i class="bi bi-grid-3x3-gap-fill"></i>
+                            Todos
+                        </button>
+                        <button type="button" class="btn btn-outline-success" onclick="filtrarGuardasolStatus('vazio')">
+                            <i class="bi bi-check-circle"></i>
+                            Vazios
+                        </button>
+                        <button type="button" class="btn btn-outline-warning" onclick="filtrarGuardasolStatus('ocupado')">
+                            <i class="bi bi-hourglass-split"></i>
+                            Ocupados
+                        </button>
+                        <button type="button" class="btn btn-outline-danger" onclick="filtrarGuardasolStatus('aguardando_pagamento')">
+                            <i class="bi bi-cash-coin"></i>
+                            Aguardando Pag.
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Grid de Guarda-sóis -->
+                <div id="gridGuardasois" class="guardasois-grid">
+                    <div class="text-center py-4">
+                        <i class="bi bi-hourglass-split" style="font-size: 2rem;"></i>
+                        <p class="text-muted">Carregando guarda-sóis...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
             </div>
         </div>
     </div>

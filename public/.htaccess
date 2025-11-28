@@ -1,0 +1,47 @@
+# ==================================================
+# CONFIGURAÇÕES ANTI-CACHE PARA APRESENTAÇÃO
+# ==================================================
+
+<IfModule mod_headers.c>
+    # Desabilitar cache para todos os arquivos
+    Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "Sat, 01 Jan 2000 00:00:00 GMT"
+    
+    # Headers de segurança
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>
+
+# ==================================================
+# DESABILITAR ETAG (evita cache baseado em modificação)
+# ==================================================
+<IfModule mod_headers.c>
+    Header unset ETag
+</IfModule>
+FileETag None
+
+# ==================================================
+# REESCREVER URLs (se necessário)
+# ==================================================
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Adicionar timestamp automático aos recursos
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^(.+)\.(js|css|jpg|jpeg|png|gif|svg|ico)$ $1.$2?v=%{TIME} [L]
+</IfModule>
+
+# ==================================================
+# COMPRESSÃO GZIP (mantém performance)
+# ==================================================
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
+# ==================================================
+# PÁGINA DE ERRO PERSONALIZADA
+# ==================================================
+ErrorDocument 404 /404.html
+ErrorDocument 500 /500.html

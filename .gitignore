@@ -1,0 +1,82 @@
+# ==================================================
+# CARRINHO DE PRAIA - GITIGNORE
+# ==================================================
+
+# Logs
+logs/*.log
+*.log
+
+# Configurações sensíveis
+config/database.php
+.env
+.env.local
+.env.production
+
+# Arquivos temporários
+*.tmp
+*.temp
+*.swp
+*.bak
+*~
+
+# Diretórios de dependências
+vendor/
+node_modules/
+bower_components/
+
+# Arquivos do sistema operacional
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# IDEs e editores
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.project
+.settings/
+*.code-workspace
+
+# Arquivos de cache
+cache/
+*.cache
+
+# Uploads (se houver diretório de uploads)
+uploads/*
+!uploads/.gitkeep
+
+# Backups
+backups/
+*.sql
+*.backup
+
+# Arquivos obsoletos (mantidos localmente mas não versionados)
+_OBSOLETOS/
+
+# Arquivos PHP temporários
+*.php~
+*.phps
+
+# Composer
+composer.phar
+composer.lock
+
+# NPM
+package-lock.json
+yarn.lock
+
+# Sessões PHP
+sessions/
+
+# Arquivos de desenvolvimento/debug
+debug.log
+error.log
+test.php
+teste_*.php
+debug_*.php

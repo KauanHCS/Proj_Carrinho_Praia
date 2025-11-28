@@ -449,14 +449,63 @@ function copiarCodigoUnico() {
 
 // Carregar estatísticas do usuário
 function carregarEstatisticas() {
-    // Simular dados - em um ambiente real, esses dados viriam da API
-    document.getElementById('totalVendas').textContent = '12';
-    document.getElementById('totalFaturamento').textContent = 'R$ 850,00';
-    document.getElementById('produtosCadastrados').textContent = '8';
+    fetch('../src/Controllers/actions.php?action=estatisticasPerfil', {
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('totalVendas').textContent = data.data.vendas_hoje;
+            document.getElementById('totalFaturamento').textContent = 'R$ ' + data.data.faturamento_hoje;
+            document.getElementById('produtosCadastrados').textContent = data.data.produtos_cadastrados;
+        }
+    })
+    .catch(error => {
+        console.error('Erro ao carregar estatísticas:', error);
+    });
     
     // Contar pontos salvos na localização
     const pontosSalvos = JSON.parse(localStorage.getItem('pontos_venda') || '[]');
     document.getElementById('pontosSalvos').textContent = pontosSalvos.length;
+    
+    // Carregar atividade recente
+    carregarAtividadeRecente();
+}
+
+// Carregar atividade recente
+function carregarAtividadeRecente() {
+    fetch('../src/Controllers/actions.php?action=atividadeRecente', {
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.data.length > 0) {
+            const container = document.getElementById('atividadeRecente');
+            container.innerHTML = '';
+            
+            data.data.forEach(atividade => {
+                const dataAtividade = new Date(atividade.data);
+                const hora = dataAtividade.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                const dataFormatada = dataAtividade.toLocaleDateString('pt-BR');
+                
+                const div = document.createElement('div');
+                div.className = 'd-flex mb-2';
+                div.innerHTML = `
+                    <div class="flex-shrink-0">
+                        <span class="badge bg-success rounded-pill">V</span>
+                    </div>
+                    <div class="flex-grow-1 ms-2">
+                        <small class="text-muted">${dataFormatada} às ${hora}</small><br>
+                        <small>Venda de R$ ${parseFloat(atividade.total).toFixed(2)}</small>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Erro ao carregar atividade:', error);
+    });
 }
 
 // Configurar eventos
@@ -607,31 +656,72 @@ function alterarSenha() {
         return;
     }
     
-    // Simular alteração de senha
-    const modal = bootstrap.Modal.getInstance(document.getElementById('modalAlterarSenha'));
-    modal.hide();
+    // Enviar para API
+    const formData = new FormData();
+    formData.append('action', 'alterarSenha');
+    formData.append('senha_atual', senhaAtual);
+    formData.append('nova_senha', novaSenha);
     
-    // Limpar formulário
-    document.getElementById('formAlterarSenha').reset();
-    
-    if (typeof mostrarAlerta === 'function') {
-        mostrarAlerta('🔐 Senha alterada com sucesso!', 'success');
-    } else {
-        alert('Senha alterada com sucesso!');
-    }
+    fetch('../src/Controllers/actions.php', {
+        method: 'POST',
+        credentials: 'same-origin',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalAlterarSenha'));
+            modal.hide();
+            
+            // Limpar formulário
+            document.getElementById('formAlterarSenha').reset();
+            
+            alert('🔐 Senha alterada com sucesso!');
+        } else {
+            alert('Erro: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao alterar senha');
+    });
 }
 
 // Confirmar exclusão da conta
 function confirmarExclusaoConta() {
-    if (confirm('⚠️ ATENÇÃO: Esta ação é irreversível!\n\nTem certeza que deseja excluir sua conta?\nTodos os seus dados serão perdidos permanentemente.')) {
-        if (confirm('Digite "CONFIRMAR EXCLUSÃO" para prosseguir:') === 'CONFIRMAR EXCLUSÃO') {
-            // Simular exclusão da conta
-            sessionStorage.clear();
-            localStorage.clear();
-            
-            alert('Conta excluída com sucesso. Você será redirecionado para a página de login.');
-            window.location.href = 'login.php';
-        }
+    const senha = prompt('⚠️ ATENÇÃO: Esta ação é irreversível!\n\nDigite sua senha para confirmar a exclusão da conta:');
+    
+    if (!senha) {
+        return;
+    }
+    
+    if (confirm('Tem certeza ABSOLUTA que deseja excluir sua conta?\nTodos os seus dados serão perdidos permanentemente.')) {
+        // Enviar para API
+        const formData = new FormData();
+        formData.append('action', 'excluirConta');
+        formData.append('senha', senha);
+        
+        fetch('../src/Controllers/actions.php', {
+            method: 'POST',
+            credentials: 'same-origin',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                sessionStorage.clear();
+                localStorage.clear();
+                
+                alert('Conta excluída com sucesso. Você será redirecionado para a página de login.');
+                window.location.href = 'login.php';
+            } else {
+                alert('Erro: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('Erro ao excluir conta');
+        });
     }
 }
 

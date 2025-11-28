@@ -1,20 +1,34 @@
 <?php
 /**
- * ACTIONS.PHP CORRIGIDO - Versão Simplificada
+ * ACTIONS.PHP - Versão Corrigida para SDK 54
  */
+
+// Headers CORS para permitir requisições do app mobile
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Access-Control-Max-Age: 86400');
+
+// Tratar requisições OPTIONS (preflight)
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
 
 // Headers de segurança e configuração
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
 
+// Habilitar exibição de erros para debug (remover em produção)
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/../../logs/php_errors.log');
+
 // Iniciar sessão se ainda não foi iniciada
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-
-// Configurar erros para produção
-error_reporting(E_ALL);
-ini_set('display_errors', 0);
 
 // Capturar qualquer output indesejado
 ob_start();
@@ -22,8 +36,8 @@ ob_start();
 // Função para resposta JSON limpa
 function cleanJsonResponse($success, $data = null, $message = '') {
     // Limpar qualquer output anterior
-    if (ob_get_level()) {
-        ob_clean();
+    while (ob_get_level()) {
+        ob_end_clean();
     }
     
     $response = [
@@ -39,6 +53,15 @@ function cleanJsonResponse($success, $data = null, $message = '') {
     exit;
 }
 
+// Função para log de erros
+function logError($message, $context = []) {
+    $logFile = __DIR__ . '/../../logs/php_errors.log';
+    $timestamp = date('Y-m-d H:i:s');
+    $contextStr = !empty($context) ? ' | Context: ' . json_encode($context) : '';
+    $logMessage = "[$timestamp] ERROR: $message$contextStr\n";
+    file_put_contents($logFile, $logMessage, FILE_APPEND);
+}
+
 try {
     // Conexão direta com banco para evitar problemas de autoload
     $host = 'localhost';
@@ -46,12 +69,22 @@ try {
     $username = 'root';
     $password = '';
     
+    try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        logError('Erro de conexão com banco de dados', ['error' => $e->getMessage()]);
+        cleanJsonResponse(false, null, 'Erro de conexão com o banco de dados');
+    }
     
     // Processar requisições POST
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $action = $_POST['action'] ?? '';
+        
+        if (empty($action)) {
+            cleanJsonResponse(false, null, 'Ação não especificada');
+        }
         
         switch ($action) {
             case 'login':
@@ -86,7 +119,6 @@ try {
                 }
                 
                 // Iniciar sessão
-                session_start();
                 $_SESSION['usuario_id'] = $user['id'];
                 $_SESSION['usuario_nome'] = $user['nome'];
                 $_SESSION['usuario_email'] = $user['email'];
@@ -138,7 +170,7 @@ try {
                         cleanJsonResponse(false, null, 'Código do administrador é obrigatório');
                     }
                     
-                    // Verificar código (agora pode ser usado múltiplas vezes)
+                    // Verificar código
                     $stmt = $pdo->prepare("SELECT * FROM codigos_funcionarios WHERE codigo = ? AND ativo = 1");
                     $stmt->execute([$codigoAdmin]);
                     $codigo = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -147,13 +179,12 @@ try {
                         cleanJsonResponse(false, null, 'Código inválido ou inativo');
                     }
                     
-                    // Inserir funcionário sem função (será definida pelo admin depois)
-                    // Salvar o código digitado no campo codigo_unico
+                    // Inserir funcionário
                     $stmt = $pdo->prepare("INSERT INTO usuarios (nome, email, telefone, senha, tipo_usuario, funcao_funcionario, codigo_admin, codigo_unico, data_cadastro) VALUES (?, ?, ?, ?, 'funcionario', NULL, ?, ?, NOW())");
                     $stmt->execute([$nomeCompleto, $email, $telefone, $hashedPassword, $codigo['admin_id'], $codigoAdmin]);
                     $userId = $pdo->lastInsertId();
                     
-                    // Registrar uso do código (mas não marcar como "usado" para permitir múltiplos usos)
+                    // Registrar uso do código
                     $stmt = $pdo->prepare("INSERT INTO usos_codigo (codigo_id, usuario_id, data_uso) VALUES (?, ?, NOW()) ON DUPLICATE KEY UPDATE data_uso = NOW()");
                     $stmt->execute([$codigo['id'], $userId]);
                     
@@ -175,203 +206,6 @@ try {
                 ], 'Cadastro realizado com sucesso');
                 break;
                 
-            case 'gerarCodigoFuncionario':
-                session_start();
-                $usuarioId = $_SESSION['usuario_id'] ?? null;
-                
-                if (!$usuarioId) {
-                    cleanJsonResponse(false, null, 'Usuário não está logado');
-                }
-                
-                // Verificar se é administrador
-                $stmt = $pdo->prepare("SELECT tipo_usuario FROM usuarios WHERE id = ?");
-                $stmt->execute([$usuarioId]);
-                $user = $stmt->fetch(PDO::FETCH_ASSOC);
-                
-                if (!$user || $user['tipo_usuario'] !== 'administrador') {
-                    cleanJsonResponse(false, null, 'Apenas administradores podem gerar códigos');
-                }
-                
-                // Gerar código único
-                $tentativas = 0;
-                do {
-                    $codigo = str_pad(rand(100000, 999999), 6, '0', STR_PAD_LEFT);
-                    
-                    $stmt = $pdo->prepare("SELECT id FROM codigos_funcionarios WHERE codigo = ?");
-                    $stmt->execute([$codigo]);
-                    $existe = $stmt->fetch();
-                    
-                    $tentativas++;
-                } while ($existe && $tentativas < 100);
-                
-                if ($existe) {
-                    cleanJsonResponse(false, null, 'Erro ao gerar código único');
-                }
-                
-                // Inserir código na tabela (sem função específica)
-                $stmt = $pdo->prepare("INSERT INTO codigos_funcionarios (codigo, admin_id, ativo, data_criacao) VALUES (?, ?, 1, NOW())");
-                $stmt->execute([$codigo, $usuarioId]);
-                
-                cleanJsonResponse(true, [
-                    'codigo' => $codigo,
-                    'data_criacao' => date('Y-m-d H:i:s')
-                ], 'Código universal gerado com sucesso');
-                break;
-                
-            case 'listarCodigosFuncionarios':
-                session_start();
-                $usuarioId = $_SESSION['usuario_id'] ?? null;
-                
-                if (!$usuarioId) {
-                    cleanJsonResponse(false, null, 'Usuário não está logado');
-                }
-                
-                // Buscar códigos e seus usuários
-                $stmt = $pdo->prepare("
-                    SELECT cf.*, 
-                           GROUP_CONCAT(
-                               CONCAT(u.nome, '|', u.id, '|', COALESCE(u.funcao_funcionario, ''), '|', u.email)
-                               ORDER BY u.data_cadastro DESC 
-                               SEPARATOR ';;'
-                           ) as funcionarios_info
-                    FROM codigos_funcionarios cf 
-                    LEFT JOIN usos_codigo uc ON cf.id = uc.codigo_id
-                    LEFT JOIN usuarios u ON uc.usuario_id = u.id 
-                    WHERE cf.admin_id = ? AND cf.ativo = 1 
-                    GROUP BY cf.id
-                    ORDER BY cf.data_criacao DESC
-                ");
-                $stmt->execute([$usuarioId]);
-                $codigos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                
-                // Processar funcionários por código
-                foreach ($codigos as &$codigo) {
-                    $codigo['funcionarios'] = [];
-                    if ($codigo['funcionarios_info']) {
-                        $funcionarios_raw = explode(';;', $codigo['funcionarios_info']);
-                        foreach ($funcionarios_raw as $func_raw) {
-                            $parts = explode('|', $func_raw);
-                            if (count($parts) >= 4) {
-                                $codigo['funcionarios'][] = [
-                                    'nome' => $parts[0],
-                                    'id' => $parts[1], 
-                                    'funcao' => $parts[2],
-                                    'email' => $parts[3]
-                                ];
-                            }
-                        }
-                    }
-                }
-                
-                cleanJsonResponse(true, $codigos, 'Códigos listados com sucesso');
-                break;
-                
-            case 'atualizarFuncaoFuncionario':
-                session_start();
-                $usuarioId = $_SESSION['usuario_id'] ?? null;
-                $funcionarioId = $_POST['funcionario_id'] ?? '';
-                $novaFuncao = $_POST['nova_funcao'] ?? '';
-                
-                if (!$usuarioId) {
-                    cleanJsonResponse(false, null, 'Usuário não está logado');
-                }
-                
-                if (empty($funcionarioId) || empty($novaFuncao)) {
-                    cleanJsonResponse(false, null, 'ID do funcionário e nova função são obrigatórios');
-                }
-                
-                // Verificar se é admin e se o funcionário pertence a ele
-                $stmt = $pdo->prepare("
-                    SELECT u.nome 
-                    FROM usuarios u 
-                    WHERE u.id = ? AND u.codigo_admin = ? AND u.tipo_usuario = 'funcionario'
-                ");
-                $stmt->execute([$funcionarioId, $usuarioId]);
-                $funcionario = $stmt->fetch(PDO::FETCH_ASSOC);
-                
-                if (!$funcionario) {
-                    cleanJsonResponse(false, null, 'Funcionário não encontrado ou você não tem permissão');
-                }
-                
-                // Atualizar função
-                $stmt = $pdo->prepare("UPDATE usuarios SET funcao_funcionario = ? WHERE id = ?");
-                $stmt->execute([$novaFuncao, $funcionarioId]);
-                
-                cleanJsonResponse(true, [
-                    'funcionario_nome' => $funcionario['nome'],
-                    'nova_funcao' => $novaFuncao
-                ], 'Função atualizada com sucesso');
-                break;
-                
-            case 'criarPedidoDeVenda':
-                session_start();
-                $usuarioId = $_SESSION['usuario_id'] ?? null;
-                $nomeCliente = $_POST['nome_cliente'] ?? '';
-                $telefoneCliente = $_POST['telefone_cliente'] ?? '';
-                $produtos = $_POST['produtos'] ?? '';
-                $total = $_POST['total'] ?? 0;
-                $observacoes = $_POST['observacoes'] ?? '';
-                
-                if (!$usuarioId) {
-                    cleanJsonResponse(false, null, 'Usuário não está logado');
-                }
-                
-                if (empty($produtos) || empty($total)) {
-                    cleanJsonResponse(false, null, 'Produtos e total são obrigatórios');
-                }
-                
-                // Inserir pedido
-                $stmt = $pdo->prepare("
-                    INSERT INTO pedidos (nome_cliente, telefone_cliente, produtos, total, usuario_vendedor_id, observacoes, data_pedido) 
-                    VALUES (?, ?, ?, ?, ?, ?, NOW())
-                ");
-                $stmt->execute([
-                    $nomeCliente,
-                    $telefoneCliente,
-                    $produtos,
-                    $total,
-                    $usuarioId,
-                    $observacoes
-                ]);
-                
-                $pedidoId = $pdo->lastInsertId();
-                
-                cleanJsonResponse(true, [
-                    'pedido_id' => $pedidoId
-                ], 'Pedido criado com sucesso');
-                break;
-                
-            case 'atualizarStatusPedido':
-                session_start();
-                $usuarioId = $_SESSION['usuario_id'] ?? null;
-                $pedidoId = $_POST['pedido_id'] ?? '';
-                $novoStatus = $_POST['novo_status'] ?? '';
-                
-                if (!$usuarioId) {
-                    cleanJsonResponse(false, null, 'Usuário não está logado');
-                }
-                
-                if (empty($pedidoId) || empty($novoStatus)) {
-                    cleanJsonResponse(false, null, 'ID do pedido e novo status são obrigatórios');
-                }
-                
-                // Verificar se o pedido existe
-                $stmt = $pdo->prepare("SELECT id FROM pedidos WHERE id = ?");
-                $stmt->execute([$pedidoId]);
-                if (!$stmt->fetch()) {
-                    cleanJsonResponse(false, null, 'Pedido não encontrado');
-                }
-                
-                // Atualizar status
-                $stmt = $pdo->prepare("UPDATE pedidos SET status = ?, data_atualizacao = NOW() WHERE id = ?");
-                $stmt->execute([$novoStatus, $pedidoId]);
-                
-                cleanJsonResponse(true, [
-                    'pedido_id' => $pedidoId,
-                    'novo_status' => $novoStatus
-                ], 'Status do pedido atualizado com sucesso');
-                break;
-                
             case 'finalizar_venda':
                 session_start();
                 $usuarioId = $_SESSION['usuario_id'] ?? null;
@@ -387,6 +221,9 @@ try {
                 $valorPagoSecundario = $_POST['valor_pago_secundario'] ?? null;
                 $formaPagamentoTerciaria = $_POST['forma_pagamento_terciaria'] ?? null;
                 $valorPagoTerciario = $_POST['valor_pago_terciario'] ?? null;
+                
+                // Cliente fiado (opcional)
+                $clienteFiadoId = $_POST['cliente_fiado_id'] ?? null;
                 
                 if (!$usuarioId) {
                     cleanJsonResponse(false, null, 'Usuário não está logado');
@@ -411,24 +248,24 @@ try {
                 try {
                     $pdo->beginTransaction();
                     
-                    // Verificar se há funcionários do financeiro no sistema
+                    // Verificar se há funcionários do financeiro
                     $stmt = $pdo->prepare("SELECT COUNT(*) FROM usuarios WHERE funcao_funcionario IN ('financeiro', 'financeiro_e_anotar') AND ativo = 1");
                     $stmt->execute();
                     $temFinanceiro = $stmt->fetchColumn() > 0;
                     
-                    // Status inicial da venda baseado na existência de funcionários do financeiro
+                    // Status inicial da venda
                     $statusPagamento = $temFinanceiro ? 'pendente' : 'pago';
                     
-                    // 1. Registrar venda (com suporte a pagamento misto)
+                    // 1. Registrar venda (com cliente fiado se houver)
                     $stmt = $pdo->prepare("
                         INSERT INTO vendas (
                             usuario_id, nome_cliente, total, 
                             forma_pagamento, valor_pago, 
                             forma_pagamento_secundaria, valor_pago_secundario,
                             forma_pagamento_terciaria, valor_pago_terciario,
-                            status_pagamento, data
+                            cliente_fiado_id, status_pagamento, data
                         ) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
                     ");
                     $stmt->execute([
                         $usuarioId, 
@@ -440,6 +277,7 @@ try {
                         $valorPagoSecundario,
                         $formaPagamentoTerciaria,
                         $valorPagoTerciario,
+                        $clienteFiadoId,
                         $statusPagamento
                     ]);
                     $vendaId = $pdo->lastInsertId();
@@ -475,12 +313,52 @@ try {
                         $stmt->execute([
                             $nomeCliente,
                             $telefoneCliente,
-                            $carrinho, // Usar JSON original do carrinho
+                            $carrinho,
                             $total,
                             $usuarioId
                         ]);
                         $pedidoId = $pdo->lastInsertId();
                         $pedidoCriado = true;
+                    }
+                    
+                    // 4. Registrar compra fiada se houver cliente
+                    if ($clienteFiadoId) {
+                        // Calcular valor fiado (pode ser parcial se houver pagamento misto)
+                        $valorFiado = 0;
+                        if ($formaPagamento === 'fiado') {
+                            $valorFiado += floatval($valorPago);
+                        }
+                        if ($formaPagamentoSecundaria === 'fiado') {
+                            $valorFiado += floatval($valorPagoSecundario);
+                        }
+                        if ($formaPagamentoTerciaria === 'fiado') {
+                            $valorFiado += floatval($valorPagoTerciario);
+                        }
+                        
+                        if ($valorFiado > 0) {
+                            // Registrar compra no histórico
+                            $stmt = $pdo->prepare("
+                                INSERT INTO pagamentos_fiado 
+                                (cliente_id, venda_id, valor, tipo, forma_pagamento, observacoes, data_pagamento, registrado_por) 
+                                VALUES (?, ?, ?, 'compra', 'Fiado', ?, NOW(), ?)
+                            ");
+                            $stmt->execute([
+                                $clienteFiadoId,
+                                $vendaId,
+                                $valorFiado,
+                                'Venda Rápida - Carrinho de Praia',
+                                $usuarioId
+                            ]);
+                            
+                            // Atualizar saldo devedor e última compra do cliente
+                            $stmt = $pdo->prepare("
+                                UPDATE clientes_fiado 
+                                SET saldo_devedor = saldo_devedor + ?, 
+                                    ultima_compra = NOW() 
+                                WHERE id = ?
+                            ");
+                            $stmt->execute([$valorFiado, $clienteFiadoId]);
+                        }
                     }
                     
                     $pdo->commit();
@@ -500,71 +378,8 @@ try {
                     
                 } catch (Exception $e) {
                     $pdo->rollback();
+                    logError('Erro ao processar venda', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
                     cleanJsonResponse(false, null, 'Erro ao processar venda: ' . $e->getMessage());
-                }
-                break;
-                
-            case 'processarPagamento':
-                session_start();
-                $usuarioId = $_SESSION['usuario_id'] ?? null;
-                
-                if (!$usuarioId) {
-                    cleanJsonResponse(false, null, 'Usuário não está logado');
-                }
-                
-                $vendaId = $_POST['venda_id'] ?? '';
-                $metodoPagamento = $_POST['metodo_pagamento'] ?? '';
-                $valorRecebido = $_POST['valor_recebido'] ?? 0;
-                $observacoes = $_POST['observacoes'] ?? '';
-                $troco = $_POST['troco'] ?? 0;
-                
-                if (!$vendaId || !$metodoPagamento) {
-                    cleanJsonResponse(false, null, 'Dados obrigatórios não informados');
-                }
-                
-                try {
-                    $pdo->beginTransaction();
-                    
-                    // Verificar se a venda existe e está pendente
-                    $stmt = $pdo->prepare("SELECT * FROM vendas WHERE id = ? AND status_pagamento = 'pendente'");
-                    $stmt->execute([$vendaId]);
-                    $venda = $stmt->fetch(PDO::FETCH_ASSOC);
-                    
-                    if (!$venda) {
-                        throw new Exception('Venda não encontrada ou já processada');
-                    }
-                    
-                    // Atualizar venda com dados do pagamento
-                    $stmt = $pdo->prepare("
-                        UPDATE vendas 
-                        SET status_pagamento = 'pago',
-                            metodo_pagamento = ?,
-                            processado_por_financeiro = ?,
-                            valor_pago = ?,
-                            observacoes_pagamento = ?,
-                            data_pagamento = NOW()
-                        WHERE id = ?
-                    ");
-                    $stmt->execute([
-                        $metodoPagamento,
-                        $usuarioId,
-                        $valorRecebido,
-                        $observacoes,
-                        $vendaId
-                    ]);
-                    
-                    $pdo->commit();
-                    
-                    cleanJsonResponse(true, [
-                        'venda_id' => $vendaId,
-                        'metodo_pagamento' => $metodoPagamento,
-                        'valor_total' => number_format($venda['total'], 2, ',', '.'),
-                        'troco' => $metodoPagamento === 'dinheiro' ? number_format($troco, 2, ',', '.') : null
-                    ], 'Pagamento processado com sucesso');
-                    
-                } catch (Exception $e) {
-                    $pdo->rollback();
-                    cleanJsonResponse(false, null, 'Erro ao processar pagamento: ' . $e->getMessage());
                 }
                 break;
                 
@@ -609,6 +424,7 @@ try {
                     
                     cleanJsonResponse(true, ['produto_id' => $pdo->lastInsertId(), 'nome' => $nome], 'Produto cadastrado com sucesso');
                 } catch (Exception $e) {
+                    logError('Erro ao cadastrar produto', ['error' => $e->getMessage()]);
                     cleanJsonResponse(false, null, 'Erro ao cadastrar produto: ' . $e->getMessage());
                 }
                 break;
@@ -661,6 +477,7 @@ try {
                         cleanJsonResponse(false, null, 'Produto não encontrado ou sem alterações');
                     }
                 } catch (Exception $e) {
+                    logError('Erro ao atualizar produto', ['error' => $e->getMessage()]);
                     cleanJsonResponse(false, null, 'Erro ao atualizar produto: ' . $e->getMessage());
                 }
                 break;
@@ -694,6 +511,7 @@ try {
                     
                     cleanJsonResponse(true, ['nome' => $produto['nome']], 'Produto excluído com sucesso');
                 } catch (Exception $e) {
+                    logError('Erro ao excluir produto', ['error' => $e->getMessage()]);
                     cleanJsonResponse(false, null, 'Erro ao excluir produto: ' . $e->getMessage());
                 }
                 break;
@@ -728,13 +546,10 @@ try {
                     
                     cleanJsonResponse(true, ['nome' => $produto['nome'] ?? 'Produto'], 'Estoque reabastecido com sucesso');
                 } catch (Exception $e) {
+                    logError('Erro ao reabastecer', ['error' => $e->getMessage()]);
                     cleanJsonResponse(false, null, 'Erro ao reabastecer: ' . $e->getMessage());
                 }
                 break;
-                
-            // ========================================
-            // SISTEMA DE FIADO - ENDPOINTS POST
-            // ========================================
             
             case 'cadastrarClienteFiado':
                 session_start();
@@ -778,6 +593,7 @@ try {
                         'nome' => $nome
                     ], 'Cliente cadastrado com sucesso');
                 } catch (Exception $e) {
+                    logError('Erro ao cadastrar cliente fiado', ['error' => $e->getMessage()]);
                     cleanJsonResponse(false, null, 'Erro ao cadastrar cliente: ' . $e->getMessage());
                 }
                 break;
@@ -848,7 +664,496 @@ try {
                     
                 } catch (Exception $e) {
                     $pdo->rollback();
+                    logError('Erro ao registrar pagamento fiado', ['error' => $e->getMessage()]);
                     cleanJsonResponse(false, null, 'Erro ao registrar pagamento: ' . $e->getMessage());
+                }
+                break;
+            
+            // ========================================
+            // SISTEMA DE GUARDA-SÓIS
+            // ========================================
+            
+            case 'cadastrarGuardasol':
+                session_start();
+                $usuarioId = $_SESSION['usuario_id'] ?? null;
+                
+                if (!$usuarioId) {
+                    cleanJsonResponse(false, null, 'Usuário não autenticado');
+                }
+                
+                $numero = $_POST['numero'] ?? '';
+                
+                if (empty($numero)) {
+                    cleanJsonResponse(false, null, 'Número do guarda-sol é obrigatório');
+                }
+                
+                try {
+                    $stmt = $pdo->prepare("
+                        INSERT INTO guardasois (numero, usuario_id) 
+                        VALUES (?, ?)
+                    ");
+                    $stmt->execute([$numero, $usuarioId]);
+                    
+                    cleanJsonResponse(true, [
+                        'guardasol_id' => $pdo->lastInsertId(),
+                        'numero' => $numero
+                    ], 'Guarda-sol cadastrado');
+                } catch (Exception $e) {
+                    cleanJsonResponse(false, null, 'Erro ao cadastrar: ' . $e->getMessage());
+                }
+                break;
+            
+            case 'ocuparGuardasol':
+                session_start();
+                $usuarioId = $_SESSION['usuario_id'] ?? null;
+                
+                if (!$usuarioId) {
+                    cleanJsonResponse(false, null, 'Usuário não autenticado');
+                }
+                
+                $guardasolId = $_POST['guardasol_id'] ?? '';
+                $clienteNome = $_POST['cliente_nome'] ?? '';
+                
+                if (empty($guardasolId)) {
+                    cleanJsonResponse(false, null, 'ID do guarda-sol é obrigatório');
+                }
+                
+                try {
+                    $stmt = $pdo->prepare("
+                        UPDATE guardasois 
+                        SET status = 'ocupado', 
+                            cliente_nome = ?, 
+                            horario_ocupacao = NOW() 
+                        WHERE id = ? AND usuario_id = ?
+                    ");
+                    $stmt->execute([$clienteNome, $guardasolId, $usuarioId]);
+                    
+                    cleanJsonResponse(true, null, 'Guarda-sol ocupado');
+                } catch (Exception $e) {
+                    cleanJsonResponse(false, null, 'Erro: ' . $e->getMessage());
+                }
+                break;
+            
+            case 'adicionarComanda':
+                session_start();
+                $usuarioId = $_SESSION['usuario_id'] ?? null;
+                
+                if (!$usuarioId) {
+                    cleanJsonResponse(false, null, 'Usuário não autenticado');
+                }
+                
+                $guardasolId = $_POST['guardasol_id'] ?? '';
+                $produtos = $_POST['produtos'] ?? '';
+                $subtotal = $_POST['subtotal'] ?? 0;
+                
+                if (empty($guardasolId) || empty($produtos)) {
+                    cleanJsonResponse(false, null, 'Dados inválidos');
+                }
+                
+                try {
+                    $pdo->beginTransaction();
+                    
+                    // Buscar informações do guarda-sol e cliente
+                    $stmt = $pdo->prepare("
+                        SELECT numero, cliente_nome 
+                        FROM guardasois 
+                        WHERE id = ? AND usuario_id = ?
+                    ");
+                    $stmt->execute([$guardasolId, $usuarioId]);
+                    $guardasol = $stmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    if (!$guardasol) {
+                        $pdo->rollback();
+                        cleanJsonResponse(false, null, 'Guarda-sol não encontrado');
+                    }
+                    
+                    // Inserir comanda
+                    $stmt = $pdo->prepare("
+                        INSERT INTO comandas (guardasol_id, usuario_id, produtos, subtotal) 
+                        VALUES (?, ?, ?, ?)
+                    ");
+                    $stmt->execute([$guardasolId, $usuarioId, $produtos, $subtotal]);
+                    $comandaId = $pdo->lastInsertId();
+                    
+                    // Atualizar total do guarda-sol
+                    $stmt = $pdo->prepare("
+                        UPDATE guardasois 
+                        SET total_consumido = total_consumido + ? 
+                        WHERE id = ?
+                    ");
+                    $stmt->execute([$subtotal, $guardasolId]);
+                    
+                    // Criar pedido automático para a cozinha/preparo
+                    $numeroPedido = 'GS' . str_pad($guardasol['numero'], 3, '0', STR_PAD_LEFT) . '-' . str_pad($comandaId, 4, '0', STR_PAD_LEFT);
+                    $nomeCliente = $guardasol['cliente_nome'] ?: 'Guarda-sol ' . $guardasol['numero'];
+                    
+                    $stmt = $pdo->prepare("
+                        INSERT INTO pedidos (
+                            numero_pedido, 
+                            nome_cliente, 
+                            produtos, 
+                            total, 
+                            usuario_vendedor_id, 
+                            status,
+                            observacoes
+                        ) VALUES (?, ?, ?, ?, ?, 'pendente', ?)
+                    ");
+                    $stmt->execute([
+                        $numeroPedido,
+                        $nomeCliente,
+                        $produtos,
+                        $subtotal,
+                        $usuarioId,
+                        'Pedido do Guarda-sol ' . $guardasol['numero'] . ' - Comanda #' . $comandaId
+                    ]);
+                    
+                    $pdo->commit();
+                    
+                    cleanJsonResponse(true, [
+                        'comanda_id' => $comandaId,
+                        'pedido_numero' => $numeroPedido
+                    ], 'Comanda adicionada e pedido enviado para preparo');
+                } catch (Exception $e) {
+                    $pdo->rollback();
+                    cleanJsonResponse(false, null, 'Erro: ' . $e->getMessage());
+                }
+                break;
+            
+            case 'finalizarGuardasol':
+                session_start();
+                $usuarioId = $_SESSION['usuario_id'] ?? null;
+                
+                if (!$usuarioId) {
+                    cleanJsonResponse(false, null, 'Usuário não autenticado');
+                }
+                
+                $guardasolId = $_POST['guardasol_id'] ?? '';
+                $vendaId = $_POST['venda_id'] ?? null;
+                
+                if (empty($guardasolId)) {
+                    cleanJsonResponse(false, null, 'ID do guarda-sol é obrigatório');
+                }
+                
+                try {
+                    $pdo->beginTransaction();
+                    
+                    // Fechar todas as comandas abertas
+                    $stmt = $pdo->prepare("
+                        UPDATE comandas 
+                        SET status = 'fechado', data_fechamento = NOW() 
+                        WHERE guardasol_id = ? AND status = 'aberto'
+                    ");
+                    $stmt->execute([$guardasolId]);
+                    
+                    // Liberar guarda-sol
+                    $stmt = $pdo->prepare("
+                        UPDATE guardasois 
+                        SET status = 'vazio', 
+                            cliente_nome = NULL, 
+                            horario_ocupacao = NULL, 
+                            total_consumido = 0.00 
+                        WHERE id = ? AND usuario_id = ?
+                    ");
+                    $stmt->execute([$guardasolId, $usuarioId]);
+                    
+                    $pdo->commit();
+                    
+                    cleanJsonResponse(true, null, 'Guarda-sol finalizado e liberado');
+                } catch (Exception $e) {
+                    $pdo->rollback();
+                    cleanJsonResponse(false, null, 'Erro: ' . $e->getMessage());
+                }
+                break;
+            
+            case 'removerGuardasol':
+                session_start();
+                $usuarioId = $_SESSION['usuario_id'] ?? null;
+                
+                if (!$usuarioId) {
+                    cleanJsonResponse(false, null, 'Usuário não autenticado');
+                }
+                
+                $guardasolId = $_POST['guardasol_id'] ?? '';
+                
+                if (empty($guardasolId)) {
+                    cleanJsonResponse(false, null, 'ID do guarda-sol é obrigatório');
+                }
+                
+                try {
+                    $pdo->beginTransaction();
+                    
+                    // Verificar se o guarda-sol está vazio
+                    $stmt = $pdo->prepare("
+                        SELECT status FROM guardasois 
+                        WHERE id = ? AND usuario_id = ?
+                    ");
+                    $stmt->execute([$guardasolId, $usuarioId]);
+                    $guardasol = $stmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    if (!$guardasol) {
+                        cleanJsonResponse(false, null, 'Guarda-sol não encontrado');
+                    }
+                    
+                    // Desativar guarda-sol
+                    $stmt = $pdo->prepare("
+                        UPDATE guardasois 
+                        SET ativo = 0 
+                        WHERE id = ? AND usuario_id = ?
+                    ");
+                    $stmt->execute([$guardasolId, $usuarioId]);
+                    
+                    $pdo->commit();
+                    
+                    cleanJsonResponse(true, null, 'Guarda-sol removido');
+                } catch (Exception $e) {
+                    $pdo->rollback();
+                    cleanJsonResponse(false, null, 'Erro: ' . $e->getMessage());
+                }
+                break;
+            
+            case 'fecharComanda':
+                session_start();
+                $usuarioId = $_SESSION['usuario_id'] ?? null;
+                
+                if (!$usuarioId) {
+                    cleanJsonResponse(false, null, 'Usuário não autenticado');
+                }
+                
+                $guardasolId = $_POST['guardasol_id'] ?? '';
+                
+                if (empty($guardasolId)) {
+                    cleanJsonResponse(false, null, 'ID do guarda-sol é obrigatório');
+                }
+                
+                try {
+                    // Atualizar status do guarda-sol para aguardando pagamento
+                    $stmt = $pdo->prepare("
+                        UPDATE guardasois 
+                        SET status = 'aguardando_pagamento' 
+                        WHERE id = ? AND usuario_id = ?
+                    ");
+                    $stmt->execute([$guardasolId, $usuarioId]);
+                    
+                    cleanJsonResponse(true, null, 'Comanda fechada, aguardando pagamento');
+                } catch (Exception $e) {
+                    cleanJsonResponse(false, null, 'Erro: ' . $e->getMessage());
+                }
+                break;
+            
+            case 'finalizarPagamentoComanda':
+                session_start();
+                $usuarioId = $_SESSION['usuario_id'] ?? null;
+                
+                if (!$usuarioId) {
+                    cleanJsonResponse(false, null, 'Usuário não autenticado');
+                }
+                
+                $guardasolId = $_POST['guardasol_id'] ?? '';
+                $formaPagamento = $_POST['forma_pagamento'] ?? '';
+                $total = $_POST['total'] ?? 0;
+                
+                if (empty($guardasolId) || empty($formaPagamento)) {
+                    cleanJsonResponse(false, null, 'Dados inválidos');
+                }
+                
+                try {
+                    $pdo->beginTransaction();
+                    
+                    // Buscar comandas abertas
+                    $stmt = $pdo->prepare("
+                        SELECT * FROM comandas 
+                        WHERE guardasol_id = ? AND status = 'aberto'
+                    ");
+                    $stmt->execute([$guardasolId]);
+                    $comandas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    
+                    if (empty($comandas)) {
+                        $pdo->rollback();
+                        cleanJsonResponse(false, null, 'Nenhuma comanda aberta encontrada');
+                    }
+                    
+                    // Preparar itens da venda
+                    $itens = [];
+                    foreach ($comandas as $comanda) {
+                        $produtos = json_decode($comanda['produtos'], true);
+                        foreach ($produtos as $prod) {
+                            $itens[] = [
+                                'produto_id' => $prod['produto_id'],
+                                'nome' => $prod['nome'],
+                                'quantidade' => $prod['quantidade'],
+                                'preco' => $prod['preco_unitario']
+                            ];
+                        }
+                    }
+                    
+                    // Registrar venda (usando apenas colunas que existem)
+                    $stmt = $pdo->prepare("
+                        INSERT INTO vendas (usuario_id, total, forma_pagamento) 
+                        VALUES (?, ?, ?)
+                    ");
+                    $stmt->execute([$usuarioId, $total, $formaPagamento]);
+                    $vendaId = $pdo->lastInsertId();
+                    
+                    // Registrar cada item da venda na tabela vendas_itens (se existir)
+                    // Ou atualizar estoque diretamente
+                    foreach ($itens as $item) {
+                        // Atualizar estoque
+                        $stmt = $pdo->prepare("
+                            UPDATE produtos 
+                            SET quantidade = quantidade - ? 
+                            WHERE id = ? AND usuario_id = ?
+                        ");
+                        $stmt->execute([$item['quantidade'], $item['produto_id'], $usuarioId]);
+                    }
+                    
+                    // Fechar comandas
+                    $stmt = $pdo->prepare("
+                        UPDATE comandas 
+                        SET status = 'fechado', data_fechamento = NOW() 
+                        WHERE guardasol_id = ? AND status = 'aberto'
+                    ");
+                    $stmt->execute([$guardasolId]);
+                    
+                    // Liberar guarda-sol
+                    $stmt = $pdo->prepare("
+                        UPDATE guardasois 
+                        SET status = 'vazio', 
+                            cliente_nome = NULL, 
+                            horario_ocupacao = NULL, 
+                            total_consumido = 0.00 
+                        WHERE id = ? AND usuario_id = ?
+                    ");
+                    $stmt->execute([$guardasolId, $usuarioId]);
+                    
+                    $pdo->commit();
+                    
+                    cleanJsonResponse(true, ['venda_id' => $pdo->lastInsertId()], 'Pagamento realizado e guarda-sol liberado');
+                } catch (Exception $e) {
+                    $pdo->rollback();
+                    cleanJsonResponse(false, null, 'Erro: ' . $e->getMessage());
+                }
+                break;
+            
+            case 'alterarSenha':
+                try {
+                    session_start();
+                    $usuarioId = $_SESSION['usuario_id'] ?? null;
+                    
+                    if (!$usuarioId) {
+                        cleanJsonResponse(false, null, 'Usuário não autenticado');
+                    }
+                    
+                    $senhaAtual = $_POST['senha_atual'] ?? '';
+                    $novaSenha = $_POST['nova_senha'] ?? '';
+                    
+                    if (empty($senhaAtual) || empty($novaSenha)) {
+                        cleanJsonResponse(false, null, 'Todos os campos são obrigatórios');
+                    }
+                    
+                    if (strlen($novaSenha) < 6) {
+                        cleanJsonResponse(false, null, 'A nova senha deve ter pelo menos 6 caracteres');
+                    }
+                    
+                    // Buscar usuário
+                    $stmt = $pdo->prepare("SELECT senha FROM usuarios WHERE id = ?");
+                    $stmt->execute([$usuarioId]);
+                    $user = $stmt->fetch();
+                    
+                    if (!$user) {
+                        cleanJsonResponse(false, null, 'Usuário não encontrado');
+                    }
+                    
+                    // Verificar senha atual
+                    if (!password_verify($senhaAtual, $user['senha'])) {
+                        cleanJsonResponse(false, null, 'Senha atual incorreta');
+                    }
+                    
+                    // Atualizar senha
+                    $novaSenhaHash = password_hash($novaSenha, PASSWORD_DEFAULT);
+                    $stmt = $pdo->prepare("UPDATE usuarios SET senha = ? WHERE id = ?");
+                    $stmt->execute([$novaSenhaHash, $usuarioId]);
+                    
+                    cleanJsonResponse(true, null, 'Senha alterada com sucesso');
+                } catch (Exception $e) {
+                    cleanJsonResponse(false, null, 'Erro: ' . $e->getMessage());
+                }
+                break;
+            
+            case 'excluirConta':
+                try {
+                    session_start();
+                    $usuarioId = $_SESSION['usuario_id'] ?? null;
+                    
+                    if (!$usuarioId) {
+                        cleanJsonResponse(false, null, 'Usuário não autenticado');
+                    }
+                    
+                    $senha = $_POST['senha'] ?? '';
+                    
+                    if (empty($senha)) {
+                        cleanJsonResponse(false, null, 'Senha é obrigatória para confirmar exclusão');
+                    }
+                    
+                    // Buscar usuário
+                    $stmt = $pdo->prepare("SELECT senha FROM usuarios WHERE id = ?");
+                    $stmt->execute([$usuarioId]);
+                    $user = $stmt->fetch();
+                    
+                    if (!$user) {
+                        cleanJsonResponse(false, null, 'Usuário não encontrado');
+                    }
+                    
+                    // Verificar senha
+                    if (!password_verify($senha, $user['senha'])) {
+                        cleanJsonResponse(false, null, 'Senha incorreta');
+                    }
+                    
+                    // Desativar conta (não excluir fisicamente para manter integridade dos dados)
+                    $stmt = $pdo->prepare("UPDATE usuarios SET ativo = 0, data_exclusao = NOW() WHERE id = ?");
+                    $stmt->execute([$usuarioId]);
+                    
+                    // Limpar sessão
+                    session_destroy();
+                    
+                    cleanJsonResponse(true, null, 'Conta excluída com sucesso');
+                } catch (Exception $e) {
+                    cleanJsonResponse(false, null, 'Erro: ' . $e->getMessage());
+                }
+                break;
+            
+            case 'atualizarStatusPedido':
+                try {
+                    session_start();
+                    $usuarioId = $_SESSION['usuario_id'] ?? null;
+                    
+                    if (!$usuarioId) {
+                        cleanJsonResponse(false, null, 'Usuário não autenticado');
+                    }
+                    
+                    $pedidoId = $_POST['pedido_id'] ?? '';
+                    $novoStatus = $_POST['novo_status'] ?? '';
+                    
+                    if (empty($pedidoId) || empty($novoStatus)) {
+                        cleanJsonResponse(false, null, 'Dados inválidos');
+                    }
+                    
+                    // Validar status
+                    $statusValidos = ['pendente', 'em_preparo', 'pronto', 'entregue', 'cancelado'];
+                    if (!in_array($novoStatus, $statusValidos)) {
+                        cleanJsonResponse(false, null, 'Status inválido');
+                    }
+                    
+                    // Atualizar status
+                    $stmt = $pdo->prepare("
+                        UPDATE pedidos 
+                        SET status = ?, data_atualizacao = NOW() 
+                        WHERE id = ?
+                    ");
+                    $stmt->execute([$novoStatus, $pedidoId]);
+                    
+                    cleanJsonResponse(true, ['status' => $novoStatus], 'Status atualizado com sucesso');
+                } catch (Exception $e) {
+                    cleanJsonResponse(false, null, 'Erro: ' . $e->getMessage());
                 }
                 break;
                 
@@ -861,222 +1166,29 @@ try {
     else if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $action = $_GET['action'] ?? '';
         
+        if (empty($action)) {
+            cleanJsonResponse(false, null, 'Ação não especificada');
+        }
+        
         switch ($action) {
-            case 'listarCodigosFuncionarios':
-                $usuarioId = $_SESSION['usuario_id'] ?? null;
-                
-                if (!$usuarioId) {
-                    cleanJsonResponse(false, null, 'Usuário não está logado');
-                }
-                
-                // Buscar todos os códigos ativos do admin
-                $stmt = $pdo->prepare("
-                    SELECT codigo, data_criacao
-                    FROM codigos_funcionarios 
-                    WHERE admin_id = ? AND ativo = 1 
-                    GROUP BY codigo
-                    ORDER BY data_criacao DESC
-                ");
-                $stmt->execute([$usuarioId]);
-                $codigos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                
-                // Para cada código, buscar os funcionários cadastrados
-                $resultado = [];
-                foreach ($codigos as $codigo) {
-                    $stmt = $pdo->prepare("
-                        SELECT u.id, u.nome, u.email, u.funcao_funcionario as funcao
-                        FROM usuarios u
-                        WHERE u.codigo_unico = ? AND u.tipo_usuario = 'funcionario'
-                        ORDER BY u.nome
-                    ");
-                    $stmt->execute([$codigo['codigo']]);
-                    $funcionarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                    
-                    $resultado[] = [
-                        'codigo' => $codigo['codigo'],
-                        'data_criacao' => $codigo['data_criacao'],
-                        'funcionarios' => $funcionarios
-                    ];
-                }
-                
-                cleanJsonResponse(true, $resultado, 'Códigos listados com sucesso');
-                break;
-                
-            case 'get_produto':
+            case 'listar_produtos':
                 session_start();
-                $usuarioId = $_SESSION['usuario_id'] ?? null;
+                $usuarioId = $_SESSION['usuario_id'] ?? $_GET['usuario_id'] ?? null;
                 
                 if (!$usuarioId) {
                     cleanJsonResponse(false, null, 'Usuário não está logado');
-                }
-                
-                $id = $_GET['id'] ?? '';
-                
-                if (empty($id)) {
-                    cleanJsonResponse(false, null, 'ID do produto é obrigatório');
                 }
                 
                 try {
-                    $stmt = $pdo->prepare("SELECT * FROM produtos WHERE id = ? AND usuario_id = ?");
-                    $stmt->execute([$id, $usuarioId]);
-                    $produto = $stmt->fetch(PDO::FETCH_ASSOC);
+                    $stmt = $pdo->prepare("SELECT * FROM produtos WHERE usuario_id = ? AND ativo = 1 ORDER BY nome ASC");
+                    $stmt->execute([$usuarioId]);
+                    $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     
-                    if (!$produto) {
-                        cleanJsonResponse(false, null, 'Produto não encontrado');
-                    }
-                    
-                    cleanJsonResponse(true, ['produto' => $produto], 'Produto carregado com sucesso');
+                    cleanJsonResponse(true, $produtos, 'Produtos listados com sucesso');
                 } catch (Exception $e) {
-                    cleanJsonResponse(false, null, 'Erro ao buscar produto: ' . $e->getMessage());
+                    logError('Erro ao listar produtos', ['error' => $e->getMessage()]);
+                    cleanJsonResponse(false, null, 'Erro ao listar produtos: ' . $e->getMessage());
                 }
-                break;
-                
-            case 'listarPedidos':
-                $usuarioId = $_SESSION['usuario_id'] ?? null;
-                
-                if (!$usuarioId) {
-                    cleanJsonResponse(false, null, 'Usuário não está logado');
-                }
-                
-                // Filtros opcionais
-                $filtroStatus = $_GET['status'] ?? '';
-                $filtroData = $_GET['data'] ?? '';
-                
-                $where = [];
-                $params = [];
-                
-                if (!empty($filtroStatus)) {
-                    $where[] = "status = ?";
-                    $params[] = $filtroStatus;
-                }
-                
-                if (!empty($filtroData)) {
-                    $where[] = "DATE(data_pedido) = ?";
-                    $params[] = $filtroData;
-                }
-                
-                $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
-                
-                $stmt = $pdo->prepare("
-                    SELECT p.*, u.nome as vendedor_nome 
-                    FROM pedidos p 
-                    LEFT JOIN usuarios u ON p.usuario_vendedor_id = u.id 
-                    $whereClause
-                    ORDER BY p.data_pedido DESC
-                    LIMIT 100
-                ");
-                $stmt->execute($params);
-                $pedidos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                
-                cleanJsonResponse(true, $pedidos, 'Pedidos listados com sucesso');
-                break;
-                
-            case 'listarVendasFinanceiro':
-                $usuarioId = $_SESSION['usuario_id'] ?? null;
-                
-                if (!$usuarioId) {
-                    cleanJsonResponse(false, null, 'Usuário não está logado');
-                }
-                
-                // Filtros opcionais
-                $filtroStatus = $_GET['status'] ?? '';
-                $filtroVendedor = $_GET['vendedor'] ?? '';
-                $filtroData = $_GET['data'] ?? '';
-                
-                $where = [];
-                $params = [];
-                
-                if (!empty($filtroStatus)) {
-                    $where[] = "v.status_pagamento = ?";
-                    $params[] = $filtroStatus;
-                }
-                
-                if (!empty($filtroVendedor)) {
-                    $where[] = "v.usuario_id = ?";
-                    $params[] = $filtroVendedor;
-                }
-                
-                if (!empty($filtroData)) {
-                    $where[] = "DATE(v.data) = ?";
-                    $params[] = $filtroData;
-                }
-                
-                $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
-                
-                // Query usando a estrutura correta do banco
-                $stmt = $pdo->prepare("
-                    SELECT v.id, v.total, v.data as data_venda, 
-                           COALESCE(v.status_pagamento, 'pago') as status_pagamento,
-                           COALESCE(v.metodo_pagamento, v.forma_pagamento) as metodo_pagamento,
-                           v.observacoes_pagamento,
-                           v.data_pagamento, 
-                           COALESCE(v.nome_cliente, v.cliente_nome) as nome_cliente, 
-                           v.usuario_id,
-                           u.nome as vendedor_nome,
-                           'Venda finalizada' as produtos_info
-                    FROM vendas v
-                    LEFT JOIN usuarios u ON v.usuario_id = u.id
-                    $whereClause
-                    ORDER BY v.data DESC
-                    LIMIT 100
-                ");
-                $stmt->execute($params);
-                $vendas = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                
-                cleanJsonResponse(true, $vendas, 'Vendas listadas com sucesso');
-                break;
-                
-            case 'listarVendedores':
-                $usuarioId = $_SESSION['usuario_id'] ?? null;
-                
-                if (!$usuarioId) {
-                    cleanJsonResponse(false, null, 'Usuário não está logado');
-                }
-                
-                $stmt = $pdo->prepare("
-                    SELECT DISTINCT u.id, u.nome 
-                    FROM usuarios u 
-                    INNER JOIN vendas v ON u.id = v.usuario_id 
-                    WHERE u.funcao_funcionario IN ('anotar_pedido', 'financeiro_e_anotar', 'ambos') 
-                    ORDER BY u.nome
-                ");
-                $stmt->execute();
-                $vendedores = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                
-                cleanJsonResponse(true, $vendedores, 'Vendedores listados com sucesso');
-                break;
-                
-            case 'obterDetalhesVenda':
-                session_start();
-                $usuarioId = $_SESSION['usuario_id'] ?? null;
-                
-                if (!$usuarioId) {
-                    cleanJsonResponse(false, null, 'Usuário não está logado');
-                }
-                
-                $vendaId = $_GET['venda_id'] ?? '';
-                
-                if (!$vendaId) {
-                    cleanJsonResponse(false, null, 'ID da venda não informado');
-                }
-                
-                $stmt = $pdo->prepare("
-                    SELECT v.*, u.nome as vendedor_nome,
-                           uf.nome as financeiro_nome,
-                           'Detalhes dos produtos' as produtos_info
-                    FROM vendas v
-                    LEFT JOIN usuarios u ON v.usuario_id = u.id
-                    LEFT JOIN usuarios uf ON v.processado_por_financeiro = uf.id
-                    WHERE v.id = ?
-                ");
-                $stmt->execute([$vendaId]);
-                $venda = $stmt->fetch(PDO::FETCH_ASSOC);
-                
-                if (!$venda) {
-                    cleanJsonResponse(false, null, 'Venda não encontrada');
-                }
-                
-                cleanJsonResponse(true, $venda, 'Detalhes da venda obtidos com sucesso');
                 break;
                 
             case 'getDashboardMetrics':
@@ -1092,7 +1204,7 @@ try {
                     $ontem = date('Y-m-d', strtotime('-1 day'));
                     $semanaPassada = date('Y-m-d', strtotime('-7 days'));
                     
-                    // ===== KPIs DO DIA =====
+                    // KPIs do dia
                     $stmt = $pdo->prepare("
                         SELECT 
                             COALESCE(SUM(total), 0) as faturamento_hoje,
@@ -1104,7 +1216,7 @@ try {
                     $stmt->execute([$hoje, $usuarioId]);
                     $kpisHoje = $stmt->fetch(PDO::FETCH_ASSOC);
                     
-                    // ===== COMPARAÇÃO COM ONTEM =====
+                    // Comparação com ontem
                     $stmt = $pdo->prepare("
                         SELECT 
                             COALESCE(SUM(total), 0) as faturamento,
@@ -1116,7 +1228,11 @@ try {
                     $stmt->execute([$ontem, $usuarioId]);
                     $dadosOntem = $stmt->fetch(PDO::FETCH_ASSOC);
                     
-                    // Calcular diferenças percentuais
+                    // Comparação com semana passada
+                    $stmt->execute([$semanaPassada, $usuarioId]);
+                    $dadosSemanaPassada = $stmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    // Calcular diferenças - Ontem
                     $diffFaturamento = $dadosOntem['faturamento'] > 0 
                         ? (($kpisHoje['faturamento_hoje'] - $dadosOntem['faturamento']) / $dadosOntem['faturamento']) * 100 
                         : 0;
@@ -1125,18 +1241,7 @@ try {
                         : 0;
                     $diffAtendimentos = $kpisHoje['num_atendimentos'] - $dadosOntem['atendimentos'];
                     
-                    // ===== COMPARAÇÃO COM SEMANA PASSADA =====
-                    $stmt = $pdo->prepare("
-                        SELECT 
-                            COALESCE(SUM(total), 0) as faturamento,
-                            COUNT(*) as atendimentos,
-                            COALESCE(AVG(total), 0) as ticket_medio
-                        FROM vendas 
-                        WHERE DATE(data) = ? AND usuario_id = ?
-                    ");
-                    $stmt->execute([$semanaPassada, $usuarioId]);
-                    $dadosSemanaPassada = $stmt->fetch(PDO::FETCH_ASSOC);
-                    
+                    // Calcular diferenças - Semana Passada
                     $diffFaturamentoSemana = $dadosSemanaPassada['faturamento'] > 0 
                         ? (($kpisHoje['faturamento_hoje'] - $dadosSemanaPassada['faturamento']) / $dadosSemanaPassada['faturamento']) * 100 
                         : 0;
@@ -1145,7 +1250,7 @@ try {
                         : 0;
                     $diffAtendimentosSemana = $kpisHoje['num_atendimentos'] - $dadosSemanaPassada['atendimentos'];
                     
-                    // ===== VENDAS POR HORA =====
+                    // Vendas por hora
                     $stmt = $pdo->prepare("
                         SELECT 
                             HOUR(data) as hora,
@@ -1159,7 +1264,7 @@ try {
                     $stmt->execute([$hoje, $usuarioId]);
                     $vendasPorHora = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     
-                    // Preencher todas as horas (0-23) com zeros se não houver vendas
+                    // Preencher todas as horas
                     $vendasPorHoraCompleto = [];
                     for ($h = 0; $h < 24; $h++) {
                         $encontrado = false;
@@ -1179,7 +1284,7 @@ try {
                         }
                     }
                     
-                    // ===== HORÁRIO DE PICO =====
+                    // Horário de pico
                     $horarioPico = null;
                     if (!empty($vendasPorHora)) {
                         $maxVendas = 0;
@@ -1194,96 +1299,98 @@ try {
                         }
                     }
                     
-                    // ===== TOP 5 PRODUTOS =====
-                    // Tentar usar vendas_itens, mas se não existir, retornar array vazio
+                    // Top 5 produtos (buscar das comandas fechadas hoje)
                     $topProdutos = [];
                     try {
                         $stmt = $pdo->prepare("
-                            SELECT 
-                                p.nome,
-                                SUM(vi.quantidade) as quantidade,
-                                SUM(vi.subtotal) as total
-                            FROM vendas_itens vi
-                            INNER JOIN produtos p ON vi.produto_id = p.id
-                            INNER JOIN vendas v ON vi.venda_id = v.id
-                            WHERE DATE(v.data) = ? AND v.usuario_id = ?
-                            GROUP BY p.id, p.nome
-                            ORDER BY quantidade DESC
-                            LIMIT 5
+                            SELECT * FROM comandas 
+                            WHERE DATE(data_fechamento) = ? 
+                            AND usuario_id = ? 
+                            AND status = 'fechado'
                         ");
                         $stmt->execute([$hoje, $usuarioId]);
-                        $topProdutos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                        $comandas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                        
+                        // Processar produtos das comandas
+                        $produtosAgrupados = [];
+                        foreach ($comandas as $comanda) {
+                            $produtos = json_decode($comanda['produtos'], true);
+                            if ($produtos) {
+                                foreach ($produtos as $prod) {
+                                    $nome = $prod['nome'];
+                                    if (!isset($produtosAgrupados[$nome])) {
+                                        $produtosAgrupados[$nome] = [
+                                            'nome' => $nome,
+                                            'quantidade' => 0,
+                                            'total' => 0
+                                        ];
+                                    }
+                                    $produtosAgrupados[$nome]['quantidade'] += $prod['quantidade'];
+                                    $produtosAgrupados[$nome]['total'] += $prod['subtotal'];
+                                }
+                            }
+                        }
+                        
+                        // Ordenar por quantidade e pegar top 5
+                        usort($produtosAgrupados, function($a, $b) {
+                            return $b['quantidade'] - $a['quantidade'];
+                        });
+                        $topProdutos = array_slice($produtosAgrupados, 0, 5);
                     } catch (PDOException $e) {
-                        // Tabela vendas_itens não existe ainda, retornar array vazio
                         $topProdutos = [];
                     }
                     
-                    // ===== FORMAS DE PAGAMENTO =====
-                    // Considerar todas as formas (principal, secundária, terciária)
+                    // Formas de pagamento (simplificado para estrutura atual da tabela)
                     $stmt = $pdo->prepare("
                         SELECT 
                             forma_pagamento,
-                            SUM(valor_pago) as total
-                        FROM (
-                            SELECT forma_pagamento, valor_pago 
-                            FROM vendas 
-                            WHERE DATE(data) = ? AND usuario_id = ? AND forma_pagamento IS NOT NULL
-                            UNION ALL
-                            SELECT forma_pagamento_secundaria as forma_pagamento, valor_pago_secundario as valor_pago
-                            FROM vendas 
-                            WHERE DATE(data) = ? AND usuario_id = ? AND forma_pagamento_secundaria IS NOT NULL
-                            UNION ALL
-                            SELECT forma_pagamento_terciaria as forma_pagamento, valor_pago_terciario as valor_pago
-                            FROM vendas 
-                            WHERE DATE(data) = ? AND usuario_id = ? AND forma_pagamento_terciaria IS NOT NULL
-                        ) as todas_formas
+                            SUM(total) as total
+                        FROM vendas 
+                        WHERE DATE(data) = ? AND usuario_id = ? AND forma_pagamento IS NOT NULL
                         GROUP BY forma_pagamento
                         ORDER BY total DESC
                     ");
-                    $stmt->execute([$hoje, $usuarioId, $hoje, $usuarioId, $hoje, $usuarioId]);
+                    $stmt->execute([$hoje, $usuarioId]);
                     $formasPagamento = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     
-                    // Estruturar resposta
                     $response = [
-                        'faturamento_hoje' => $kpisHoje['faturamento_hoje'],
-                        'num_atendimentos' => $kpisHoje['num_atendimentos'],
-                        'ticket_medio' => $kpisHoje['ticket_medio'],
+                        'faturamento_hoje' => floatval($kpisHoje['faturamento_hoje']),
+                        'num_atendimentos' => intval($kpisHoje['num_atendimentos']),
+                        'ticket_medio' => floatval($kpisHoje['ticket_medio']),
                         'comparacao_ontem_faturamento' => round($diffFaturamento, 1),
                         'comparacao_ontem_ticket' => round($diffTicket, 1),
-                        'comparacao_ontem_atendimentos' => $diffAtendimentos,
+                        'comparacao_ontem_atendimentos' => intval($diffAtendimentos),
+                        'comparacao_semana_faturamento' => round($diffFaturamentoSemana, 1),
+                        'comparacao_semana_ticket' => round($diffTicketSemana, 1),
+                        'comparacao_semana_atendimentos' => intval($diffAtendimentosSemana),
+                        'dados_ontem' => [
+                            'faturamento' => floatval($dadosOntem['faturamento']),
+                            'atendimentos' => intval($dadosOntem['atendimentos']),
+                            'ticket_medio' => floatval($dadosOntem['ticket_medio']),
+                            'diff_faturamento' => round($diffFaturamento, 1),
+                            'diff_ticket' => round($diffTicket, 1),
+                            'diff_atendimentos' => intval($diffAtendimentos)
+                        ],
+                        'dados_semana_passada' => [
+                            'faturamento' => floatval($dadosSemanaPassada['faturamento']),
+                            'atendimentos' => intval($dadosSemanaPassada['atendimentos']),
+                            'ticket_medio' => floatval($dadosSemanaPassada['ticket_medio']),
+                            'diff_faturamento' => round($diffFaturamentoSemana, 1),
+                            'diff_ticket' => round($diffTicketSemana, 1),
+                            'diff_atendimentos' => intval($diffAtendimentosSemana)
+                        ],
                         'vendas_por_hora' => $vendasPorHoraCompleto,
                         'horario_pico' => $horarioPico,
                         'top_produtos' => $topProdutos,
-                        'formas_pagamento' => $formasPagamento,
-                        'comparacoes' => [
-                            'ontem' => [
-                                'faturamento' => $dadosOntem['faturamento'],
-                                'atendimentos' => $dadosOntem['atendimentos'],
-                                'ticket_medio' => $dadosOntem['ticket_medio'],
-                                'diff_faturamento' => round($diffFaturamento, 1),
-                                'diff_atendimentos' => $diffAtendimentos,
-                                'diff_ticket' => round($diffTicket, 1)
-                            ],
-                            'semana_passada' => [
-                                'faturamento' => $dadosSemanaPassada['faturamento'],
-                                'atendimentos' => $dadosSemanaPassada['atendimentos'],
-                                'ticket_medio' => $dadosSemanaPassada['ticket_medio'],
-                                'diff_faturamento' => round($diffFaturamentoSemana, 1),
-                                'diff_atendimentos' => $diffAtendimentosSemana,
-                                'diff_ticket' => round($diffTicketSemana, 1)
-                            ]
-                        ]
+                        'formas_pagamento' => $formasPagamento
                     ];
                     
                     cleanJsonResponse(true, $response, 'Métricas carregadas com sucesso');
                 } catch (Exception $e) {
+                    logError('Erro ao buscar métricas', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
                     cleanJsonResponse(false, null, 'Erro ao buscar métricas: ' . $e->getMessage());
                 }
                 break;
-                
-            // ========================================
-            // SISTEMA DE FIADO
-            // ========================================
             
             case 'getDashboardFiado':
                 try {
@@ -1307,7 +1414,7 @@ try {
                     $stmt->execute([$usuarioId]);
                     $qtdClientes = $stmt->fetch(PDO::FETCH_ASSOC)['qtd'] ?? 0;
                     
-                    // Clientes inadimplentes (>30 dias sem comprar e com dívida)
+                    // Clientes inadimplentes
                     $stmt = $pdo->prepare("
                         SELECT 
                             COUNT(*) as qtd,
@@ -1362,6 +1469,7 @@ try {
                     
                     cleanJsonResponse(true, $response, 'Dashboard carregado');
                 } catch (Exception $e) {
+                    logError('Erro ao carregar dashboard fiado', ['error' => $e->getMessage()]);
                     cleanJsonResponse(false, null, 'Erro ao carregar dashboard: ' . $e->getMessage());
                 }
                 break;
@@ -1392,6 +1500,7 @@ try {
                     
                     cleanJsonResponse(true, $clientes, 'Clientes carregados');
                 } catch (Exception $e) {
+                    logError('Erro ao listar clientes fiado', ['error' => $e->getMessage()]);
                     cleanJsonResponse(false, null, 'Erro ao listar clientes: ' . $e->getMessage());
                 }
                 break;
@@ -1419,7 +1528,7 @@ try {
                         cleanJsonResponse(false, null, 'Cliente não encontrado');
                     }
                     
-                    // Buscar histórico de movimentações
+                    // Buscar histórico
                     $stmt = $pdo->prepare("
                         SELECT * FROM pagamentos_fiado 
                         WHERE cliente_id = ? 
@@ -1434,7 +1543,311 @@ try {
                         'historico' => $historico
                     ], 'Histórico carregado');
                 } catch (Exception $e) {
+                    logError('Erro ao obter histórico cliente', ['error' => $e->getMessage()]);
                     cleanJsonResponse(false, null, 'Erro ao carregar histórico: ' . $e->getMessage());
+                }
+                break;
+            
+            // ========================================
+            // ENDPOINTS GET - GUARDA-SÓIS
+            // ========================================
+            
+            case 'listarGuardasois':
+                try {
+                    session_start();
+                    $usuarioId = $_SESSION['usuario_id'] ?? null;
+                    
+                    if (!$usuarioId) {
+                        cleanJsonResponse(false, null, 'Usuário não autenticado');
+                    }
+                    
+                    $stmt = $pdo->prepare("
+                        SELECT * FROM view_resumo_guardasois 
+                        WHERE usuario_id = ? 
+                        ORDER BY 
+                            CASE status 
+                                WHEN 'aguardando_pagamento' THEN 1
+                                WHEN 'ocupado' THEN 2
+                                WHEN 'vazio' THEN 3
+                            END,
+                            CAST(numero AS UNSIGNED), numero
+                    ");
+                    $stmt->execute([$usuarioId]);
+                    $guardasois = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    
+                    cleanJsonResponse(true, $guardasois, 'Guarda-sóis carregados');
+                } catch (Exception $e) {
+                    cleanJsonResponse(false, null, 'Erro: ' . $e->getMessage());
+                }
+                break;
+            
+            case 'obterComandasGuardasol':
+                try {
+                    session_start();
+                    $usuarioId = $_SESSION['usuario_id'] ?? null;
+                    $guardasolId = $_GET['guardasol_id'] ?? null;
+                    
+                    if (!$usuarioId) {
+                        cleanJsonResponse(false, null, 'Usuário não autenticado');
+                    }
+                    
+                    if (!$guardasolId) {
+                        cleanJsonResponse(false, null, 'ID do guarda-sol não informado');
+                    }
+                    
+                    // Buscar guarda-sol
+                    $stmt = $pdo->prepare("SELECT * FROM guardasois WHERE id = ? AND usuario_id = ?");
+                    $stmt->execute([$guardasolId, $usuarioId]);
+                    $guardasol = $stmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    if (!$guardasol) {
+                        cleanJsonResponse(false, null, 'Guarda-sol não encontrado');
+                    }
+                    
+                    // Buscar comandas abertas
+                    $stmt = $pdo->prepare("
+                        SELECT * FROM comandas 
+                        WHERE guardasol_id = ? AND status = 'aberto' 
+                        ORDER BY data_pedido ASC
+                    ");
+                    $stmt->execute([$guardasolId]);
+                    $comandas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    
+                    // Retornar direto as comandas para simplificar o acesso
+                    cleanJsonResponse(true, $comandas, 'Comandas carregadas');
+                } catch (Exception $e) {
+                    cleanJsonResponse(false, null, 'Erro: ' . $e->getMessage());
+                }
+                break;
+            
+            case 'listarPedidos':
+                try {
+                    session_start();
+                    $usuarioId = $_SESSION['usuario_id'] ?? null;
+                    
+                    if (!$usuarioId) {
+                        cleanJsonResponse(false, null, 'Usuário não autenticado');
+                    }
+                    
+                    $filtroStatus = $_GET['status'] ?? '';
+                    $filtroData = $_GET['data'] ?? '';
+                    
+                    $sql = "SELECT * FROM pedidos WHERE usuario_vendedor_id = ?";
+                    $params = [$usuarioId];
+                    
+                    if (!empty($filtroStatus)) {
+                        $sql .= " AND status = ?";
+                        $params[] = $filtroStatus;
+                    }
+                    
+                    if (!empty($filtroData)) {
+                        $sql .= " AND DATE(data_pedido) = ?";
+                        $params[] = $filtroData;
+                    }
+                    
+                    $sql .= " ORDER BY data_pedido DESC";
+                    
+                    $stmt = $pdo->prepare($sql);
+                    $stmt->execute($params);
+                    $pedidos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    
+                    cleanJsonResponse(true, $pedidos, 'Pedidos carregados');
+                } catch (Exception $e) {
+                    cleanJsonResponse(false, null, 'Erro: ' . $e->getMessage());
+                }
+                break;
+            
+            case 'listarVendasFinanceiro':
+                try {
+                    session_start();
+                    $usuarioId = $_SESSION['usuario_id'] ?? null;
+                    
+                    if (!$usuarioId) {
+                        cleanJsonResponse(false, null, 'Usuário não autenticado');
+                    }
+                    
+                    $filtroStatus = $_GET['status'] ?? '';
+                    $filtroVendedor = $_GET['vendedor'] ?? '';
+                    $filtroData = $_GET['data'] ?? '';
+                    
+                    // Query para buscar vendas individuais com detalhes
+                    $sql = "
+                        SELECT 
+                            v.id,
+                            v.data,
+                            v.forma_pagamento,
+                            v.total,
+                            v.valor_pago,
+                            v.troco,
+                            v.desconto,
+                            v.cliente_nome,
+                            v.cliente_telefone,
+                            v.observacoes,
+                            v.status,
+                            u.nome as vendedor_nome,
+                            v.usuario_id
+                        FROM vendas v
+                        LEFT JOIN usuarios u ON v.usuario_id = u.id
+                        WHERE v.usuario_id = ?
+                    ";
+                    $params = [$usuarioId];
+                    
+                    if (!empty($filtroStatus)) {
+                        $sql .= " AND v.status = ?";
+                        $params[] = $filtroStatus;
+                    }
+                    
+                    if (!empty($filtroData)) {
+                        $sql .= " AND DATE(v.data) = ?";
+                        $params[] = $filtroData;
+                    }
+                    
+                    $sql .= " ORDER BY v.data DESC";
+                    
+                    $stmt = $pdo->prepare($sql);
+                    $stmt->execute($params);
+                    $vendas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    
+                    // Para cada venda, buscar os produtos vendidos
+                    foreach ($vendas as &$venda) {
+                        $stmt = $pdo->prepare("
+                            SELECT 
+                                iv.quantidade,
+                                iv.preco_unitario,
+                                iv.subtotal,
+                                p.nome as produto_nome
+                            FROM itens_venda iv
+                            LEFT JOIN produtos p ON iv.produto_id = p.id
+                            WHERE iv.venda_id = ?
+                        ");
+                        $stmt->execute([$venda['id']]);
+                        $itens = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                        
+                        // Formatar produtos para exibição
+                        $produtos = [];
+                        foreach ($itens as $item) {
+                            $produtos[] = $item['quantidade'] . 'x ' . $item['produto_nome'];
+                        }
+                        $venda['produtos'] = $itens;
+                        $venda['produtos_info'] = implode(', ', $produtos);
+                        
+                        // Tentar identificar número do guarda-sol (se houver nas observações)
+                        $venda['numero_guardasol'] = null;
+                        if (!empty($venda['observacoes'])) {
+                            if (preg_match('/Guarda-sol\s+(\d+)/i', $venda['observacoes'], $matches)) {
+                                $venda['numero_guardasol'] = $matches[1];
+                            } elseif (preg_match('/GS(\d+)/i', $venda['observacoes'], $matches)) {
+                                $venda['numero_guardasol'] = $matches[1];
+                            }
+                        }
+                    }
+                    
+                    cleanJsonResponse(true, $vendas, 'Vendas carregadas');
+                } catch (Exception $e) {
+                    cleanJsonResponse(false, null, 'Erro: ' . $e->getMessage());
+                }
+                break;
+            
+            case 'listarCodigosFuncionarios':
+                try {
+                    session_start();
+                    $usuarioId = $_SESSION['usuario_id'] ?? null;
+                    
+                    if (!$usuarioId) {
+                        cleanJsonResponse(false, null, 'Usuário não autenticado');
+                    }
+                    
+                    // Buscar códigos
+                    $stmt = $pdo->prepare("
+                        SELECT 
+                            cf.*,
+                            COUNT(DISTINCT uc.usuario_id) as total_usos
+                        FROM codigos_funcionarios cf
+                        LEFT JOIN usos_codigo uc ON cf.id = uc.codigo_id
+                        WHERE cf.admin_id = ?
+                        GROUP BY cf.id
+                        ORDER BY cf.data_criacao DESC
+                    ");
+                    $stmt->execute([$usuarioId]);
+                    $codigos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    
+                    // Para cada código, buscar funcionários que usaram esse código
+                    foreach ($codigos as &$codigo) {
+                        $stmt = $pdo->prepare("
+                            SELECT u.id, u.nome, u.email, u.funcao_funcionario as funcao
+                            FROM usuarios u
+                            WHERE u.codigo_admin = ? AND u.tipo_usuario = 'funcionario'
+                            ORDER BY u.nome
+                        ");
+                        $stmt->execute([$usuarioId]);
+                        $codigo['funcionarios'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    }
+                    
+                    cleanJsonResponse(true, $codigos, 'Códigos carregados');
+                } catch (Exception $e) {
+                    cleanJsonResponse(false, null, 'Erro: ' . $e->getMessage());
+                }
+                break;
+            
+            case 'estatisticasPerfil':
+                try {
+                    session_start();
+                    $usuarioId = $_SESSION['usuario_id'] ?? null;
+                    
+                    if (!$usuarioId) {
+                        cleanJsonResponse(false, null, 'Usuário não autenticado');
+                    }
+                    
+                    $hoje = date('Y-m-d');
+                    
+                    // Total de vendas hoje
+                    $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM vendas WHERE usuario_id = ? AND DATE(data) = ?");
+                    $stmt->execute([$usuarioId, $hoje]);
+                    $totalVendas = $stmt->fetch()['total'] ?? 0;
+                    
+                    // Faturamento hoje
+                    $stmt = $pdo->prepare("SELECT COALESCE(SUM(total), 0) as total FROM vendas WHERE usuario_id = ? AND DATE(data) = ?");
+                    $stmt->execute([$usuarioId, $hoje]);
+                    $faturamento = $stmt->fetch()['total'] ?? 0;
+                    
+                    // Produtos cadastrados
+                    $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM produtos WHERE usuario_id = ?");
+                    $stmt->execute([$usuarioId]);
+                    $produtos = $stmt->fetch()['total'] ?? 0;
+                    
+                    cleanJsonResponse(true, [
+                        'vendas_hoje' => $totalVendas,
+                        'faturamento_hoje' => number_format($faturamento, 2, ',', '.'),
+                        'produtos_cadastrados' => $produtos
+                    ], 'Estatísticas carregadas');
+                } catch (Exception $e) {
+                    cleanJsonResponse(false, null, 'Erro: ' . $e->getMessage());
+                }
+                break;
+            
+            case 'atividadeRecente':
+                try {
+                    session_start();
+                    $usuarioId = $_SESSION['usuario_id'] ?? null;
+                    
+                    if (!$usuarioId) {
+                        cleanJsonResponse(false, null, 'Usuário não autenticado');
+                    }
+                    
+                    // Buscar últimas vendas
+                    $stmt = $pdo->prepare("
+                        SELECT 'venda' as tipo, data, total 
+                        FROM vendas 
+                        WHERE usuario_id = ? 
+                        ORDER BY data DESC 
+                        LIMIT 5
+                    ");
+                    $stmt->execute([$usuarioId]);
+                    $atividades = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    
+                    cleanJsonResponse(true, $atividades, 'Atividades carregadas');
+                } catch (Exception $e) {
+                    cleanJsonResponse(false, null, 'Erro: ' . $e->getMessage());
                 }
                 break;
                 
@@ -1446,6 +1859,19 @@ try {
     cleanJsonResponse(false, null, 'Método não permitido');
     
 } catch (Exception $e) {
+    logError('Erro geral no actions.php', [
+        'error' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+        'trace' => $e->getTraceAsString()
+    ]);
     cleanJsonResponse(false, null, 'Erro interno: ' . $e->getMessage());
+} catch (Error $e) {
+    logError('Erro fatal no actions.php', [
+        'error' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+        'trace' => $e->getTraceAsString()
+    ]);
+    cleanJsonResponse(false, null, 'Erro fatal: ' . $e->getMessage());
 }
-?>

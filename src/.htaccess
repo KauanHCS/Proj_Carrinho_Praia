@@ -1,0 +1,11 @@
+# Permitir acesso a arquivos PHP (Apache 2.4+)
+<Files "*.php">
+    Require all granted
+</Files>
+
+# Habilitar CORS
+Header set Access-Control-Allow-Origin "*"
+Header set Access-Control-Allow-Methods "GET, POST, OPTIONS"
+Header set Access-Control-Allow-Headers "Content-Type"
+
+

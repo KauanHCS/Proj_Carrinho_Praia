@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Limpar Cache - Sistema Carrinho de Praia</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .cache-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+        }
+        
+        .cache-icon {
+            font-size: 5rem;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        
+        .btn-limpar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-limpar:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6);
+        }
+        
+        .status-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .status-icon {
+            font-size: 1.5rem;
+        }
+        
+        .success { color: #28a745; }
+        .pending { color: #ffc107; }
+        
+        .instrucoes {
+            background: #e7f3ff;
+            border-left: 4px solid #0066cc;
+            padding: 15px;
+            margin-top: 20px;
+            text-align: left;
+            border-radius: 5px;
+        }
+        
+        .instrucoes h6 {
+            color: #0066cc;
+            font-weight: 600;
+        }
+        
+        .instrucoes ol {
+            margin-bottom: 0;
+            padding-left: 20px;
+        }
+        
+        .instrucoes li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="cache-container">
+        <i class="bi bi-arrow-clockwise cache-icon"></i>
+        <h2 class="mb-3">Limpeza de Cache</h2>
+        <p class="text-muted mb-4">Prepare seu sistema para a apresentação</p>
+        
+        <div id="statusContainer" class="mb-4" style="display: none;">
+            <div class="status-item">
+                <span><i class="bi bi-database-fill-check status-icon pending"></i> LocalStorage</span>
+                <span id="statusLocal" class="badge bg-warning">Aguardando...</span>
+            </div>
+            <div class="status-item">
+                <span><i class="bi bi-server status-icon pending"></i> SessionStorage</span>
+                <span id="statusSession" class="badge bg-warning">Aguardando...</span>
+            </div>
+            <div class="status-item">
+                <span><i class="bi bi-cookie status-icon pending"></i> Cookies</span>
+                <span id="statusCookies" class="badge bg-warning">Aguardando...</span>
+            </div>
+            <div class="status-item">
+                <span><i class="bi bi-hdd-fill status-icon pending"></i> Cache do Navegador</span>
+                <span id="statusCache" class="badge bg-warning">Aguardando...</span>
+            </div>
+        </div>
+        
+        <button class="btn btn-limpar" onclick="limparTudo()">
+            <i class="bi bi-trash3"></i> Limpar Tudo Agora
+        </button>
+        
+        <div class="instrucoes mt-4">
+            <h6><i class="bi bi-info-circle"></i> Instruções Adicionais</h6>
+            <p class="mb-2"><strong>Para garantir limpeza total, após clicar no botão:</strong></p>
+            <ol>
+                <li><strong>Chrome/Edge:</strong> Pressione <kbd>Ctrl + Shift + Delete</kbd></li>
+                <li>Selecione "Todo o período"</li>
+                <li>Marque: Cookies, Imagens e arquivos em cache</li>
+                <li>Clique em "Limpar dados"</li>
+                <li>Pressione <kbd>Ctrl + F5</kbd> para recarregar sem cache</li>
+            </ol>
+            <p class="mt-2 mb-0"><strong>Ou simplesmente:</strong> Abra uma janela anônima/privada (<kbd>Ctrl + Shift + N</kbd>)</p>
+        </div>
+        
+        <button class="btn btn-success mt-3 w-100" onclick="irParaSistema()">
+            <i class="bi bi-box-arrow-in-right"></i> Ir para o Sistema
+        </button>
+    </div>
+    
+    <script>
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        async function limparTudo() {
+            const container = document.getElementById('statusContainer');
+            container.style.display = 'block';
+            
+            // 1. Limpar LocalStorage
+            try {
+                localStorage.clear();
+                await sleep(300);
+                document.getElementById('statusLocal').className = 'badge bg-success';
+                document.getElementById('statusLocal').innerHTML = '<i class="bi bi-check-lg"></i> Limpo';
+            } catch (e) {
+                document.getElementById('statusLocal').className = 'badge bg-danger';
+                document.getElementById('statusLocal').innerHTML = '<i class="bi bi-x-lg"></i> Erro';
+            }
+            
+            // 2. Limpar SessionStorage
+            try {
+                sessionStorage.clear();
+                await sleep(300);
+                document.getElementById('statusSession').className = 'badge bg-success';
+                document.getElementById('statusSession').innerHTML = '<i class="bi bi-check-lg"></i> Limpo';
+            } catch (e) {
+                document.getElementById('statusSession').className = 'badge bg-danger';
+                document.getElementById('statusSession').innerHTML = '<i class="bi bi-x-lg"></i> Erro';
+            }
+            
+            // 3. Limpar Cookies (do domínio atual)
+            try {
+                document.cookie.split(";").forEach(function(c) { 
+                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+                });
+                await sleep(300);
+                document.getElementById('statusCookies').className = 'badge bg-success';
+                document.getElementById('statusCookies').innerHTML = '<i class="bi bi-check-lg"></i> Limpo';
+            } catch (e) {
+                document.getElementById('statusCookies').className = 'badge bg-danger';
+                document.getElementById('statusCookies').innerHTML = '<i class="bi bi-x-lg"></i> Erro';
+            }
+            
+            // 4. Tentar limpar cache (limitado pelo navegador)
+            try {
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                }
+                
+                // Service Worker
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (let registration of registrations) {
+                        await registration.unregister();
+                    }
+                }
+                
+                await sleep(300);
+                document.getElementById('statusCache').className = 'badge bg-success';
+                document.getElementById('statusCache').innerHTML = '<i class="bi bi-check-lg"></i> Limpo';
+            } catch (e) {
+                document.getElementById('statusCache').className = 'badge bg-warning';
+                document.getElementById('statusCache').innerHTML = '<i class="bi bi-exclamation-triangle"></i> Parcial';
+            }
+            
+            // Alerta de sucesso
+            await sleep(500);
+            
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success mt-3';
+            alertDiv.innerHTML = `
+                <i class="bi bi-check-circle"></i> 
+                <strong>Limpeza concluída!</strong><br>
+                Para garantir 100%, pressione <kbd>Ctrl + Shift + Delete</kbd> e limpe o cache manualmente,
+                ou use modo anônimo/privado.
+            `;
+            container.appendChild(alertDiv);
+        }
+        
+        function irParaSistema() {
+            // Adicionar timestamp para evitar cache
+            window.location.href = 'public/login.php?v=' + Date.now();
+        }
+        
+        // Adicionar evento de teclado
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.shiftKey && e.key === 'Delete') {
+                alert('Perfeito! Agora limpe o cache no painel que abriu e recarregue a página com Ctrl + F5');
+            }
+        });
+    </script>
+</body>
+</html>

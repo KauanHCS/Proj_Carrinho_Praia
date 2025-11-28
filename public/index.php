@@ -1,4 +1,10 @@
 <?php
+// Headers anti-cache para apresentação
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Cache-Control: post-check=0, pre-check=0', false);
+header('Pragma: no-cache');
+header('Expires: Sat, 01 Jan 2000 00:00:00 GMT');
+
 // Headers de segurança
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: SAMEORIGIN'); // Permitir iframe no mesmo domínio
@@ -298,20 +304,24 @@ session_start();
         .footer {
             position: fixed;
             bottom: 0;
-            left: 0;
+            left: 280px;
             right: 0;
-            width: 100vw;
             height: 60px;
             background: linear-gradient(135deg, #0066cc, #0099ff);
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 999;
+            z-index: 998;
             box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
             border-top: 1px solid rgba(255,255,255,0.1);
             margin: 0;
             padding: 0;
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .footer.collapsed {
+            left: 0;
         }
         
         .footer .container {
@@ -525,6 +535,7 @@ session_start();
             }
             
             .footer {
+                left: 0;
                 height: 60px;
             }
             
@@ -682,12 +693,6 @@ session_start();
                 </a>
             </li>
             <li>
-                <a href="#" onclick="showTab('vendas')" data-tab="vendas">
-                    <i class="bi bi-cash"></i>
-                    <span>Vendas</span>
-                </a>
-            </li>
-            <li>
                 <a href="#" onclick="showTab('venda_rapida')" data-tab="venda_rapida">
                     <i class="bi bi-lightning-charge-fill"></i>
                     <span>Venda Rápida</span>
@@ -697,6 +702,12 @@ session_start();
                 <a href="#" onclick="showTab('fiado')" data-tab="fiado">
                     <i class="bi bi-journal-text"></i>
                     <span>Fiado/Caderneta</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showTab('guardasois')" data-tab="guardasois">
+                    <i class="bi bi-umbrella-fill"></i>
+                    <span>Guarda-sóis</span>
                 </a>
             </li>
             <li>
@@ -761,14 +772,6 @@ session_start();
                     ?>
                 </div>
 
-                <!-- Tab Vendas -->
-                <div class="tab-pane fade" id="vendas">
-                    <?php 
-                    require_once '../config/database.php';
-                    include '../src/Views/vendas.php';
-                    ?>
-                </div>
-
                 <!-- Tab Venda Rápida -->
                 <div class="tab-pane fade" id="venda_rapida">
                     <?php 
@@ -782,6 +785,14 @@ session_start();
                     <?php 
                     require_once '../config/database.php';
                     include '../src/Views/fiado.php';
+                    ?>
+                </div>
+
+                <!-- Tab Guarda-sóis -->
+                <div class="tab-pane fade" id="guardasois">
+                    <?php 
+                    require_once '../config/database.php';
+                    include '../src/Views/guardasois.php';
                     ?>
                 </div>
 
@@ -848,7 +859,7 @@ session_start();
     </div>
 
     <!-- Footer -->
-    <div class="footer text-center">
+    <div class="footer text-center collapsed">
         <div class="container">
             <small>Sistema de Gestão para Carrinhos de Praia | © 2025</small>
         </div>
@@ -866,6 +877,7 @@ session_start();
     <script src="assets/js/filtro-simple.js"></script>
     <script src="assets/js/venda-rapida.js"></script>
     <script src="assets/js/fiado.js"></script>
+    <script src="assets/js/guardasois.js"></script>
     
     <!-- Scripts principais -->
     <script>
@@ -902,6 +914,7 @@ session_start();
                 'vendas': 'Vendas',
                 'venda_rapida': 'Venda Rápida',
                 'fiado': 'Fiado/Caderneta',
+                'guardasois': 'Guarda-sóis',
                 'produtos': 'Produtos',
                 'estoque': 'Estoque',
                 'relatorios': 'Relatórios',
@@ -924,6 +937,15 @@ session_start();
                         atualizarGraficoVendas();
                     } else {
                         console.error('❌ Função atualizarGraficoVendas não encontrada!');
+                    }
+                }, 100);
+            }
+            
+            // Carregar guarda-sóis quando a aba for aberta
+            if (tabName === 'guardasois') {
+                setTimeout(() => {
+                    if (typeof carregarGuardasoisAdmin === 'function') {
+                        carregarGuardasoisAdmin();
                     }
                 }, 100);
             }
@@ -979,6 +1001,8 @@ session_start();
                 const funcaoTexto = {
                     'anotar_pedido': 'Anota Pedidos',
                     'fazer_pedido': 'Faz Pedidos',
+                    'financeiro': 'Financeiro',
+                    'financeiro_e_anotar': 'Financeiro + Anota Pedidos',
                     'ambos': 'Anota/Faz Pedidos'
                 };
                 const funcao = userData.funcao || userData.funcao_funcionario || 'Funcionário';
@@ -1007,6 +1031,8 @@ session_start();
                 dashboard: document.querySelector('[data-tab="dashboard"]'),
                 vendas: document.querySelector('[data-tab="vendas"]'),
                 venda_rapida: document.querySelector('[data-tab="venda_rapida"]'),
+                fiado: document.querySelector('[data-tab="fiado"]'),
+                guardasois: document.querySelector('[data-tab="guardasois"]'),
                 produtos: document.querySelector('[data-tab="produtos"]'),
                 estoque: document.querySelector('[data-tab="estoque"]'),
                 relatorios: document.querySelector('[data-tab="relatorios"]'),
@@ -1026,9 +1052,9 @@ session_start();
             const funcao = userData.funcao || userData.funcao_funcionario;
             
             if (tipoUsuario === 'administrador') {
-                // Administrador - mostrar todas as abas exceto pedidos
+                // Administrador - mostrar todas as abas
                 Object.keys(abas).forEach(key => {
-                    if (key !== 'pedidos' && abas[key]) {
+                    if (abas[key]) {
                         abas[key].parentElement.style.display = 'block';
                     }
                 });
@@ -1038,33 +1064,46 @@ session_start();
                     if (abas.perfil) abas.perfil.parentElement.style.display = 'block';
                     
                 } else if (funcao === 'anotar_pedido') {
-                    // Funcionário que anota pedidos - vendas, produtos (restrito) e perfil
-                    if (abas.vendas) abas.vendas.parentElement.style.display = 'block';
+                    // Funcionário que anota pedidos - venda rápida, fiado, guarda-sóis, produtos e perfil
+                    if (abas.venda_rapida) abas.venda_rapida.parentElement.style.display = 'block';
+                    if (abas.fiado) abas.fiado.parentElement.style.display = 'block';
+                    if (abas.guardasois) abas.guardasois.parentElement.style.display = 'block';
                     if (abas.produtos) abas.produtos.parentElement.style.display = 'block';
                     if (abas.perfil) abas.perfil.parentElement.style.display = 'block';
                     
                 } else if (funcao === 'fazer_pedido') {
-                    // Funcionário que faz pedidos - só pedidos e perfil
+                    // Funcionário que faz pedidos - pedidos, estoque e perfil
                     if (abas.pedidos) abas.pedidos.parentElement.style.display = 'block';
+                    if (abas.estoque) abas.estoque.parentElement.style.display = 'block';
                     if (abas.perfil) abas.perfil.parentElement.style.display = 'block';
                     
                 } else if (funcao === 'financeiro') {
-                    // Funcionário do financeiro - só financeiro e perfil
-                    if (abas.financeiro) abas.financeiro.parentElement.style.display = 'block';
+                    // Funcionário financeiro - venda rápida, fiado, guarda-sóis, pedidos, estoque e perfil
+                    if (abas.venda_rapida) abas.venda_rapida.parentElement.style.display = 'block';
+                    if (abas.fiado) abas.fiado.parentElement.style.display = 'block';
+                    if (abas.guardasois) abas.guardasois.parentElement.style.display = 'block';
+                    if (abas.pedidos) abas.pedidos.parentElement.style.display = 'block';
+                    if (abas.estoque) abas.estoque.parentElement.style.display = 'block';
                     if (abas.perfil) abas.perfil.parentElement.style.display = 'block';
                     
                 } else if (funcao === 'financeiro_e_anotar') {
-                    // Funcionário financeiro + anotar - vendas, financeiro e perfil
-                    if (abas.vendas) abas.vendas.parentElement.style.display = 'block';
+                    // Funcionário financeiro + anotar - venda rápida, fiado, guarda-sóis, produtos, pedidos, estoque e perfil
+                    if (abas.venda_rapida) abas.venda_rapida.parentElement.style.display = 'block';
+                    if (abas.fiado) abas.fiado.parentElement.style.display = 'block';
+                    if (abas.guardasois) abas.guardasois.parentElement.style.display = 'block';
                     if (abas.produtos) abas.produtos.parentElement.style.display = 'block';
-                    if (abas.financeiro) abas.financeiro.parentElement.style.display = 'block';
+                    if (abas.pedidos) abas.pedidos.parentElement.style.display = 'block';
+                    if (abas.estoque) abas.estoque.parentElement.style.display = 'block';
                     if (abas.perfil) abas.perfil.parentElement.style.display = 'block';
                     
                 } else if (funcao === 'ambos') {
-                    // Funcionário com ambas funções - vendas, produtos (restrito), pedidos e perfil
-                    if (abas.vendas) abas.vendas.parentElement.style.display = 'block';
+                    // Funcionário anotar + fazer pedidos - venda rápida, fiado, guarda-sóis, produtos, pedidos, estoque e perfil
+                    if (abas.venda_rapida) abas.venda_rapida.parentElement.style.display = 'block';
+                    if (abas.fiado) abas.fiado.parentElement.style.display = 'block';
+                    if (abas.guardasois) abas.guardasois.parentElement.style.display = 'block';
                     if (abas.produtos) abas.produtos.parentElement.style.display = 'block';
                     if (abas.pedidos) abas.pedidos.parentElement.style.display = 'block';
+                    if (abas.estoque) abas.estoque.parentElement.style.display = 'block';
                     if (abas.perfil) abas.perfil.parentElement.style.display = 'block';
                 }
             }
@@ -1102,6 +1141,7 @@ session_start();
             const toggleBtn = document.getElementById('sidebarToggle');
             const overlay = document.getElementById('sidebarOverlay');
             const alertBanner = document.getElementById('alertLowStock');
+            const footer = document.querySelector('.footer');
             
             if (!sidebar || !mainContent) {
                 console.error('❌ Elementos não encontrados:', { sidebar, mainContent });
@@ -1117,12 +1157,14 @@ session_start();
                 mainContent.classList.remove('collapsed');
                 if (toggleBtn) toggleBtn.classList.remove('collapsed');
                 if (alertBanner) alertBanner.classList.remove('collapsed');
+                if (footer) footer.classList.remove('collapsed');
             } else {
                 // Ocultar sidebar
                 sidebar.classList.add('collapsed');
                 mainContent.classList.add('collapsed');
                 if (toggleBtn) toggleBtn.classList.add('collapsed');
                 if (alertBanner) alertBanner.classList.add('collapsed');
+                if (footer) footer.classList.add('collapsed');
             }
             
             // Gerenciar overlay em mobile
@@ -1143,11 +1185,13 @@ session_start();
             const mainContent = document.getElementById('mainContent');
             const overlay = document.getElementById('sidebarOverlay');
             const toggleBtn = document.getElementById('sidebarToggle');
+            const footer = document.querySelector('.footer');
             
             if (sidebar && !sidebar.classList.contains('collapsed')) {
                 sidebar.classList.add('collapsed');
                 if (mainContent) mainContent.classList.add('collapsed');
                 if (overlay) overlay.classList.remove('show');
+                if (footer) footer.classList.add('collapsed');
                 
                 // Resetar ícone
                 if (toggleBtn) {
