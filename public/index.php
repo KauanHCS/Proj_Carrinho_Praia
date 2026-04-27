@@ -13,8 +13,10 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 header('Permissions-Policy: geolocation=(self), microphone=(), camera=()');
 
 // Content Security Policy adaptado para o projeto com CDNs de mapa
+// Nota: 'unsafe-inline' mantido temporariamente devido ao volume de scripts inline existentes;
+// removê-lo é a próxima evolução de segurança (mover JS para arquivos externos ou usar nonces).
 $csp = "default-src 'self'; ";
-$csp .= "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://accounts.google.com https://www.gstatic.com; ";
+$csp .= "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://accounts.google.com https://www.gstatic.com; ";
 $csp .= "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://fonts.googleapis.com; ";
 $csp .= "img-src 'self' data: https: blob: https://*.openstreetmap.org https://*.tile.openstreetmap.org; ";
 $csp .= "font-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://fonts.gstatic.com; ";
@@ -25,14 +27,23 @@ $csp .= "object-src 'none'; ";
 $csp .= "base-uri 'self';";
 header("Content-Security-Policy: $csp");
 
+// Bootstrap (autoload + .env + helpers)
+require_once __DIR__ . '/../bootstrap.php';
+
 // Inicializar sessão PHP para suporte multi-usuário
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Token CSRF para proteger requisições AJAX
+$csrfToken = csrf_token();
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
     <title>Sistema de Vendas - Carrinho de Praia</title>
     <meta name="description" content="Sistema completo de gestão para vendas em carrinhos de praia com controle de estoque e relatórios">
     <meta name="theme-color" content="#0066cc">
@@ -871,6 +882,7 @@ session_start();
     <!-- Scripts - ORDEM CORRETA -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="assets/js/csrf.js"></script>
     <script src="assets/js/validation.js"></script>
     <script src="assets/js/main.js"></script>
     <script src="assets/js/produtos-actions.js"></script>

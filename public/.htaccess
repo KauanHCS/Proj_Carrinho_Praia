@@ -1,47 +1,48 @@
 # ==================================================
-# CONFIGURAÇÕES ANTI-CACHE PARA APRESENTAÇÃO
+# Headers globais de segurança
 # ==================================================
-
 <IfModule mod_headers.c>
-    # Desabilitar cache para todos os arquivos
-    Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
-    Header set Pragma "no-cache"
-    Header set Expires "Sat, 01 Jan 2000 00:00:00 GMT"
-    
-    # Headers de segurança
     Header set X-Content-Type-Options "nosniff"
     Header set X-Frame-Options "SAMEORIGIN"
     Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
 
 # ==================================================
-# DESABILITAR ETAG (evita cache baseado em modificação)
+# Cache headers - dinâmicos vs estáticos
 # ==================================================
 <IfModule mod_headers.c>
-    Header unset ETag
+    # PHP / HTML → sem cache (sempre dinâmico)
+    <FilesMatch "\.(php|html|htm)$">
+        Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+        Header set Pragma "no-cache"
+        Header set Expires "Sat, 01 Jan 2000 00:00:00 GMT"
+    </FilesMatch>
+
+    # Assets estáticos → cache longo, com cache-busting via ?v=hash
+    <FilesMatch "\.(css|js|jpg|jpeg|png|gif|svg|ico|woff|woff2|ttf|eot)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+        Header unset Pragma
+        Header unset Expires
+    </FilesMatch>
 </IfModule>
-FileETag None
 
 # ==================================================
-# REESCREVER URLs (se necessário)
-# ==================================================
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    
-    # Adicionar timestamp automático aos recursos
-    RewriteCond %{REQUEST_FILENAME} -f
-    RewriteRule ^(.+)\.(js|css|jpg|jpeg|png|gif|svg|ico)$ $1.$2?v=%{TIME} [L]
-</IfModule>
-
-# ==================================================
-# COMPRESSÃO GZIP (mantém performance)
+# Compressão GZIP
 # ==================================================
 <IfModule mod_deflate.c>
-    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json image/svg+xml
 </IfModule>
 
 # ==================================================
-# PÁGINA DE ERRO PERSONALIZADA
+# Bloquear arquivos sensíveis
+# ==================================================
+<FilesMatch "^(\.env|\.env\..*|composer\.(json|lock)|\.gitignore)$">
+    Require all denied
+</FilesMatch>
+
+# ==================================================
+# Páginas de erro (apenas se os arquivos existirem)
 # ==================================================
 ErrorDocument 404 /404.html
 ErrorDocument 500 /500.html

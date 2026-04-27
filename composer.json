@@ -1,0 +1,30 @@
+{
+    "name": "carrinho-de-praia/sistema",
+    "description": "Sistema de Gestao para Carrinhos de Praia",
+    "type": "project",
+    "require": {
+        "php": ">=8.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "CarrinhoDePreia\\": "src/"
+        },
+        "classmap": [
+            "src/Classes"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "CarrinhoDePreia\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}

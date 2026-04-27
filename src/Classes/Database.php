@@ -16,15 +16,25 @@ class Database
     private $dbname;
 
     /**
-     * Construtor privado para Singleton
+     * Construtor privado para Singleton.
+     * Lê credenciais via \CarrinhoDePreia\Config\Env (carregada pelo bootstrap.php).
      */
     private function __construct()
     {
-        $this->servername = "localhost";
-        $this->username = "root";
-        $this->password = "";
-        $this->dbname = "sistema_carrinho";
-        
+        $envClass = '\\CarrinhoDePreia\\Config\\Env';
+        if (class_exists($envClass)) {
+            $this->servername = $envClass::get('DB_HOST', 'localhost');
+            $this->username   = $envClass::get('DB_USER', 'root');
+            $this->password   = $envClass::get('DB_PASS', '');
+            $this->dbname     = $envClass::get('DB_NAME', 'sistema_carrinho');
+        } else {
+            // Fallback se o bootstrap não foi carregado
+            $this->servername = getenv('DB_HOST') ?: 'localhost';
+            $this->username   = getenv('DB_USER') ?: 'root';
+            $this->password   = getenv('DB_PASS') ?: '';
+            $this->dbname     = getenv('DB_NAME') ?: 'sistema_carrinho';
+        }
+
         $this->connect();
     }
 

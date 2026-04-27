@@ -67,6 +67,10 @@ _OBSOLETOS/
 composer.phar
 composer.lock
 
+# PHPUnit
+.phpunit.cache/
+.phpunit.result.cache
+
 # NPM
 package-lock.json
 yarn.lock

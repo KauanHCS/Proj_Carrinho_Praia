@@ -68,6 +68,129 @@ class Security
     }
     
     /**
+     * Verificar rate limit usando tabela `login_attempts` (persistente).
+     *
+     * Esta versão resiste a limpeza de cookies/sessão e é a recomendada
+     * para fluxos sensíveis como login.
+     *
+     * Cria automaticamente a tabela se não existir (defensivo — a migração
+     * oficial está em database/migrations/create_login_attempts.sql).
+     *
+     * @return bool true se está dentro do limite, false se excedeu
+     */
+    public static function checkRateLimitDb(\PDO $pdo, $identifier, $maxAttempts = 5, $timeWindow = 300)
+    {
+        try {
+            self::ensureLoginAttemptsTable($pdo);
+
+            $now = new \DateTimeImmutable('now');
+            $ip = $_SERVER['REMOTE_ADDR'] ?? null;
+
+            $stmt = $pdo->prepare('SELECT attempts, first_attempt, blocked_until FROM login_attempts WHERE identifier = ?');
+            $stmt->execute([$identifier]);
+            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            if (!$row) {
+                $insert = $pdo->prepare(
+                    'INSERT INTO login_attempts (identifier, ip, attempts, first_attempt, last_attempt) VALUES (?, ?, 1, ?, ?)'
+                );
+                $insert->execute([$identifier, $ip, $now->format('Y-m-d H:i:s'), $now->format('Y-m-d H:i:s')]);
+                return true;
+            }
+
+            // Já bloqueado e ainda dentro do bloqueio?
+            if (!empty($row['blocked_until']) && strtotime($row['blocked_until']) > $now->getTimestamp()) {
+                return false;
+            }
+
+            // Janela expirou? Reseta o contador.
+            if ($now->getTimestamp() - strtotime($row['first_attempt']) > $timeWindow) {
+                $update = $pdo->prepare(
+                    'UPDATE login_attempts SET attempts = 1, first_attempt = ?, last_attempt = ?, blocked_until = NULL WHERE identifier = ?'
+                );
+                $update->execute([$now->format('Y-m-d H:i:s'), $now->format('Y-m-d H:i:s'), $identifier]);
+                return true;
+            }
+
+            // Excedeu o limite? Marca bloqueio.
+            if ((int) $row['attempts'] + 1 > $maxAttempts) {
+                $blockedUntil = $now->getTimestamp() + ($timeWindow - ($now->getTimestamp() - strtotime($row['first_attempt'])));
+                $update = $pdo->prepare(
+                    'UPDATE login_attempts SET attempts = attempts + 1, last_attempt = ?, blocked_until = ? WHERE identifier = ?'
+                );
+                $update->execute([$now->format('Y-m-d H:i:s'), date('Y-m-d H:i:s', $blockedUntil), $identifier]);
+                return false;
+            }
+
+            // Incrementa.
+            $update = $pdo->prepare(
+                'UPDATE login_attempts SET attempts = attempts + 1, last_attempt = ?, ip = ? WHERE identifier = ?'
+            );
+            $update->execute([$now->format('Y-m-d H:i:s'), $ip, $identifier]);
+            return true;
+        } catch (\Throwable $e) {
+            // Em caso de qualquer erro de DB no rate-limit, falhar aberto evita
+            // bloquear o login legítimo. Logamos para investigação.
+            error_log('checkRateLimitDb error: ' . $e->getMessage());
+            return true;
+        }
+    }
+
+    /**
+     * Reset persistente do rate limit (chamado após login bem-sucedido).
+     */
+    public static function resetRateLimitDb(\PDO $pdo, $identifier)
+    {
+        try {
+            $stmt = $pdo->prepare('DELETE FROM login_attempts WHERE identifier = ?');
+            $stmt->execute([$identifier]);
+        } catch (\Throwable $e) {
+            error_log('resetRateLimitDb error: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Tempo restante de bloqueio para o identificador (segundos).
+     */
+    public static function getRateLimitWaitTimeDb(\PDO $pdo, $identifier): int
+    {
+        try {
+            $stmt = $pdo->prepare('SELECT blocked_until FROM login_attempts WHERE identifier = ?');
+            $stmt->execute([$identifier]);
+            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+            if (!$row || empty($row['blocked_until'])) {
+                return 0;
+            }
+            return max(0, strtotime($row['blocked_until']) - time());
+        } catch (\Throwable $e) {
+            return 0;
+        }
+    }
+
+    private static function ensureLoginAttemptsTable(\PDO $pdo): void
+    {
+        static $checked = false;
+        if ($checked) {
+            return;
+        }
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS login_attempts ('
+            . ' id INT UNSIGNED NOT NULL AUTO_INCREMENT,'
+            . ' identifier VARCHAR(190) NOT NULL,'
+            . ' ip VARCHAR(45) NULL,'
+            . ' attempts INT UNSIGNED NOT NULL DEFAULT 0,'
+            . ' first_attempt DATETIME NOT NULL,'
+            . ' last_attempt DATETIME NOT NULL,'
+            . ' blocked_until DATETIME NULL,'
+            . ' PRIMARY KEY (id),'
+            . ' UNIQUE KEY uq_login_attempts_identifier (identifier),'
+            . ' KEY idx_login_attempts_blocked_until (blocked_until)'
+            . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+        $checked = true;
+    }
+
+    /**
      * Resetar rate limit para um identificador
      * 
      * @param string $identifier Identificador a resetar
