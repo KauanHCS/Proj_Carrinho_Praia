@@ -152,19 +152,32 @@ class FiadoController extends BaseController
         $userId = self::requireAuth();
         $pdo    = self::getPdo();
 
+        $query = trim((string) ($_GET['query'] ?? ''));
+
         try {
-            $stmt = $pdo->prepare(
+            $sql = 
                 "SELECT cf.*,
                         DATEDIFF(NOW(), cf.ultima_compra) AS dias_sem_comprar,
                         COALESCE(SUM(CASE WHEN pf.tipo = 'compra' THEN pf.valor ELSE 0 END), 0) AS total_compras,
                         COALESCE(SUM(CASE WHEN pf.tipo = 'pagamento' THEN pf.valor ELSE 0 END), 0) AS total_pago
                  FROM clientes_fiado cf
                  LEFT JOIN pagamentos_fiado pf ON cf.id = pf.cliente_id
-                 WHERE cf.usuario_id = ? AND cf.ativo = 1
-                 GROUP BY cf.id
-                 ORDER BY cf.saldo_devedor DESC, cf.nome ASC"
-            );
-            $stmt->execute([$userId]);
+                 WHERE cf.usuario_id = ? AND cf.ativo = 1";
+
+            $params = [$userId];
+
+            if ($query !== '') {
+                $sql .= " AND (cf.nome LIKE ? OR cf.telefone LIKE ? OR cf.celular LIKE ? )";
+                $like = '%' . $query . '%';
+                $params[] = $like;
+                $params[] = $like;
+                $params[] = $like;
+            }
+
+            $sql .= " GROUP BY cf.id ORDER BY cf.saldo_devedor DESC, cf.nome ASC";
+
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
             self::json(true, $stmt->fetchAll(\PDO::FETCH_ASSOC), 'Clientes carregados');
         } catch (\Throwable $e) {
             self::logError('Erro listar clientes fiado', ['error' => $e->getMessage()]);

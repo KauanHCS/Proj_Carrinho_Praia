@@ -85,6 +85,7 @@ $postRoutes = [
 /** Mapa de rotas GET. */
 $getRoutes = [
     'listar_produtos'             => [ProductController::class, 'listar'],
+    'get_produto'                 => [ProductController::class, 'getProduto'],
     'getDashboardMetrics'         => [DashboardController::class, 'metrics'],
 
     'getDashboardFiado'           => [FiadoController::class, 'dashboard'],
@@ -96,6 +97,7 @@ $getRoutes = [
 
     'listarPedidos'               => [OrderController::class, 'listar'],
     'listarVendasFinanceiro'      => [SaleController::class, 'listarVendasFinanceiro'],
+    'listarVendasRelatorio'       => [SaleController::class, 'listarVendasRelatorio'],
 
     'listarCodigosFuncionarios'   => [UserController::class, 'listarCodigosFuncionarios'],
     'estatisticasPerfil'          => [UserController::class, 'estatisticasPerfil'],

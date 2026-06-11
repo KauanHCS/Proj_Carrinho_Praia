@@ -299,12 +299,13 @@ async function carregarComandasGuardasol(guardasolId) {
             data.data.forEach((comanda, index) => {
                 const produtos = JSON.parse(comanda.produtos);
                 
+                const subtotalVal = parseFloat(comanda.subtotal) || 0;
                 html += `
                     <div class="card mb-2">
                         <div class="card-body p-3">
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <strong>Comanda #${index + 1}</strong>
-                                <span class="badge bg-primary">R$ ${parseFloat(comanda.subtotal).toFixed(2).replace('.', ',')}</span>
+                                <span class="badge bg-primary">R$ ${subtotalVal.toFixed(2).replace('.', ',')}</span>
                             </div>
                             <small class="text-muted">${new Date(comanda.data_pedido).toLocaleString('pt-BR')}</small>
                             <hr class="my-2">
@@ -312,8 +313,26 @@ async function carregarComandasGuardasol(guardasolId) {
                 `;
                 
                 produtos.forEach(prod => {
+                    // Normalizar campos possíveis para preço unitário
+                    const possiblePrices = [
+                        prod.preco_unitario,
+                        prod.preco_venda,
+                        prod.preco,
+                        prod.valor,
+                        prod.price,
+                        prod.unit_price
+                    ];
+                    let unitPrice = 0;
+                    for (const p of possiblePrices) {
+                        if (typeof p !== 'undefined' && p !== null && p !== '') {
+                            unitPrice = parseFloat(p) || 0;
+                            if (unitPrice !== 0) break;
+                        }
+                    }
+                    const qtd = parseInt(prod.quantidade) || parseInt(prod.qtd) || 0;
+                    const prodSubtotal = parseFloat(prod.subtotal) || (unitPrice * qtd) || 0;
                     html += `
-                        <li>${prod.quantidade}x ${prod.nome} - R$ ${parseFloat(prod.subtotal).toFixed(2).replace('.', ',')}</li>
+                        <li>${qtd}x ${prod.nome} - R$ ${unitPrice.toFixed(2).replace('.', ',')} - Subtotal R$ ${prodSubtotal.toFixed(2).replace('.', ',')}</li>
                     `;
                 });
                 

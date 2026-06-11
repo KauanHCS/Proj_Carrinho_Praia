@@ -126,7 +126,7 @@
                 $usuarioId = $_SESSION['usuario_id'] ?? null;
                 
                 if ($usuarioId) {
-                    $sql = "SELECT * FROM produtos WHERE quantidade > 0 AND usuario_id = ? ORDER BY nome";
+                    $sql = "SELECT * FROM produtos WHERE quantidade > 0 AND usuario_id = ? AND ativo = 1 ORDER BY nome";
                     $stmt = $conn->prepare($sql);
                     $stmt->bind_param("i", $usuarioId);
                     $stmt->execute();
@@ -230,7 +230,9 @@
                                 id="nomeClienteVenda" 
                                 placeholder="Digite o nome do cliente..."
                                 autocomplete="off">
+                            <input type="hidden" id="clienteIdVenda" value="">
                         </div>
+
                     </div>
 
                     <!-- Pagamento Misto -->

@@ -580,22 +580,6 @@ header("Content-Security-Policy: $csp");
                     return;
                 }
                 
-                // Verificar login demo
-                if (email === 'demo@carrinho.com' && password === '123456') {
-                    const user = {
-                        name: 'Usuário Demo',
-                        email: email,
-                        imageUrl: "https://ui-avatars.com/api/?name=Usuario+Demo&background=0066cc&color=fff"
-                    };
-                    
-                    sessionStorage.setItem('user', JSON.stringify(user));
-                    sessionStorage.setItem('user_type', 'demo');
-                    alert('Login demo realizado com sucesso!');
-                    window.location.href = 'index.php';
-                    return;
-                }
-                
-                // Enviar dados para o servidor
                 const formData = new FormData();
                 formData.append('action', 'login');
                 formData.append('email', email);

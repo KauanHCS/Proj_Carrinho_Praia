@@ -22,7 +22,8 @@
                     echo "0,00";
                 }
                 $conn->close();
-                ?></h2>
+                ?>
+                </h2>
                 <small><span id="quantidadeItensDia">
                 <?php
                 $conn = getConnection();
@@ -75,7 +76,8 @@
                     echo "0,00";
                 }
                 $conn->close();
-                ?></h2>
+                ?>
+                </h2>
                 <small>Lucro real calculado (Venda - Compra)</small>
             </div>
         </div>
@@ -160,76 +162,6 @@
                         </button>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row mt-4">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-bar-chart"></i> Produtos Mais Vendidos</span>
-                <button class="btn btn-secondary btn-sm" onclick="corrigirGrafico()" title="Corrigir renderização do gráfico">
-                    <i class="bi bi-arrow-repeat"></i> Corrigir
-                </button>
-            </div>
-            <div class="card-body">
-                <canvas id="graficoVendas" style="max-height: 400px;"></canvas>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <i class="bi bi-trophy"></i> Top 5 Produtos
-            </div>
-            <div class="card-body" id="topProdutos">
-                <?php
-                $conn = getConnection();
-                $usuarioId = $_SESSION['usuario_id'] ?? null;
-                
-                if ($usuarioId) {
-                    $sql = "SELECT p.nome, p.categoria, SUM(iv.quantidade) as total_vendido, 
-                                   COUNT(DISTINCT iv.venda_id) as num_vendas
-                            FROM itens_venda iv 
-                            JOIN produtos p ON iv.produto_id = p.id 
-                            WHERE p.usuario_id = ? 
-                            GROUP BY p.id, p.nome, p.categoria 
-                            ORDER BY total_vendido DESC 
-                            LIMIT 5";
-                    $stmt = $conn->prepare($sql);
-                    $stmt->bind_param("i", $usuarioId);
-                    $stmt->execute();
-                    $result = $stmt->get_result();
-                    
-                    $position = 1;
-                    while ($row = $result->fetch_assoc()) {
-                        $badgeClass = $position == 1 ? 'bg-warning' : ($position == 2 ? 'bg-secondary' : 'bg-success');
-                        $icon = $position == 1 ? 'bi-trophy' : ($position == 2 ? 'bi-award' : 'bi-star');
-                        
-                        echo '<div class="d-flex justify-content-between align-items-center mb-3">';
-                        echo '<div>';
-                        echo '<span class="badge ' . $badgeClass . ' me-2"><i class="bi ' . $icon . '"></i> #' . $position . '</span>';
-                        echo '<strong>' . htmlspecialchars($row['nome']) . '</strong><br>';
-                        echo '<small class="text-muted">' . ucfirst($row['categoria']) . '</small>';
-                        echo '</div>';
-                        echo '<div class="text-end">';
-                        echo '<strong>' . $row['total_vendido'] . '</strong><br>';
-                        echo '<small class="text-muted">' . $row['num_vendas'] . ' vendas</small>';
-                        echo '</div>';
-                        echo '</div>';
-                        $position++;
-                    }
-                    
-                    if ($result->num_rows == 0) {
-                        echo '<p class="text-muted text-center">Nenhuma venda registrada ainda</p>';
-                    }
-                } else {
-                    echo '<p class="text-muted text-center">Faça login para ver os dados</p>';
-                }
-                $conn->close();
-                ?>
             </div>
         </div>
     </div>

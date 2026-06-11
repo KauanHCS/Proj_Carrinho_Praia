@@ -30,12 +30,20 @@ class AuthController extends BaseController
             && function_exists('is_debug') && is_debug()
             && $email === 'demo@carrinho.com' && $password === '123456'
         ) {
-            $_SESSION['usuario_id']    = 999;
+            Security::resetRateLimitDb($pdo, $email);
+            // Usar o primeiro usuário real do banco para sessão (produtos e vendas são por usuario_id).
+            $stmt = $pdo->query('SELECT id, nome FROM usuarios WHERE COALESCE(ativo, 1) = 1 ORDER BY id ASC LIMIT 1');
+            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+            if (!$row) {
+                self::error('Cadastre um usuário no sistema antes de usar o login demo.');
+            }
+            $demoId = (int) $row['id'];
+            $_SESSION['usuario_id']    = $demoId;
             $_SESSION['usuario_nome']  = 'Usuário Demo';
             $_SESSION['usuario_email'] = $email;
             $_SESSION['usuario_tipo']  = 'administrador';
             self::json(true, [
-                'usuario_id' => 999,
+                'usuario_id' => $demoId,
                 'nome' => 'Usuário Demo',
                 'tipo_usuario' => 'administrador',
             ], 'Login demo (apenas em DEV)');

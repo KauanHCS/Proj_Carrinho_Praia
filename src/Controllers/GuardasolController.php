@@ -37,8 +37,7 @@ class GuardasolController extends BaseController
 
         try {
             $stmt = $pdo->prepare(
-                "UPDATE guardasois SET status = 'ocupado', cliente_nome = ?, horario_ocupacao = NOW()
-                 WHERE id = ? AND usuario_id = ?"
+                "UPDATE guardasois SET status = 'ocupado', cliente_nome = ?, horario_ocupacao = NOW()\n                 WHERE id = ? AND usuario_id = ?"
             );
             $stmt->execute([$clienteNome, $guardasolId, $userId]);
             self::json(true, null, 'Guarda-sol ocupado');
@@ -75,15 +74,19 @@ class GuardasolController extends BaseController
             $stmt->execute([$guardasolId, $userId, $produtos, $subtotal]);
             $comandaId = $pdo->lastInsertId();
 
+            // Atualiza total consumido
             $stmt = $pdo->prepare('UPDATE guardasois SET total_consumido = total_consumido + ? WHERE id = ?');
             $stmt->execute([$subtotal, $guardasolId]);
+
+            // Garantir que o guarda-sol fique como ocupado quando adicionar uma comanda
+            $stmt = $pdo->prepare("UPDATE guardasois SET status = 'ocupado', horario_ocupacao = COALESCE(horario_ocupacao, NOW()) WHERE id = ? AND status <> 'ocupado'");
+            $stmt->execute([$guardasolId]);
 
             $numeroPedido = 'GS' . str_pad((string) $guardasol['numero'], 3, '0', STR_PAD_LEFT) . '-' . str_pad((string) $comandaId, 4, '0', STR_PAD_LEFT);
             $nomeCliente  = $guardasol['cliente_nome'] ?: 'Guarda-sol ' . $guardasol['numero'];
 
             $stmt = $pdo->prepare(
-                "INSERT INTO pedidos (numero_pedido, nome_cliente, produtos, total, usuario_vendedor_id, status, observacoes)
-                 VALUES (?, ?, ?, ?, ?, 'pendente', ?)"
+                "INSERT INTO pedidos (numero_pedido, nome_cliente, produtos, total, usuario_vendedor_id, status, observacoes)\n                 VALUES (?, ?, ?, ?, ?, 'pendente', ?)"
             );
             $stmt->execute([
                 $numeroPedido, $nomeCliente, $produtos, $subtotal, $userId,
@@ -116,8 +119,7 @@ class GuardasolController extends BaseController
             $stmt->execute([$guardasolId]);
 
             $stmt = $pdo->prepare(
-                "UPDATE guardasois SET status = 'vazio', cliente_nome = NULL, horario_ocupacao = NULL, total_consumido = 0.00
-                 WHERE id = ? AND usuario_id = ?"
+                "UPDATE guardasois SET status = 'vazio', cliente_nome = NULL, horario_ocupacao = NULL, total_consumido = 0.00\n                 WHERE id = ? AND usuario_id = ?"
             );
             $stmt->execute([$guardasolId, $userId]);
 
@@ -216,8 +218,7 @@ class GuardasolController extends BaseController
             $stmt->execute([$guardasolId]);
 
             $stmt = $pdo->prepare(
-                "UPDATE guardasois SET status = 'vazio', cliente_nome = NULL, horario_ocupacao = NULL, total_consumido = 0.00
-                 WHERE id = ? AND usuario_id = ?"
+                "UPDATE guardasois SET status = 'vazio', cliente_nome = NULL, horario_ocupacao = NULL, total_consumido = 0.00\n                 WHERE id = ? AND usuario_id = ?"
             );
             $stmt->execute([$guardasolId, $userId]);
 
@@ -237,13 +238,7 @@ class GuardasolController extends BaseController
 
         try {
             $stmt = $pdo->prepare(
-                "SELECT * FROM view_resumo_guardasois
-                 WHERE usuario_id = ?
-                 ORDER BY CASE status
-                            WHEN 'aguardando_pagamento' THEN 1
-                            WHEN 'ocupado' THEN 2
-                            WHEN 'vazio' THEN 3
-                          END, CAST(numero AS UNSIGNED), numero"
+                "SELECT * FROM view_resumo_guardasois\n                 WHERE usuario_id = ?\n                 ORDER BY CASE status\n                            WHEN 'aguardando_pagamento' THEN 1\n                            WHEN 'ocupado' THEN 2\n                            WHEN 'vazio' THEN 3\n                          END, CAST(numero AS UNSIGNED), numero"
             );
             $stmt->execute([$userId]);
             self::json(true, $stmt->fetchAll(\PDO::FETCH_ASSOC), 'Guarda-sóis carregados');

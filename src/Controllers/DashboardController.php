@@ -13,43 +13,53 @@ class DashboardController extends BaseController
         $ontem         = date('Y-m-d', strtotime('-1 day'));
         $semanaPassada = date('Y-m-d', strtotime('-7 days'));
 
+        $vendasDiaUsuario = 'DATE(data) = ? AND usuario_id = ? AND (status IS NULL OR status <> \'cancelada\')';
+
         try {
             $stmt = $pdo->prepare(
-                'SELECT COALESCE(SUM(total), 0) AS faturamento_hoje,
+                "SELECT COALESCE(SUM(total), 0) AS faturamento_hoje,
                         COUNT(*) AS num_atendimentos,
                         COALESCE(AVG(total), 0) AS ticket_medio
-                 FROM vendas WHERE DATE(data) = ? AND usuario_id = ?'
+                 FROM vendas WHERE {$vendasDiaUsuario}"
             );
             $stmt->execute([$hoje, $userId]);
             $kpisHoje = $stmt->fetch(\PDO::FETCH_ASSOC);
 
             $stmt = $pdo->prepare(
-                'SELECT COALESCE(SUM(total), 0) AS faturamento,
+                "SELECT COALESCE(SUM(total), 0) AS faturamento,
                         COUNT(*) AS atendimentos,
                         COALESCE(AVG(total), 0) AS ticket_medio
-                 FROM vendas WHERE DATE(data) = ? AND usuario_id = ?'
+                 FROM vendas WHERE {$vendasDiaUsuario}"
             );
             $stmt->execute([$ontem, $userId]);
             $dadosOntem = $stmt->fetch(\PDO::FETCH_ASSOC);
             $stmt->execute([$semanaPassada, $userId]);
             $dadosSemanaPassada = $stmt->fetch(\PDO::FETCH_ASSOC);
 
-            $diff = static function ($atual, $anterior) {
-                return $anterior > 0 ? (($atual - $anterior) / $anterior) * 100 : 0;
+            /** Variação percentual: se a base (ontem) for zero e hoje houver valor, retorna 100% em vez de 0. */
+            $diffPct = static function (float $atual, float $anterior): float {
+                if ($anterior > 0) {
+                    return (($atual - $anterior) / $anterior) * 100;
+                }
+                if ($atual > 0) {
+                    return 100.0;
+                }
+
+                return 0.0;
             };
 
-            $diffFat   = $diff($kpisHoje['faturamento_hoje'], $dadosOntem['faturamento']);
-            $diffTicket = $diff($kpisHoje['ticket_medio'], $dadosOntem['ticket_medio']);
+            $diffFat   = $diffPct((float) $kpisHoje['faturamento_hoje'], (float) $dadosOntem['faturamento']);
+            $diffTicket = $diffPct((float) $kpisHoje['ticket_medio'], (float) $dadosOntem['ticket_medio']);
             $diffAtend  = (int) $kpisHoje['num_atendimentos'] - (int) $dadosOntem['atendimentos'];
 
-            $diffFatSem    = $diff($kpisHoje['faturamento_hoje'], $dadosSemanaPassada['faturamento']);
-            $diffTicketSem = $diff($kpisHoje['ticket_medio'], $dadosSemanaPassada['ticket_medio']);
+            $diffFatSem    = $diffPct((float) $kpisHoje['faturamento_hoje'], (float) $dadosSemanaPassada['faturamento']);
+            $diffTicketSem = $diffPct((float) $kpisHoje['ticket_medio'], (float) $dadosSemanaPassada['ticket_medio']);
             $diffAtendSem  = (int) $kpisHoje['num_atendimentos'] - (int) $dadosSemanaPassada['atendimentos'];
 
             $stmt = $pdo->prepare(
-                'SELECT HOUR(data) AS hora, COALESCE(SUM(total), 0) AS total, COUNT(*) AS quantidade
-                 FROM vendas WHERE DATE(data) = ? AND usuario_id = ?
-                 GROUP BY HOUR(data) ORDER BY hora'
+                "SELECT HOUR(data) AS hora, COALESCE(SUM(total), 0) AS total, COUNT(*) AS quantidade
+                 FROM vendas WHERE {$vendasDiaUsuario}
+                 GROUP BY HOUR(data) ORDER BY hora"
             );
             $stmt->execute([$hoje, $userId]);
             $vendasPorHora = $stmt->fetchAll(\PDO::FETCH_ASSOC);
@@ -78,37 +88,118 @@ class DashboardController extends BaseController
                 }
             }
 
-            // Top 5 produtos
-            $topProdutos = [];
+            // Top 5 produtos: vendas do dia (itens_venda) + comandas fechadas no dia (guarda-sol)
+            $porNome = [];
             try {
                 $stmt = $pdo->prepare(
-                    "SELECT * FROM comandas WHERE DATE(data_fechamento) = ? AND usuario_id = ? AND status = 'fechado'"
+                    'SELECT MAX(COALESCE(NULLIF(TRIM(p.nome), \'\'), CONCAT(\'Produto #\', iv.produto_id))) AS nome,
+                            SUM(iv.quantidade) AS quantidade,
+                            SUM(iv.subtotal) AS total
+                     FROM itens_venda iv
+                     INNER JOIN vendas v ON iv.venda_id = v.id
+                     LEFT JOIN produtos p ON p.id = iv.produto_id
+                     WHERE DATE(v.data) = ? AND v.usuario_id = ?
+                       AND (v.status IS NULL OR v.status <> \'cancelada\')
+                     GROUP BY iv.produto_id
+                     ORDER BY quantidade DESC'
                 );
                 $stmt->execute([$hoje, $userId]);
-                $comandas = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-                $produtosAgrupados = [];
-                foreach ($comandas as $c) {
-                    $produtos = json_decode($c['produtos'], true) ?: [];
-                    foreach ($produtos as $prod) {
-                        $nome = $prod['nome'];
-                        $produtosAgrupados[$nome] = $produtosAgrupados[$nome] ?? ['nome' => $nome, 'quantidade' => 0, 'total' => 0];
-                        $produtosAgrupados[$nome]['quantidade'] += $prod['quantidade'];
-                        $produtosAgrupados[$nome]['total']      += $prod['subtotal'];
+                foreach ($stmt->fetchAll(\PDO::FETCH_ASSOC) as $row) {
+                    $n = (string) ($row['nome'] ?? '');
+                    if ($n === '') {
+                        $n = 'Produto';
                     }
+                    if (!isset($porNome[$n])) {
+                        $porNome[$n] = ['nome' => $n, 'quantidade' => 0, 'total' => 0.0];
+                    }
+                    $porNome[$n]['quantidade'] += (int) $row['quantidade'];
+                    $porNome[$n]['total'] += (float) $row['total'];
                 }
-                usort($produtosAgrupados, static fn ($a, $b) => $b['quantidade'] - $a['quantidade']);
-                $topProdutos = array_slice($produtosAgrupados, 0, 5);
             } catch (\Throwable $e) {
-                $topProdutos = [];
+                // itens_venda / join pode falhar em bases legadas
             }
 
-            $stmt = $pdo->prepare(
-                'SELECT forma_pagamento, SUM(total) AS total
-                 FROM vendas WHERE DATE(data) = ? AND usuario_id = ? AND forma_pagamento IS NOT NULL
-                 GROUP BY forma_pagamento ORDER BY total DESC'
-            );
-            $stmt->execute([$hoje, $userId]);
-            $formasPagamento = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            try {
+                $stmt = $pdo->prepare(
+                    "SELECT produtos FROM comandas WHERE DATE(data_fechamento) = ? AND usuario_id = ? AND status = 'fechado'"
+                );
+                $stmt->execute([$hoje, $userId]);
+                foreach ($stmt->fetchAll(\PDO::FETCH_ASSOC) as $c) {
+                    $produtos = json_decode($c['produtos'], true) ?: [];
+                    foreach ($produtos as $prod) {
+                        $nome = isset($prod['nome']) ? trim((string) $prod['nome']) : '';
+                        if ($nome === '') {
+                            $nome = 'Item';
+                        }
+                        if (!isset($porNome[$nome])) {
+                            $porNome[$nome] = ['nome' => $nome, 'quantidade' => 0, 'total' => 0.0];
+                        }
+                        $porNome[$nome]['quantidade'] += (int) ($prod['quantidade'] ?? 0);
+                        $porNome[$nome]['total'] += (float) ($prod['subtotal'] ?? 0);
+                    }
+                }
+            } catch (\Throwable $e) {
+                // tabela comandas opcional
+            }
+
+            $listaTop = array_values($porNome);
+            usort($listaTop, static fn ($a, $b) => $b['quantidade'] <=> $a['quantidade']);
+            $topProdutos = array_slice($listaTop, 0, 5);
+
+            // Build payment methods totals, treating sales with cliente_fiado_id as Fiado
+            $formasMap = [];
+            try {
+                $stmt = $pdo->prepare(
+                    "SELECT forma_pagamento, forma_pagamento_secundaria, forma_pagamento_terciaria, cliente_fiado_id, total
+                     FROM vendas WHERE {$vendasDiaUsuario}"
+                );
+                $stmt->execute([$hoje, $userId]);
+                $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+                foreach ($rows as $r) {
+                    $totalVenda = (float) ($r['total'] ?? 0);
+
+                    // If sale used fiado (cliente_fiado_id set), count entire sale as Fiado
+                    if (!empty($r['cliente_fiado_id'])) {
+                        $formasMap['Fiado'] = ($formasMap['Fiado'] ?? 0) + $totalVenda;
+                        continue;
+                    }
+
+                    // Collect non-empty payment parts
+                    $parts = [];
+                    if (!empty($r['forma_pagamento'])) $parts[] = $r['forma_pagamento'];
+                    if (!empty($r['forma_pagamento_secundaria'])) $parts[] = $r['forma_pagamento_secundaria'];
+                    if (!empty($r['forma_pagamento_terciaria'])) $parts[] = $r['forma_pagamento_terciaria'];
+
+                    $parts = array_values(array_unique($parts));
+                    $count = count($parts);
+
+                    if ($count === 0) {
+                        $formasMap['Outros'] = ($formasMap['Outros'] ?? 0) + $totalVenda;
+                        continue;
+                    }
+
+                    // Distribute total equally among payment parts (best-effort)
+                    $partValue = $totalVenda / $count;
+                    foreach ($parts as $p) {
+                        $formasMap[$p] = ($formasMap[$p] ?? 0) + $partValue;
+                    }
+                }
+
+                $formasPagamento = [];
+                foreach ($formasMap as $k => $v) {
+                    $formasPagamento[] = ['forma_pagamento' => $k, 'total' => $v];
+                }
+            } catch (\Throwable $e) {
+                // Fallback to simple aggregation if something fails
+                $stmt = $pdo->prepare(
+                    "SELECT forma_pagamento, SUM(total) AS total
+                     FROM vendas WHERE {$vendasDiaUsuario} AND forma_pagamento IS NOT NULL AND forma_pagamento <> ''
+                     GROUP BY forma_pagamento ORDER BY total DESC"
+                );
+                $stmt->execute([$hoje, $userId]);
+                $formasPagamento = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            }
 
             self::json(true, [
                 'faturamento_hoje'                => (float) $kpisHoje['faturamento_hoje'],

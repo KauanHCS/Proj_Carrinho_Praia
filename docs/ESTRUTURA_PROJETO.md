@@ -46,7 +46,6 @@ Proj_Carrinho_Praia/
 │       ├── produtos.php       # Gerenciamento de produtos
 │       ├── estoque.php        # Controle de estoque
 │       ├── relatorios.php     # Dashboard e relatórios
-│       ├── localizacao.php    # Mapa e localização
 │       └── modais.php         # Modais do sistema
 ├── 📁 tests/                   # Testes automatizados (futuro)
 ├── autoload.php               # Autoloader PSR-4 atualizado

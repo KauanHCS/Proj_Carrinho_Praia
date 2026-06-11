@@ -10,17 +10,17 @@ header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: SAMEORIGIN'); // Permitir iframe no mesmo domínio
 header('X-XSS-Protection: 1; mode=block');
 header('Referrer-Policy: strict-origin-when-cross-origin');
-header('Permissions-Policy: geolocation=(self), microphone=(), camera=()');
+header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
 
-// Content Security Policy adaptado para o projeto com CDNs de mapa
+// Content Security Policy (CDNs usados pelo app)
 // Nota: 'unsafe-inline' mantido temporariamente devido ao volume de scripts inline existentes;
 // removê-lo é a próxima evolução de segurança (mover JS para arquivos externos ou usar nonces).
 $csp = "default-src 'self'; ";
 $csp .= "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://accounts.google.com https://www.gstatic.com; ";
 $csp .= "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://fonts.googleapis.com; ";
-$csp .= "img-src 'self' data: https: blob: https://*.openstreetmap.org https://*.tile.openstreetmap.org; ";
+$csp .= "img-src 'self' data: https: blob:; ";
 $csp .= "font-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://fonts.gstatic.com; ";
-$csp .= "connect-src 'self' https: https://*.openstreetmap.org https://*.tile.openstreetmap.org; ";
+$csp .= "connect-src 'self' https:; ";
 $csp .= "frame-src 'self' https://accounts.google.com; ";
 $csp .= "worker-src 'self' blob:; ";
 $csp .= "object-src 'none'; ";
@@ -740,12 +740,6 @@ $csrfToken = csrf_token();
                 </a>
             </li>
             <li>
-                <a href="#" onclick="showTab('localizacao')" data-tab="localizacao">
-                    <i class="bi bi-geo-alt"></i>
-                    <span>Localização</span>
-                </a>
-            </li>
-            <li>
                 <a href="#" onclick="showTab('pedidos')" data-tab="pedidos">
                     <i class="bi bi-clipboard-check"></i>
                     <span>Pedidos</span>
@@ -831,14 +825,6 @@ $csrfToken = csrf_token();
                     ?>
                 </div>
 
-                <!-- Tab Localização -->
-                <div class="tab-pane fade" id="localizacao">
-                    <?php 
-                    require_once '../config/database.php';
-                    include '../src/Views/localizacao.php';
-                    ?>
-                </div>
-
                 <!-- Tab Pedidos -->
                 <div class="tab-pane fade" id="pedidos">
                     <?php 
@@ -890,6 +876,7 @@ $csrfToken = csrf_token();
     <script src="assets/js/venda-rapida.js"></script>
     <script src="assets/js/fiado.js"></script>
     <script src="assets/js/guardasois.js"></script>
+    <script src="assets/js/relatorios-export.js"></script>
     
     <!-- Scripts principais -->
     <script>
@@ -930,7 +917,6 @@ $csrfToken = csrf_token();
                 'produtos': 'Produtos',
                 'estoque': 'Estoque',
                 'relatorios': 'Relatórios',
-                'localizacao': 'Localização',
                 'pedidos': 'Pedidos',
                 'funcionarios': 'Funcionários',
                 'perfil': 'Meu Perfil'
@@ -1048,7 +1034,6 @@ $csrfToken = csrf_token();
                 produtos: document.querySelector('[data-tab="produtos"]'),
                 estoque: document.querySelector('[data-tab="estoque"]'),
                 relatorios: document.querySelector('[data-tab="relatorios"]'),
-                localizacao: document.querySelector('[data-tab="localizacao"]'),
                 funcionarios: document.querySelector('[data-tab="funcionarios"]'),
                 pedidos: document.querySelector('[data-tab="pedidos"]'),
                 financeiro: document.querySelector('[data-tab="financeiro"]'),
@@ -1405,8 +1390,5 @@ $csrfToken = csrf_token();
             }
         });
     </script>
-    
-    
-    <!-- OpenStreetMap usado na aba de localização (carregado via Leaflet) -->
 </body>
 </html>

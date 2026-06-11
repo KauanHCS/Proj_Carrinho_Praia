@@ -107,7 +107,6 @@ Object.assign(window, { testarGrafico, Utils, CONFIG });
 
 // Dados iniciais
 let carrinho = [];
-let localizacaoVendas = [];
 
 // Cart persistence functions
 function salvarCarrinho() {
@@ -163,7 +162,6 @@ function carregarDados() {
         verificarEstoqueBaixo();
         // atualizarGraficoVendas(); // Removido - só executa na aba de relatórios
         configurarDatasExportacao(); // Configurar datas padrão
-        // inicializarMapa(); // Removido - agora usando OpenStreetMap na aba de localização
     } catch (error) {
         console.warn('Erro ao carregar dados iniciais:', error);
     }
@@ -708,56 +706,6 @@ function corrigirGraficoDashboard() {
         if (typeof mostrarAlerta === 'function') {
             mostrarAlerta('❌ Erro ao corrigir gráfico', 'danger', 3000);
         }
-    }
-}
-
-// Inicializar mapa (apenas para outras abas que não sejam localização)
-function inicializarMapa() {
-    const mapElement = document.getElementById('map');
-    if (!mapElement) {
-        return; // Elemento não existe
-    }
-    
-    // Verificar se estamos na aba de localização
-    const localizacaoTab = document.getElementById('localizacao');
-    if (localizacaoTab && localizacaoTab.classList.contains('show')) {
-        // A aba de localização tem seu próprio sistema de mapa
-        return;
-    }
-    
-    // Verificar se Google Maps está disponível
-    if (typeof google === 'undefined' || typeof google.maps === 'undefined') {
-        console.warn('Google Maps não está disponível');
-        return;
-    }
-    
-    try {
-        // Coordenadas aproximadas de uma praia
-        const centro = { lat: -23.550520, lng: -46.633308 };
-        
-        const map = new google.maps.Map(mapElement, {
-            zoom: 15,
-            center: centro
-        });
-        
-        // Verifique se AdvancedMarkerElement está disponível
-        if (typeof google.maps.marker !== 'undefined' && typeof google.maps.marker.AdvancedMarkerElement !== 'undefined') {
-            // Use AdvancedMarkerElement se disponível
-            const marker = new google.maps.marker.AdvancedMarkerElement({
-                position: centro,
-                map: map,
-                title: 'Ponto de Venda'
-            });
-        } else if (typeof google.maps.Marker !== 'undefined') {
-            // Use o Marker antigo como fallback
-            const marker = new google.maps.Marker({
-                position: centro,
-                map: map,
-                title: 'Ponto de Venda'
-            });
-        }
-    } catch (error) {
-        console.warn('Erro ao inicializar mapa:', error);
     }
 }
 

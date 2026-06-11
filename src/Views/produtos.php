@@ -43,7 +43,7 @@ $isAdmin = ($tipoUsuario === 'administrador' || (!$funcaoUsuario && $tipoUsuario
                     $usuarioId = $_SESSION['usuario_id'] ?? null;
                     
                     if ($usuarioId) {
-                        $sql = "SELECT * FROM produtos WHERE usuario_id = ? ORDER BY nome";
+                        $sql = "SELECT * FROM produtos WHERE usuario_id = ? AND ativo = 1 ORDER BY nome";
                         $stmt = $conn->prepare($sql);
                         $stmt->bind_param("i", $usuarioId);
                         $stmt->execute();

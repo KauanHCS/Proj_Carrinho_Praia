@@ -12,7 +12,7 @@
                     $usuarioId = $_SESSION['usuario_id'] ?? null;
                     
                     if ($usuarioId) {
-                        $sql = "SELECT * FROM produtos WHERE quantidade <= limite_minimo AND quantidade >= 0 AND usuario_id = ? ORDER BY quantidade ASC";
+                        $sql = "SELECT * FROM produtos WHERE quantidade <= limite_minimo AND quantidade >= 0 AND usuario_id = ? AND ativo = 1 ORDER BY quantidade ASC";
                         $stmt = $conn->prepare($sql);
                         $stmt->bind_param("i", $usuarioId);
                         $stmt->execute();

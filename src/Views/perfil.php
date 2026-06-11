@@ -139,28 +139,21 @@
                 </div>
                 <div class="card-body">
                     <div class="row text-center">
-                        <div class="col-6">
+                        <div class="col-4">
                             <div class="border-end">
                                 <h4 class="text-primary mb-1" id="totalVendas">0</h4>
                                 <small class="text-muted">Vendas Hoje</small>
                             </div>
                         </div>
-                        <div class="col-6">
-                            <h4 class="text-success mb-1" id="totalFaturamento">R$ 0,00</h4>
-                            <small class="text-muted">Faturamento</small>
-                        </div>
-                    </div>
-                    <hr>
-                    <div class="row text-center">
-                        <div class="col-6">
+                        <div class="col-4">
                             <div class="border-end">
-                                <h6 class="text-info mb-1" id="produtosCadastrados">0</h6>
-                                <small class="text-muted">Produtos</small>
+                                <h4 class="text-success mb-1" id="totalFaturamento">R$ 0,00</h4>
+                                <small class="text-muted">Faturamento</small>
                             </div>
                         </div>
-                        <div class="col-6">
-                            <h6 class="text-warning mb-1" id="pontosSalvos">0</h6>
-                            <small class="text-muted">Localizações</small>
+                        <div class="col-4">
+                            <h4 class="text-info mb-1" id="produtosCadastrados">0</h4>
+                            <small class="text-muted">Produtos</small>
                         </div>
                     </div>
                 </div>
@@ -463,10 +456,6 @@ function carregarEstatisticas() {
     .catch(error => {
         console.error('Erro ao carregar estatísticas:', error);
     });
-    
-    // Contar pontos salvos na localização
-    const pontosSalvos = JSON.parse(localStorage.getItem('pontos_venda') || '[]');
-    document.getElementById('pontosSalvos').textContent = pontosSalvos.length;
     
     // Carregar atividade recente
     carregarAtividadeRecente();

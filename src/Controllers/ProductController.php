@@ -85,6 +85,7 @@ class ProductController extends BaseController
         }
 
         try {
+            // Buscar nome do produto para mensagem
             $stmt = $pdo->prepare('SELECT nome FROM produtos WHERE id = ? AND usuario_id = ?');
             $stmt->execute([$id, $userId]);
             $produto = $stmt->fetch(\PDO::FETCH_ASSOC);
@@ -92,8 +93,13 @@ class ProductController extends BaseController
                 self::error('Produto não encontrado');
             }
 
-            $stmt = $pdo->prepare('DELETE FROM produtos WHERE id = ? AND usuario_id = ?');
+            // Em vez de DELETE físico, faz soft delete para não quebrar FKs
+            $stmt = $pdo->prepare('UPDATE produtos SET ativo = 0 WHERE id = ? AND usuario_id = ?');
             $stmt->execute([$id, $userId]);
+
+            if ($stmt->rowCount() === 0) {
+                self::error('Não foi possível excluir o produto');
+            }
 
             self::json(true, ['nome' => $produto['nome']], 'Produto excluído com sucesso');
         } catch (\Throwable $e) {
@@ -150,6 +156,32 @@ class ProductController extends BaseController
         } catch (\Throwable $e) {
             self::logError('Erro ao listar produtos', ['error' => $e->getMessage()]);
             self::error('Erro ao listar produtos');
+        }
+    }
+
+    public static function getProduto(): void
+    {
+        $userId = self::requireAuth();
+        $pdo    = self::getPdo();
+
+        $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+        if ($id === 0) {
+            self::error('ID do produto é obrigatório');
+        }
+
+        try {
+            $stmt = $pdo->prepare('SELECT * FROM produtos WHERE id = ? AND usuario_id = ? AND ativo = 1');
+            $stmt->execute([$id, $userId]);
+            $produto = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            if (!$produto) {
+                self::error('Produto não encontrado');
+            }
+
+            self::json(true, ['produto' => $produto], 'Produto carregado com sucesso');
+        } catch (\Throwable $e) {
+            self::logError('Erro ao obter produto', ['error' => $e->getMessage()]);
+            self::error('Erro ao obter produto');
         }
     }
 }

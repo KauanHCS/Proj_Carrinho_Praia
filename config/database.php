@@ -1,13 +1,5 @@
 <?php
-/**
- * Configuração do banco de dados.
- *
- * Este arquivo mantém a função getConnection() para retrocompatibilidade
- * com o código legado, mas agora lê as credenciais do arquivo .env através
- * da classe \CarrinhoDePreia\Config\Env.
- */
 
-// Garantir bootstrap (autoload + .env)
 $bootstrap = __DIR__ . '/../bootstrap.php';
 if (is_file($bootstrap)) {
     require_once $bootstrap;

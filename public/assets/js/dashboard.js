@@ -56,7 +56,9 @@ function atualizarDashboard() {
 
 async function carregarDadosDashboard() {
     try {
-        const response = await fetch('../src/Controllers/actions.php?action=getDashboardMetrics');
+        const response = await fetch('../src/Controllers/actions.php?action=getDashboardMetrics', {
+            credentials: 'same-origin'
+        });
         const data = await response.json();
         
         if (data.success) {
@@ -101,7 +103,17 @@ function atualizarKPIs(data) {
 
 function atualizarTrend(elementId, percentual) {
     const element = document.getElementById(elementId);
+    if (!element) return;
     const valor = parseFloat(percentual);
+    
+    if (isNaN(valor)) {
+        element.innerHTML = `
+        <i class="bi bi-dash"></i>
+        <span>—</span> vs ontem
+    `;
+        element.className = 'kpi-trend text-muted';
+        return;
+    }
     
     const icone = valor >= 0 ? 'bi-arrow-up' : 'bi-arrow-down';
     const classe = valor >= 0 ? 'text-success' : 'text-danger';
@@ -116,7 +128,17 @@ function atualizarTrend(elementId, percentual) {
 
 function atualizarTrendNumero(elementId, diferenca) {
     const element = document.getElementById(elementId);
-    const valor = parseInt(diferenca);
+    if (!element) return;
+    const valor = parseInt(diferenca, 10);
+    
+    if (isNaN(valor)) {
+        element.innerHTML = `
+        <i class="bi bi-dash"></i>
+        <span>—</span> vs ontem
+    `;
+        element.className = 'kpi-trend text-muted';
+        return;
+    }
     
     const icone = valor >= 0 ? 'bi-arrow-up' : 'bi-arrow-down';
     const classe = valor >= 0 ? 'text-success' : 'text-danger';
@@ -214,7 +236,8 @@ function atualizarTopProdutos(produtos) {
     produtos.forEach((produto, index) => {
         const posicao = index + 1;
         const medalha = posicao === 1 ? '🥇' : posicao === 2 ? '🥈' : posicao === 3 ? '🥉' : `${posicao}º`;
-        const progressWidth = (produto.quantidade / produtos[0].quantidade) * 100;
+        const maxQ = produtos[0].quantidade > 0 ? produtos[0].quantidade : 1;
+        const progressWidth = (produto.quantidade / maxQ) * 100;
         
         html += `
             <div class="produto-item">
@@ -265,7 +288,7 @@ function atualizarFormasPagamento(dados) {
         if (formaLower.includes('dinheiro')) return '#198754';  // Verde
         if (formaLower.includes('pix')) return '#0dcaf0';       // Azul claro
         if (formaLower.includes('cart')) return '#0d6efd';      // Azul
-        if (formaLower.includes('fiado')) return '#ffc107';     // Amarelo
+        if (formaLower.includes('fiado')) return '#fd7e14';     // Laranja
         return '#6c757d'; // Cinza para outros
     }
     
@@ -369,6 +392,10 @@ function atualizarFormasPagamento(dados) {
 // ============================================
 
 function atualizarComparacoes(comparacoes) {
+    if (!comparacoes || !comparacoes.ontem || !comparacoes.semana_passada) {
+        console.warn('Dashboard: dados de comparação ausentes ou incompletos');
+        return;
+    }
     // Comparação com Ontem
     document.getElementById('compOntemFaturamento').textContent = formatarMoeda(comparacoes.ontem.faturamento);
     atualizarBadgeComparacao('compOntemDiff', comparacoes.ontem.diff_faturamento);
@@ -392,6 +419,7 @@ function atualizarComparacoes(comparacoes) {
 
 function atualizarBadgeComparacao(elementId, percentual) {
     const element = document.getElementById(elementId);
+    if (!element) return;
     const valor = parseFloat(percentual);
     
     // Proteger contra NaN
@@ -410,7 +438,14 @@ function atualizarBadgeComparacao(elementId, percentual) {
 
 function atualizarBadgeComparacaoNumero(elementId, diferenca) {
     const element = document.getElementById(elementId);
-    const valor = parseInt(diferenca);
+    if (!element) return;
+    const valor = parseInt(diferenca, 10);
+    
+    if (isNaN(valor)) {
+        element.className = 'badge bg-secondary';
+        element.textContent = '—';
+        return;
+    }
     
     const classe = valor >= 0 ? 'bg-success' : 'bg-danger';
     const sinal = valor > 0 ? '+' : '';

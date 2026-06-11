@@ -239,6 +239,26 @@ function toggleFormaPagamentoBox(element, forma) {
         element.classList.add('selected');
         input.disabled = false;
         
+        // If fiado selected, open client selection modal immediately (unless already selected)
+        if (forma === 'fiado') {
+            const clienteIdEl = document.getElementById('clienteIdVenda');
+            const clienteId = clienteIdEl ? clienteIdEl.value : '';
+            if (!clienteId) {
+                if (typeof abrirModalSelecionarClienteFiado === 'function') {
+                    abrirModalSelecionarClienteFiado();
+                } else {
+                    const modalEl = document.getElementById('modalSelecionarClienteFiado');
+                    if (modalEl) {
+                        const modal = new bootstrap.Modal(modalEl);
+                        modal.show();
+                    }
+                    if (typeof carregarListaClientesFiado === 'function') {
+                        carregarListaClientesFiado();
+                    }
+                }
+            }
+        }
+        
         // Lógica de auto-preenchimento inteligente
         setTimeout(() => {
             const formasMarcadas = contarFormasMarcadas();
@@ -449,7 +469,6 @@ function finalizarVendaMista() {
     formData.append('nome_cliente', clienteFiadoSelecionado ? clienteFiadoSelecionado.nome : nomeCliente);
     formData.append('telefone_cliente', '');
     formData.append('criar_pedido', '0');
-    formData.append('valor_pago', totalPago);
     
     // Adicionar cliente fiado se selecionado
     if (clienteFiadoSelecionado) {

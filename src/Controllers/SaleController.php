@@ -38,6 +38,26 @@ class SaleController extends BaseController
         try {
             $pdo->beginTransaction();
 
+            // Reserva / validação de estoque por produto (sem filtrar por usuario_id do produto:
+            // o catálogo pode ser do admin e a venda do vendedor; o trigger tr_item_venda_inserted
+            // já baixa estoque ao inserir em itens_venda).
+            foreach ($itensCarrinho as $item) {
+                $pid = (int) ($item['id'] ?? 0);
+                $qty = (int) ($item['quantidade'] ?? 0);
+                if ($pid <= 0 || $qty <= 0) {
+                    throw new \Exception('Item inválido no carrinho');
+                }
+                $stmt = $pdo->prepare('SELECT nome, quantidade FROM produtos WHERE id = ? FOR UPDATE');
+                $stmt->execute([$pid]);
+                $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+                if (!$row) {
+                    throw new \Exception('Produto não encontrado: ' . ($item['nome'] ?? (string) $pid));
+                }
+                if ((int) $row['quantidade'] < $qty) {
+                    throw new \Exception('Estoque insuficiente para: ' . $row['nome']);
+                }
+            }
+
             $stmt = $pdo->prepare("SELECT COUNT(*) FROM usuarios WHERE funcao_funcionario IN ('financeiro', 'financeiro_e_anotar') AND ativo = 1");
             $stmt->execute();
             $temFinanceiro = $stmt->fetchColumn() > 0;
@@ -58,17 +78,14 @@ class SaleController extends BaseController
             ]);
             $vendaId = $pdo->lastInsertId();
 
+            $stmtItem = $pdo->prepare(
+                'INSERT INTO itens_venda (venda_id, produto_id, quantidade, preco_unitario) VALUES (?, ?, ?, ?)'
+            );
             foreach ($itensCarrinho as $item) {
-                $stmt = $pdo->prepare(
-                    'UPDATE produtos SET quantidade = quantidade - ?
-                     WHERE id = ? AND usuario_id = ? AND quantidade >= ?'
-                );
-                $stmt->execute([
-                    $item['quantidade'], $item['id'], $userId, $item['quantidade'],
-                ]);
-                if ($stmt->rowCount() === 0) {
-                    throw new \Exception('Estoque insuficiente para: ' . ($item['nome'] ?? 'item'));
-                }
+                $pid = (int) $item['id'];
+                $qty = (int) $item['quantidade'];
+                $preco = (float) ($item['preco'] ?? 0);
+                $stmtItem->execute([$vendaId, $pid, $qty, $preco]);
             }
 
             $pedidoId      = null;
@@ -120,7 +137,79 @@ class SaleController extends BaseController
         } catch (\Throwable $e) {
             if ($pdo->inTransaction()) { $pdo->rollBack(); }
             self::logError('Erro ao processar venda', ['error' => $e->getMessage()]);
+            $msg = $e->getMessage();
+            if ($msg !== '' && (
+                strncmp($msg, 'Estoque insuficiente', 20) === 0
+                || strncmp($msg, 'Produto não encontrado', 22) === 0
+                || strncmp($msg, 'Item inválido', 13) === 0
+            )) {
+                self::error($msg);
+            }
             self::error('Erro ao processar venda');
+        }
+    }
+
+    public static function listarVendasRelatorio(): void
+    {
+        $userId = self::requireAuth();
+        $pdo    = self::getPdo();
+
+        $filtroDataIni = (string) self::input($_GET, 'data_ini', '');
+        $filtroDataFim = (string) self::input($_GET, 'data_fim', '');
+
+        $sql = 'SELECT DISTINCT v.id, v.data, v.forma_pagamento, v.total, v.valor_pago,
+                       v.troco, v.desconto,
+                       v.nome_cliente AS cliente_nome,
+                       v.telefone_cliente AS cliente_telefone,
+                       v.observacoes,
+                       v.status_pagamento AS status,
+                       u.nome AS vendedor_nome,
+                       v.usuario_id
+                FROM vendas v
+                LEFT JOIN usuarios u   ON v.usuario_id = u.id
+                INNER JOIN itens_venda iv ON v.id = iv.venda_id
+                INNER JOIN produtos    p  ON iv.produto_id = p.id
+                WHERE p.usuario_id = ?';
+        $params = [$userId];
+
+        if ($filtroDataIni !== '') {
+            $sql .= ' AND DATE(v.data) >= ?';
+            $params[] = $filtroDataIni;
+        }
+        if ($filtroDataFim !== '') {
+            $sql .= ' AND DATE(v.data) <= ?';
+            $params[] = $filtroDataFim;
+        }
+
+        $sql .= ' ORDER BY v.data DESC, v.id DESC';
+
+        try {
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            $vendas = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            foreach ($vendas as &$venda) {
+                $stmtItems = $pdo->prepare(
+                    'SELECT iv.quantidade, iv.preco_unitario, iv.subtotal, p.nome AS produto_nome
+                     FROM itens_venda iv
+                     LEFT JOIN produtos p ON iv.produto_id = p.id
+                     WHERE iv.venda_id = ?'
+                );
+                $stmtItems->execute([$venda['id']]);
+                $itens = $stmtItems->fetchAll(\PDO::FETCH_ASSOC);
+
+                $produtos = [];
+                foreach ($itens as $item) {
+                    $produtos[] = $item['quantidade'] . 'x ' . $item['produto_nome'];
+                }
+                $venda['produtos']      = $itens;
+                $venda['produtos_info'] = implode(', ', $produtos);
+            }
+
+            self::json(true, $vendas, 'Vendas carregadas para relatório');
+        } catch (\Throwable $e) {
+            self::logError('Erro listarVendasRelatorio', ['error' => $e->getMessage()]);
+            self::error('Erro ao carregar vendas para relatório');
         }
     }
 
